@@ -1,0 +1,4 @@
+// Entry point Express app
+import express from 'express';
+const app = express();
+export default app;

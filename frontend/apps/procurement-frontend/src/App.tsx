@@ -6,10 +6,10 @@ function App() {
     <Container maxWidth="sm">
       <CssBaseline />
       <Typography variant="h3" align="center" gutterBottom>
-        Welcome to miniERP Frontend
+        Procurement Frontend
       </Typography>
       <Typography align="center">
-        Start building your ERP modules here!
+        Modul Procurement miniERP
       </Typography>
     </Container>
   );
