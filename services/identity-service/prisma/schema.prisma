@@ -29,6 +29,8 @@ model users {
   employee_id   String?    @unique
   is_active     Boolean    @default(true)
   employees     employees? @relation(fields: [employee_id], references: [id])
+  created_at    DateTime   @default(now())
+  updated_at    DateTime   @updatedAt
 }
 
 model employees {

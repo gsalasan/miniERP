@@ -1,10 +1,11 @@
-import { Router } from "express";
-import { login, getProfile } from "../controllers/auth.controller";
-import authMiddleware from "../middlewares/auth.middleware";
+import express from "express";
+import { register, login, me } from "../controllers/auth.controller";
+import { verifyToken } from "../middlewares/auth.middleware";
 
-const router = Router();
+const router = express.Router();
 
+router.post("/register", register);
 router.post("/login", login);
-router.get("/me", authMiddleware, getProfile);
+router.get("/me", verifyToken, me);
 
 export default router;
