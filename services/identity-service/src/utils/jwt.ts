@@ -1,9 +1,7 @@
 import jwt from "jsonwebtoken";
 
-export const generateToken = (payload: object) => {
-  return jwt.sign(payload, process.env.JWT_SECRET!, { expiresIn: "1d" });
-};
+const JWT_SECRET = process.env.JWT_SECRET || "minierpsecret";
 
-export const verifyToken = (token: string) => {
-  return jwt.verify(token, process.env.JWT_SECRET!);
+export const generateToken = (payload: object) => {
+  return jwt.sign(payload, JWT_SECRET, { expiresIn: "8h" });
 };
