@@ -1,0 +1,145 @@
+version: "3.9"
+
+services:
+  # === DATABASE ===
+  postgres:
+    image: postgres:16
+    container_name: miniERP-postgres
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: minierp
+    volumes:
+      - ./data/postgres:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    networks:
+      - minierp-network
+
+  # === BACKEND SERVICES ===
+  identity-service:
+    build: ./services/identity-service
+    container_name: identity-service
+    env_file:
+      - ./services/identity-service/.env
+    ports:
+      - "4001:4001"
+    depends_on:
+      - postgres
+    networks:
+      - minierp-network
+
+  hr-service:
+    build: ./services/hr-service
+    container_name: hr-service
+    env_file:
+      - ./services/hr-service/.env
+    ports:
+      - "4002:4002"
+    depends_on:
+      - postgres
+    networks:
+      - minierp-network
+
+  finance-service:
+    build: ./services/finance-service
+    container_name: finance-service
+    env_file:
+      - ./services/finance-service/.env
+    ports:
+      - "4003:4003"
+    depends_on:
+      - postgres
+    networks:
+      - minierp-network
+
+  procurement-service:
+    build: ./services/procurement-service
+    container_name: procurement-service
+    env_file:
+      - ./services/procurement-service/.env
+    ports:
+      - "4004:4004"
+    depends_on:
+      - postgres
+    networks:
+      - minierp-network
+
+  crm-service:
+    build: ./services/crm-service
+    container_name: crm-service
+    env_file:
+      - ./services/crm-service/.env
+    ports:
+      - "4005:4005"
+    depends_on:
+      - postgres
+    networks:
+      - minierp-network
+
+  inventory-service:
+    build: ./services/inventory-service
+    container_name: inventory-service
+    env_file:
+      - ./services/inventory-service/.env
+    ports:
+      - "4006:4006"
+    depends_on:
+      - postgres
+    networks:
+      - minierp-network
+
+  engineering-service:
+    build: ./services/engineering-service
+    container_name: engineering-service
+    env_file:
+      - ./services/engineering-service/.env
+    ports:
+      - "4007:4007"
+    depends_on:
+      - postgres
+    networks:
+      - minierp-network
+
+  project-service:
+    build: ./services/project-service
+    container_name: project-service
+    env_file:
+      - ./services/project-service/.env
+    ports:
+      - "4008:4008"
+    depends_on:
+      - postgres
+    networks:
+      - minierp-network
+
+  # === FRONTEND ===
+  frontend:
+    build: ./frontend
+    container_name: frontend
+    ports:
+      - "5173:5173"
+    depends_on:
+      - identity-service
+      - hr-service
+      - finance-service
+    networks:
+      - minierp-network
+
+  # === GATEWAY ===
+  gateway:
+    image: nginx:alpine
+    container_name: minierp-gateway
+    volumes:
+      - ./gateway/nginx.conf:/etc/nginx/nginx.conf:ro
+    ports:
+      - "80:80"
+    depends_on:
+      - frontend
+    networks:
+      - minierp-network
+
+# === NETWORKS ===
+networks:
+  minierp-network:
+    driver: bridge
