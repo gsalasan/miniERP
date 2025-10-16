@@ -26,9 +26,9 @@ model users {
   email         String     @unique
   password_hash String
   role          UserRole
-  employee_id   String?    @unique
+  employee_id   String?    // Hapus @unique di sini
   is_active     Boolean    @default(true)
-  employees     employees? @relation(fields: [employee_id], references: [id])
+  employee      employees? @relation(fields: [employee_id], references: [id])
   created_at    DateTime   @default(now())
   updated_at    DateTime   @updatedAt
 }
