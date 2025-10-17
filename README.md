@@ -2,6 +2,8 @@
 
 Repositori miniERP — panduan singkat untuk menjalankan proyek ini secara lokal.## Aturan Kontribusi
 
+## Aturan Kontribusi
+
 1. **Selalu lakukan `git pull` dari branch `main` sebelum mulai bekerja**  
    Pastikan branch lokal kamu sudah update dengan perubahan terbaru dari `main`.
 
