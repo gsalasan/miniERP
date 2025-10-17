@@ -42,42 +42,56 @@ model employees {
   allowances   Json
   users        users[]
 }
-
-model Customer {
-  id               String             @id @default(uuid())
-  customer_name    String
-  channel          String
-  city             String
-  status           CustomerStatus
-  top_days         Int
-  assigned_sales_id String?
-  credit_limit     Float?             
-  no_npwp          String?           
-  sppkp            String?           
-  createdAt        DateTime           @default(now())
-  updatedAt        DateTime           @updatedAt
-
-  contacts         CustomerContact[]
-
-  @@map("customers")
+enum MaterialStatus {
+  Active
+  EndOfLife
+  Discontinue
 }
 
-model CustomerContact {
-  id              String   @id @default(uuid())
-  customer_id     String
-  name            String
-  position        String?
-  email           String?
-  phone           String?     
-  contact_person  String?         
-
-  customer        Customer  @relation(fields: [customer_id], references: [id], onDelete: Cascade)
-
-  @@map("customer_contacts")
+enum MaterialLocation {
+  Local
+  Import
 }
 
-enum CustomerStatus {
-  ACTIVE
-  INACTIVE
-  PROSPECT
+enum ServiceUnit {
+  Jam
+  Hari
+}
+
+model Material {
+  id              String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  sbu             String?
+  system          String?   
+  subsystem       String?   
+  components      String?   
+  item_name       String
+  brand           String?
+  owner_pn        String?  @map("owner_pn") 
+  vendor          String?   
+  status          MaterialStatus? 
+  location        MaterialLocation? 
+  cost_ori        Decimal?  @db.Decimal(14,2) 
+  curr            String?   @db.VarChar(3)    
+  satuan          String?   @db.VarChar(50)   
+  cost_rp         Decimal?  @db.Decimal(14,2) 
+  cost_date       DateTime  @default(now()) @db.Timestamptz(6) 
+  cost_validity   DateTime? @db.Timestamptz(6)                  
+  created_at      DateTime  @default(now()) @db.Timestamptz(6)
+  updated_at      DateTime  @default(now()) @db.Timestamptz(6)
+}
+
+
+model Service {
+  id                      String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  service_name            String
+  service_code            String   @unique
+  item_type               String   @default("Service")
+  category                String?
+  unit                    ServiceUnit 
+  internal_cost_per_hour   Decimal? @db.Decimal(14,2)
+  freelance_cost_per_hour  Decimal? @db.Decimal(14,2)
+  default_duration         Decimal? @db.Decimal(10,2) 
+  is_active                Boolean  @default(true)
+  created_at               DateTime @default(now()) @db.Timestamptz(6)
+  updated_at               DateTime @default(now()) @db.Timestamptz(6)
 }
