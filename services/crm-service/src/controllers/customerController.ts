@@ -1,11 +1,16 @@
-import { Request, Response } from 'express'
-import prisma from '../prismaClient'
+import { Request, Response } from "express";
+import { getAllCustomersService } from "../services/customerServices";
 
 export async function getAllCustomers(req: Request, res: Response) {
   try {
-    const customers = await prisma.customer.findMany()
-    res.json(customers)
+    const customers = await getAllCustomersService();
+    res.status(200).json({
+      success: true,
+      message: "Data customers berhasil diambil",
+      data: customers,
+    });
   } catch (error) {
-    res.status(500).json({ message: 'Server error' })
+    console.error("Error fetching customers:", error);
+    res.status(500).json({ success: false, message: "Server error" });
   }
 }
