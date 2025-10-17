@@ -1,6 +1,26 @@
 # miniERP
 
-Repositori miniERP — panduan singkat untuk menjalankan proyek ini secara lokal.
+Repositori miniERP — panduan singkat untuk menjalankan proyek ini secara lokal.## Aturan Kontribusi
+
+1. **Selalu lakukan `git pull` dari branch `main` sebelum mulai bekerja**  
+   Pastikan branch lokal kamu sudah update dengan perubahan terbaru dari `main`.
+
+2. **Buat branch baru sesuai ticket**  
+   Format nama branch: `namabranch[MIN-12]`  
+   Contoh: `fitur-auth[MIN-12]`
+
+3. **Commit perubahan secara teratur**  
+   Gunakan pesan commit yang jelas dan deskriptif.
+
+4. **Push branch ke remote**  
+   Setelah commit, lakukan `git push` ke branch yang sudah dibuat.
+
+5. **Buat Pull Request (PR) ke branch `main`**  
+   Sertakan deskripsi singkat tentang perubahan dan referensi ticket (misal: MIN-12).
+
+6. **Tunggu review dan approval sebelum merge**  
+   Jangan merge PR sendiri tanpa persetujuan reviewer.
+
 
 ## Persyaratan
 - Node.js (disarankan v14+)
