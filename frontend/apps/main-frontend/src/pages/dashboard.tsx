@@ -28,8 +28,12 @@ const Dashboard: React.FC = () => {
       <h2>Berhasil Login!</h2>
       {user ? (
         <div>
-          <p>Selamat datang, <b>{user.email}</b></p>
-          <p>Role: <b>{user.role}</b></p>
+          <p>
+            Selamat datang, <b>{user.email}</b>
+          </p>
+          <p>
+            Role: <b>{user.role}</b>
+          </p>
         </div>
       ) : (
         <p>Memuat data user...</p>
