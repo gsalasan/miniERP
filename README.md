@@ -1,24 +1,70 @@
 # miniERP
 
-Repositori miniERP — panduan singkat untuk menjalankan proyek ini secara lokal.
+Repositori miniERP — panduan lengkap untuk menjalankan proyek ini secara lokal dengan npm.
 
 ## 🚀 Quick Start
 
+### **Prerequisites**
+- Node.js v18+ 
+- npm v8+
+- Docker (untuk database PostgreSQL)
+- Git
+
+### **1. Clone dan Setup**
 ```bash
-# 1. Clone dan install dependencies
+# Clone repositori
 git clone <url-repo>
 cd miniERP
-npm install
 
-# 2. Setup environment
-cp .env.example .env
-# Edit .env sesuai kebutuhan
+# Install semua dependencies
+npm run install:all
+```
 
-# 3. Start development
-npm run dev:frontend    # Start semua frontend apps
-npm run dev:identity    # Start identity service
+### **2. Database Setup**
+```bash
+# Start PostgreSQL dengan Docker
+docker run --name minierp-postgres \
+  -e POSTGRES_PASSWORD=anisa252502 \
+  -e POSTGRES_DB=minierp_unais \
+  -p 5432:5432 \
+  -d postgres:15
 
-# 4. Code quality (opsional)
+# Setup database schema
+npx prisma migrate dev
+npx prisma generate
+```
+
+### **3. Environment Configuration**
+```bash
+# File .env sudah tersedia dengan konfigurasi:
+DATABASE_URL="postgresql://postgres:anisa252502@localhost:5432/minierp_unais?schema=public"
+JWT_SECRET=minierpsecret
+PORT=3001
+```
+
+### **4. Start Development**
+```bash
+# Terminal 1: Start Identity Service
+npm run dev:identity
+
+# Terminal 2: Start Main Frontend (Login Page)
+cd frontend/apps/main-frontend
+npm run dev
+```
+
+**⚠️ Important Note:** 
+- Use `cd frontend/apps/main-frontend && npm run dev` to start the login page
+- The `npm run dev:frontend` command starts other frontend apps, not the main login page
+
+### **5. Access Applications**
+- **Main Frontend (Login)**: http://localhost:3000
+- **Identity Service API**: http://localhost:3001
+- **Test Login Credentials**:
+  - Email: `admin@minierp.com`
+  - Password: `admin123`
+
+### **6. Code Quality (Opsional)**
+```bash
 npm run lint            # Lint dan fix code
 npm run format          # Format code
 npm run type-check      # Check TypeScript errors
@@ -224,7 +270,7 @@ JWT_SECRET=change_this_secret
 - yarn:
   - yarn install
 
-## Scripts yang Tersedia
+## 📋 NPM Commands Guide
 
 ### **Root Level Scripts**
 ```bash
@@ -245,6 +291,111 @@ npm run type-check          # Type check semua workspace
 
 # Utilities
 npm run install:all         # Install dependencies untuk semua workspace
+```
+
+### **Database Commands**
+```bash
+# Prisma Commands
+npx prisma migrate dev      # Run database migrations
+npx prisma generate         # Generate Prisma client
+npx prisma studio           # Open Prisma Studio (database GUI)
+npx prisma db seed          # Seed database with sample data
+
+# Docker Database Commands
+docker start minierp-postgres    # Start database
+docker stop minierp-postgres     # Stop database
+docker restart minierp-postgres  # Restart database
+docker logs minierp-postgres     # View database logs
+```
+
+### **Individual App/Service Commands**
+```bash
+# Frontend Apps (dalam folder frontend/apps/*)
+cd frontend/apps/main-frontend
+npm run dev                 # Start development server
+npm run build               # Build untuk production
+npm run preview             # Preview production build
+
+# Backend Services (dalam folder services/*)
+cd services/identity-service
+npm run dev                 # Start development server
+npm run build               # Build untuk production
+npm run start               # Start production server
+```
+
+### **Development Workflow Commands**
+```bash
+# Setup baru
+git clone <repo-url>
+cd miniERP
+npm run install:all
+docker run --name minierp-postgres -e POSTGRES_PASSWORD=anisa252502 -e POSTGRES_DB=minierp_unais -p 5432:5432 -d postgres:15
+npx prisma migrate dev
+npx prisma generate
+
+# Daily development (CORRECT WAY)
+npm run dev:identity        # Terminal 1: Start identity service
+cd frontend/apps/main-frontend && npm run dev  # Terminal 2: Start login page
+
+# Before committing
+npm run lint
+npm run format
+npm run type-check
+git add .
+git commit -m "feat: your message"
+```
+
+### **⚠️ Important: Correct Startup Sequence**
+```bash
+# ❌ WRONG - This starts other frontend apps, not the login page
+npm run dev:frontend
+
+# ✅ CORRECT - This starts the main frontend with login page
+cd frontend/apps/main-frontend
+npm run dev
+
+# Expected result:
+# - Main Frontend: http://localhost:3000 (Login page)
+# - Identity Service: http://localhost:3001 (API)
+```
+
+### **Stop Services Commands**
+```bash
+# Stop all development servers
+pkill -f "ts-node.*server.ts"    # Stop identity service
+pkill -f "vite"                  # Stop frontend apps
+pkill -f "npm.*dev"              # Stop npm dev processes
+
+# Stop specific ports
+lsof -ti:3000,3001,5173 | xargs kill -9 2>/dev/null || true
+
+# Stop database
+docker stop minierp-postgres
+
+# Check what's running
+ps aux | grep -E "(ts-node|vite|npm.*dev)" | grep -v grep
+lsof -i :3000,3001,5432
+```
+
+### **Troubleshooting Commands**
+```bash
+# Fix dependency issues
+rm -rf node_modules package-lock.json
+npm run install:all
+
+# Fix database issues
+docker restart minierp-postgres
+npx prisma migrate reset
+npx prisma migrate dev
+
+# Fix code quality issues
+npm run lint
+npm run format
+npm run type-check
+
+# Check running processes
+lsof -i :3000,3001,5432
+ps aux | grep -E "(ts-node|vite|postgres)"
 ```
 
 ### **Per App/Service Scripts**
@@ -520,7 +671,7 @@ Proyek ini telah dikonfigurasi dengan tools berikut untuk menjaga kualitas kode:
 ### **Most Used Commands**
 ```bash
 # Development
-npm run dev:frontend        # Start frontend apps
+cd frontend/apps/main-frontend && npm run dev  # Start main frontend (login page)
 npm run dev:identity        # Start identity service
 
 # Code Quality
@@ -531,7 +682,20 @@ npm run type-check          # Check TypeScript
 # Build
 npm run build:frontend      # Build frontend
 npm run build:services      # Build services
+
+# Database
+npx prisma migrate dev      # Run migrations
+npx prisma generate         # Generate client
 ```
+
+### **Access URLs**
+- **Main Frontend**: http://localhost:3000
+- **Identity API**: http://localhost:3001
+- **Database**: localhost:5432
+
+### **Test Credentials**
+- **Email**: `admin@minierp.com`
+- **Password**: `admin123`
 
 ### **File Locations**
 - **ESLint**: `eslint.config.js` (root)
@@ -540,13 +704,18 @@ npm run build:services      # Build services
 - **Frontend apps**: `frontend/apps/*/`
 - **Backend services**: `services/*/`
 - **Database**: `prisma/schema.prisma`
+- **Environment**: `.env`
 
 ### **Common Issues & Solutions**
 - **Linting errors**: `npm run lint`
 - **Format issues**: `npm run format`
 - **Type errors**: `npm run type-check`
 - **Dependency issues**: `npm run install:all`
-- **Port conflicts**: Check running processes
+- **Port conflicts**: `lsof -i :3000,3001,5432`
+- **Database issues**: `docker restart minierp-postgres`
+- **Service not starting**: Check logs with `DEBUG=* npm run dev:identity`
+- **Login page not found**: Use `cd frontend/apps/main-frontend && npm run dev` (not `npm run dev:frontend`)
+- **Wrong port (3010 instead of 3000)**: Stop current process and start main-frontend specifically
 
 ## Lisensi
 Sesuaikan dengan lisensi proyek (mis. MIT) atau tambahkan file LICENSE.
