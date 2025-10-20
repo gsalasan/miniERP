@@ -1,0 +1,1 @@
+// Identity style definitions

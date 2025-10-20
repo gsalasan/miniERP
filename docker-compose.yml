@@ -1,145 +1,200 @@
-version: "3.9"
+version: '3.8'
 
 services:
-  # === DATABASE ===
   postgres:
-    image: postgres:16
-    container_name: miniERP-postgres
+    image: postgres:15
+    restart: unless-stopped
     environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
-      POSTGRES_DB: minierp
+      POSTGRES_USER: mini
+      POSTGRES_PASSWORD: mini
+      POSTGRES_DB: mini
     volumes:
-      - ./data/postgres:/var/lib/postgresql/data
-    ports:
-      - "5432:5432"
+      - postgres_data:/var/lib/postgresql/data
     networks:
-      - minierp-network
+      - mini-net
 
-  # === BACKEND SERVICES ===
   identity-service:
-    build: ./services/identity-service
+    build:
+      context: ./services/identity-service
+      dockerfile: Dockerfile
     container_name: identity-service
-    env_file:
-      - ./services/identity-service/.env
+    working_dir: /usr/src/app
+    command: sh -c "npm install && npm run dev"
     ports:
-      - "4001:4001"
+      - "4000:4000"
+    environment:
+      NODE_ENV: development
+      DATABASE_URL: postgresql://mini:mini@postgres:5432/mini
+    volumes:
+      - ./services/identity-service:/usr/src/app
+      - /usr/src/app/node_modules
     depends_on:
       - postgres
     networks:
-      - minierp-network
-
-  hr-service:
-    build: ./services/hr-service
-    container_name: hr-service
-    env_file:
-      - ./services/hr-service/.env
-    ports:
-      - "4002:4002"
-    depends_on:
-      - postgres
-    networks:
-      - minierp-network
-
-  finance-service:
-    build: ./services/finance-service
-    container_name: finance-service
-    env_file:
-      - ./services/finance-service/.env
-    ports:
-      - "4003:4003"
-    depends_on:
-      - postgres
-    networks:
-      - minierp-network
-
-  procurement-service:
-    build: ./services/procurement-service
-    container_name: procurement-service
-    env_file:
-      - ./services/procurement-service/.env
-    ports:
-      - "4004:4004"
-    depends_on:
-      - postgres
-    networks:
-      - minierp-network
-
-  crm-service:
-    build: ./services/crm-service
-    container_name: crm-service
-    env_file:
-      - ./services/crm-service/.env
-    ports:
-      - "4005:4005"
-    depends_on:
-      - postgres
-    networks:
-      - minierp-network
-
-  inventory-service:
-    build: ./services/inventory-service
-    container_name: inventory-service
-    env_file:
-      - ./services/inventory-service/.env
-    ports:
-      - "4006:4006"
-    depends_on:
-      - postgres
-    networks:
-      - minierp-network
+      - mini-net
 
   engineering-service:
-    build: ./services/engineering-service
+    build:
+      context: ./services/engineering-service
+      dockerfile: Dockerfile
     container_name: engineering-service
-    env_file:
-      - ./services/engineering-service/.env
+    working_dir: /usr/src/app
+    command: sh -c "npm install && npm run dev"
     ports:
-      - "4007:4007"
+      - "4001:4001"
+    environment:
+      NODE_ENV: development
+      DATABASE_URL: postgresql://mini:mini@postgres:5432/mini
+    volumes:
+      - ./services/engineering-service:/usr/src/app
+      - /usr/src/app/node_modules
     depends_on:
       - postgres
     networks:
-      - minierp-network
+      - mini-net
+
+  crm-service:
+    build:
+      context: ./services/crm-service
+      dockerfile: Dockerfile
+    container_name: crm-service
+    working_dir: /usr/src/app
+    command: sh -c "npm install && npm run dev"
+    ports:
+      - "4002:4002"
+    environment:
+      NODE_ENV: development
+      DATABASE_URL: postgresql://mini:mini@postgres:5432/mini
+    volumes:
+      - ./services/crm-service:/usr/src/app
+      - /usr/src/app/node_modules
+    depends_on:
+      - postgres
+    networks:
+      - mini-net
+
+  finance-service:
+    build:
+      context: ./services/finance-service
+      dockerfile: Dockerfile
+    container_name: finance-service
+    working_dir: /usr/src/app
+    command: sh -c "npm install && npm run dev"
+    ports:
+      - "4003:4003"
+    environment:
+      NODE_ENV: development
+      DATABASE_URL: postgresql://mini:mini@postgres:5432/mini
+    volumes:
+      - ./services/finance-service:/usr/src/app
+      - /usr/src/app/node_modules
+    depends_on:
+      - postgres
+    networks:
+      - mini-net
+
+  hr-service:
+    build:
+      context: ./services/hr-service
+      dockerfile: Dockerfile
+    container_name: hr-service
+    working_dir: /usr/src/app
+    command: sh -c "npm install && npm run dev"
+    ports:
+      - "4004:4004"
+    environment:
+      NODE_ENV: development
+      DATABASE_URL: postgresql://mini:mini@postgres:5432/mini
+    volumes:
+      - ./services/hr-service:/usr/src/app
+      - /usr/src/app/node_modules
+    depends_on:
+      - postgres
+    networks:
+      - mini-net
+
+  inventory-service:
+    build:
+      context: ./services/inventory-service
+      dockerfile: Dockerfile
+    container_name: inventory-service
+    working_dir: /usr/src/app
+    command: sh -c "npm install && npm run dev"
+    ports:
+      - "4005:4005"
+    environment:
+      NODE_ENV: development
+      DATABASE_URL: postgresql://mini:mini@postgres:5432/mini
+    volumes:
+      - ./services/inventory-service:/usr/src/app
+      - /usr/src/app/node_modules
+    depends_on:
+      - postgres
+    networks:
+      - mini-net
+
+  procurement-service:
+    build:
+      context: ./services/procurement-service
+      dockerfile: Dockerfile
+    container_name: procurement-service
+    working_dir: /usr/src/app
+    command: sh -c "npm install && npm run dev"
+    ports:
+      - "4006:4006"
+    environment:
+      NODE_ENV: development
+      DATABASE_URL: postgresql://mini:mini@postgres:5432/mini
+    volumes:
+      - ./services/procurement-service:/usr/src/app
+      - /usr/src/app/node_modules
+    depends_on:
+      - postgres
+    networks:
+      - mini-net
 
   project-service:
-    build: ./services/project-service
+    build:
+      context: ./services/project-service
+      dockerfile: Dockerfile
     container_name: project-service
-    env_file:
-      - ./services/project-service/.env
+    working_dir: /usr/src/app
+    command: sh -c "npm install && npm run dev"
     ports:
-      - "4008:4008"
+      - "4007:4007"
+    environment:
+      NODE_ENV: development
+      DATABASE_URL: postgresql://mini:mini@postgres:5432/mini
+    volumes:
+      - ./services/project-service:/usr/src/app
+      - /usr/src/app/node_modules
     depends_on:
       - postgres
     networks:
-      - minierp-network
+      - mini-net
 
-  # === FRONTEND ===
-  frontend:
-    build: ./frontend
-    container_name: frontend
-    ports:
-      - "5173:5173"
-    depends_on:
-      - identity-service
-      - hr-service
-      - finance-service
-    networks:
-      - minierp-network
-
-  # === GATEWAY ===
   gateway:
-    image: nginx:alpine
-    container_name: minierp-gateway
+    image: nginx:stable
+    container_name: gateway
     volumes:
       - ./gateway/nginx.conf:/etc/nginx/nginx.conf:ro
     ports:
       - "80:80"
     depends_on:
-      - frontend
+      - identity-service
+      - engineering-service
+      - crm-service
+      - finance-service
+      - hr-service
+      - inventory-service
+      - procurement-service
+      - project-service
     networks:
-      - minierp-network
+      - mini-net
 
-# === NETWORKS ===
+volumes:
+  postgres_data:
+
 networks:
-  minierp-network:
+  mini-net:
     driver: bridge

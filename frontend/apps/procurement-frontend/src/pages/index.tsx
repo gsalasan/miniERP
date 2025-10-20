@@ -1,0 +1,1 @@
+// Procurement page components
