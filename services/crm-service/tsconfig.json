@@ -1,4 +1,5 @@
 {
+<<<<<<< HEAD
   "extends": "../../tsconfig.json",
   "compilerOptions": {
     "baseUrl": ".",
@@ -17,4 +18,16 @@
     "build",
     "coverage"
   ]
+=======
+  "compilerOptions": {
+    "target": "ES2020",
+    "module": "CommonJS",
+    "moduleResolution": "node",
+    "outDir": "dist",
+    "rootDir": "src",
+    "esModuleInterop": true,
+    "strict": true,
+    "skipLibCheck": true
+  }
+>>>>>>> main
 }

@@ -43,3 +43,56 @@ model employees {
   allowances   Json
   users        users[]
 }
+enum MaterialStatus {
+  Active
+  EndOfLife
+  Discontinue
+}
+
+enum MaterialLocation {
+  Local
+  Import
+}
+
+enum ServiceUnit {
+  Jam
+  Hari
+}
+
+model Material {
+  id              String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  sbu             String?
+  system          String?   
+  subsystem       String?   
+  components      String?   
+  item_name       String
+  brand           String?
+  owner_pn        String?  @map("owner_pn") 
+  vendor          String?   
+  status          MaterialStatus? 
+  location        MaterialLocation? 
+  cost_ori        Decimal?  @db.Decimal(14,2) 
+  curr            String?   @db.VarChar(3)    
+  satuan          String?   @db.VarChar(50)   
+  cost_rp         Decimal?  @db.Decimal(14,2) 
+  cost_date       DateTime  @default(now()) @db.Timestamptz(6) 
+  cost_validity   DateTime? @db.Timestamptz(6)                  
+  created_at      DateTime  @default(now()) @db.Timestamptz(6)
+  updated_at      DateTime  @default(now()) @db.Timestamptz(6)
+}
+
+
+model Service {
+  id                      String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  service_name            String
+  service_code            String   @unique
+  item_type               String   @default("Service")
+  category                String?
+  unit                    ServiceUnit 
+  internal_cost_per_hour   Decimal? @db.Decimal(14,2)
+  freelance_cost_per_hour  Decimal? @db.Decimal(14,2)
+  default_duration         Decimal? @db.Decimal(10,2) 
+  is_active                Boolean  @default(true)
+  created_at               DateTime @default(now()) @db.Timestamptz(6)
+  updated_at               DateTime @default(now()) @db.Timestamptz(6)
+}
