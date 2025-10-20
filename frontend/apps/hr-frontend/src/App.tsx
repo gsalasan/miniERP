@@ -1,5 +1,5 @@
-import React from 'react';
-import { CssBaseline, Container, Typography } from '@mui/material';
+import React from "react";
+import { CssBaseline, Container, Typography } from "@mui/material";
 
 function App() {
   return (
@@ -8,9 +8,7 @@ function App() {
       <Typography variant="h3" align="center" gutterBottom>
         HR Frontend
       </Typography>
-      <Typography align="center">
-        Modul HR miniERP
-      </Typography>
+      <Typography align="center">Modul HR miniERP</Typography>
     </Container>
   );
 }
