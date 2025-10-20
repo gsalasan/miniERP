@@ -5,7 +5,7 @@
   "main": "dist/index.js",
   "type": "commonjs",
   "scripts": {
-    "dev": "ts-node-dev --respawn --transpile-only src/server.ts",
+    "dev": "npm run build && node dist/server.js",
     "lint": "if [ -d src ]; then eslint src --ext .ts --fix; else echo No src directory found, skipping lint; fi",
     "build": "tsc",
     "start": "node dist/index.js",

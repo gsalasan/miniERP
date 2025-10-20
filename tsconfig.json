@@ -1,38 +1,39 @@
 {
   "compilerOptions": {
     "target": "ES2022",
-    "lib": ["ES2022"],
     "module": "CommonJS",
-    "moduleResolution": "node",
-    "allowSyntheticDefaultImports": true,
-    "esModuleInterop": true,
-    "allowJs": true,
-    "skipLibCheck": true,
+    "lib": ["ES2022"],
+    "outDir": "./dist",
+    "rootDir": "./src",
     "strict": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true,
     "resolveJsonModule": true,
-    "isolatedModules": true,
-    "noEmit": true,
     "declaration": true,
     "declarationMap": true,
     "sourceMap": true,
-    "outDir": "./dist",
-    "rootDir": "./",
-    "baseUrl": "./",
-    "paths": {
-      "@/*": ["./src/*"],
-      "@shared/*": ["./shared/*"]
-    }
+    "removeComments": true,
+    "noImplicitAny": true,
+    "noImplicitReturns": true,
+    "noImplicitThis": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "exactOptionalPropertyTypes": true,
+    "noImplicitOverride": true,
+    "noPropertyAccessFromIndexSignature": true,
+    "noUncheckedIndexedAccess": true,
+    "allowUnusedLabels": false,
+    "allowUnreachableCode": false,
+    "exactOptionalPropertyTypes": true
   },
   "include": [
-    "services/**/*",
-    "prisma/**/*"
+    "src/**/*"
   ],
   "exclude": [
     "node_modules",
     "dist",
     "build",
-    "coverage",
-    "frontend"
+    "coverage"
   ]
 }
