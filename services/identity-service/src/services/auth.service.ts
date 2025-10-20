@@ -1,6 +1,6 @@
-import bcrypt from "bcryptjs";
-import jwt from "jsonwebtoken";
-import { PrismaClient, UserRole } from "@prisma/client";
+import bcrypt from 'bcryptjs';
+import jwt from 'jsonwebtoken';
+import { PrismaClient, UserRole } from '@prisma/client';
 
 const prisma = new PrismaClient();
 
@@ -37,7 +37,7 @@ export const generateToken = (user: any) => {
       role: user.role,
     },
     process.env.JWT_SECRET as string, // <-- pakai dari .env
-    { expiresIn: "8h" } // token berlaku 8 jam
+    { expiresIn: '8h' } // token berlaku 8 jam
   );
 };
 
