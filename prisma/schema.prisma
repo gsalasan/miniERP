@@ -1,10 +1,98 @@
 generator client {
   provider = "prisma-client-js"
+  output  = "../services/finance-service/node_modules/.prisma/client"
 }
+
 
 datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
+}
+
+model users {
+  id            String     @id @default(uuid())
+  email         String     @unique
+  password_hash String
+  role          UserRole
+  employee_id   String?
+  is_active     Boolean    @default(true)
+  created_at    DateTime   @default(now())
+  updated_at    DateTime   @updatedAt
+  employee      employees? @relation(fields: [employee_id], references: [id])
+}
+
+model employees {
+  id           String   @id @default(uuid())
+  full_name    String
+  position     String
+  hire_date    DateTime
+  basic_salary Decimal
+  allowances   Json
+  users        users[]
+}
+
+model Material {
+  id            String            @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  sbu           String?
+  system        String?
+  subsystem     String?
+  components    String?
+  item_name     String
+  brand         String?
+  owner_pn      String?
+  vendor        String?
+  status        MaterialStatus?
+  location      MaterialLocation?
+  cost_ori      Decimal?          @db.Decimal(14, 2)
+  curr          String?           @db.VarChar(3)
+  satuan        String?           @db.VarChar(50)
+  cost_rp       Decimal?          @db.Decimal(14, 2)
+  cost_date     DateTime          @default(now()) @db.Timestamptz(6)
+  cost_validity DateTime?         @db.Timestamptz(6)
+  created_at    DateTime          @default(now()) @db.Timestamptz(6)
+  updated_at    DateTime          @default(now()) @db.Timestamptz(6)
+}
+
+model Service {
+  id                      String      @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  service_name            String
+  service_code            String      @unique
+  item_type               String      @default("Service")
+  category                String?
+  unit                    ServiceUnit
+  internal_cost_per_hour  Decimal?    @db.Decimal(14, 2)
+  freelance_cost_per_hour Decimal?    @db.Decimal(14, 2)
+  default_duration        Decimal?    @db.Decimal(10, 2)
+  is_active               Boolean     @default(true)
+  created_at              DateTime    @default(now()) @db.Timestamptz(6)
+  updated_at              DateTime    @default(now()) @db.Timestamptz(6)
+}
+
+model customer_contacts {
+  id             String    @id
+  customer_id    String
+  name           String
+  position       String?
+  email          String?
+  phone          String?
+  contact_person String?
+  customers      customers @relation(fields: [customer_id], references: [id], onDelete: Cascade)
+}
+
+model customers {
+  id                String              @id
+  customer_name     String
+  channel           String
+  city              String
+  status            CustomerStatus
+  top_days          Int
+  assigned_sales_id String?
+  credit_limit      Float?
+  no_npwp           String?
+  sppkp             String?
+  createdAt         DateTime            @default(now())
+  updatedAt         DateTime
+  customer_contacts customer_contacts[]
 }
 
 enum UserRole {
@@ -21,24 +109,42 @@ enum UserRole {
   SYSTEM_ADMIN
 }
 
-model users {
-  id            String     @id @default(uuid())
-  email         String     @unique
-  password_hash String
-  role          UserRole
-  employee_id   String?    // Hapus @unique di sini
-  is_active     Boolean    @default(true)
-  employee      employees? @relation(fields: [employee_id], references: [id])
-  created_at    DateTime   @default(now())
-  updated_at    DateTime   @updatedAt
+enum CustomerStatus {
+  ACTIVE
+  INACTIVE
+  PROSPECT
 }
 
-model employees {
-  id           String   @id @default(uuid())
-  full_name    String
-  position     String
-  hire_date    DateTime
-  basic_salary Decimal
-  allowances   Json
-  users        users[]
+enum MaterialLocation {
+  Local
+  Import
+}
+
+enum MaterialStatus {
+  Active
+  EndOfLife
+  Discontinue
+}
+
+enum ServiceUnit {
+  Jam
+  Hari
+}
+
+model ChartOfAccounts {
+  id            Int          @id @default(autoincrement())
+  account_code  String       @unique
+  account_name  String
+  account_type  AccountType
+  description   String?
+  created_at    DateTime     @default(now())
+  updated_at    DateTime     @updatedAt
+}
+
+enum AccountType {
+  Asset
+  Liability
+  Equity
+  Revenue
+  Expense
 }
