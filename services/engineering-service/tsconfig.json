@@ -1,4 +1,25 @@
 {
+<<<<<<< HEAD
+  "extends": "../../tsconfig.json",
+  "compilerOptions": {
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["./src/*"]
+    },
+    "outDir": "./dist",
+    "rootDir": "./src"
+  },
+  "include": [
+    "src/**/*"
+  ],
+  "exclude": [
+    "node_modules",
+    "dist",
+    "build",
+    "coverage"
+  ]
+}
+=======
 	"compilerOptions": {
 		"target": "ES2020",
 		"module": "commonjs",
@@ -15,3 +36,4 @@
 	"include": ["src/**/*"],
 	"exclude": ["node_modules", "dist"]
 }
+>>>>>>> main
