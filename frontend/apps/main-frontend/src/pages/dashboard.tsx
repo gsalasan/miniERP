@@ -1,7 +1,14 @@
 import React, { useEffect, useState } from "react";
 
+interface User {
+  id: number;
+  email: string;
+  roles: string[];
+  employee_id?: string;
+}
+
 const Dashboard: React.FC = () => {
-  const [user, setUser] = useState<any>(null);
+  const [user, setUser] = useState<User | null>(null);
 
   useEffect(() => {
     // Ambil token dari localStorage
@@ -18,8 +25,15 @@ const Dashboard: React.FC = () => {
     })
       .then((res) => res.json())
       .then((data) => {
-        if (data.success) setUser(data.data);
-        else window.location.href = "/";
+        if (data.success) {
+          setUser(data.data);
+        } else {
+          window.location.href = "/";
+        }
+      })
+      .catch((error) => {
+        console.error("Error fetching user data:", error);
+        window.location.href = "/";
       });
   }, []);
 
@@ -32,7 +46,7 @@ const Dashboard: React.FC = () => {
             Selamat datang, <b>{user.email}</b>
           </p>
           <p>
-            Role: <b>{user.role}</b>
+            Role: <b>{user.roles && user.roles.length > 0 ? user.roles.join(', ') : 'Tidak ada role'}</b>
           </p>
         </div>
       ) : (
