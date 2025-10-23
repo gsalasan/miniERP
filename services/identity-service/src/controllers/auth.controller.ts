@@ -5,12 +5,12 @@ import { findUserByEmail, createUser } from '../services/auth.service';
 
 // REGISTER
 export const register = async (req: Request, res: Response) => {
-  const { email, password, role, employee_id } = req.body;
+  const { email, password, roles, employee_id } = req.body;
 
-  if (!email || !password || !role) {
+  if (!email || !password || !roles) {
     return res.status(400).json({
       success: false,
-      message: 'Email, password, dan role wajib diisi',
+      message: 'Email, password, dan roles wajib diisi',
     });
   }
 
@@ -22,12 +22,14 @@ export const register = async (req: Request, res: Response) => {
         .json({ success: false, message: 'Email sudah terdaftar' });
     }
 
-    const user = await createUser(email, password, role, employee_id);
+    // Pastikan roles adalah array
+    const rolesArray = Array.isArray(roles) ? roles : [roles];
+    const user = await createUser(email, password, rolesArray, employee_id);
 
     return res.status(201).json({
       success: true,
       message: 'User berhasil dibuat',
-      data: { id: user.id, email: user.email, role: user.role },
+      data: { id: user.id, email: user.email, roles: user.roles },
     });
   } catch (err: any) {
     return res
@@ -59,14 +61,14 @@ export const login = async (req: Request, res: Response) => {
   const token = generateToken({
     id: user.id,
     email: user.email,
-    role: user.role,
+    roles: user.roles,
   });
 
   return res.json({
     success: true,
     message: 'Login berhasil',
     token,
-    data: { id: user.id, email: user.email, role: user.role },
+    data: { id: user.id, email: user.email, roles: user.roles },
   });
 };
 
