@@ -159,3 +159,70 @@ export function validateCustomerData(
     errors,
   };
 }
+
+export function validateCustomerContactData(
+  data: Record<string, unknown>,
+  isUpdate = false
+): ValidationResult {
+  const errors: string[] = [];
+
+  // Required fields untuk create
+  if (!isUpdate) {
+    if (!data.customer_id || typeof data.customer_id !== 'string') {
+      errors.push('Customer ID harus diisi dan berupa string');
+    }
+
+    if (!data.name || typeof data.name !== 'string') {
+      errors.push('Nama contact harus diisi dan berupa string');
+    }
+  } else {
+    // Validasi untuk update (optional fields)
+    if (
+      data.customer_id !== undefined &&
+      typeof data.customer_id !== 'string'
+    ) {
+      errors.push('Customer ID harus berupa string');
+    }
+
+    if (data.name !== undefined && typeof data.name !== 'string') {
+      errors.push('Nama contact harus berupa string');
+    }
+  }
+
+  // Optional fields validation
+  if (data.position !== undefined && typeof data.position !== 'string') {
+    errors.push('Position harus berupa string');
+  }
+
+  if (data.email !== undefined && typeof data.email !== 'string') {
+    errors.push('Email harus berupa string');
+  }
+
+  if (data.phone !== undefined && typeof data.phone !== 'string') {
+    errors.push('Phone harus berupa string');
+  }
+
+  if (
+    data.contact_person !== undefined &&
+    typeof data.contact_person !== 'string'
+  ) {
+    errors.push('Contact person harus berupa string');
+  }
+
+  // Validate email format if provided
+  if (
+    data.email &&
+    typeof data.email === 'string' &&
+    data.email.trim() !== ''
+  ) {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(data.email)) {
+      errors.push('Format email tidak valid');
+    }
+  }
+
+  return {
+    isValid: errors.length === 0,
+    errors,
+  };
+}
