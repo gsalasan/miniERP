@@ -1,7 +1,9 @@
-import app from "./app"
+import app from './app';
 
-const PORT = process.env.PORT || 3001
+// Use explicit port for CRM service to avoid conflicts
+const PORT = process.env.CRM_PORT || 3002;
 
 app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`)
-})
+  // eslint-disable-next-line no-console
+  console.log(`CRM Service running on port ${PORT}`);
+});

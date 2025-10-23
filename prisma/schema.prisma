@@ -1,11 +1,243 @@
 generator client {
-  provider      = "prisma-client-js"
-  binaryTargets = ["native", "darwin-arm64"]
+  provider = "prisma-client-js"
+  output  = "../services/finance-service/node_modules/.prisma/client"
 }
+
 
 datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
+}
+
+model users {
+  id            String     @id @default(uuid())
+  email         String     @unique
+  password_hash String
+  role          UserRole
+  employee_id   String?
+  is_active     Boolean    @default(true)
+  created_at    DateTime   @default(now())
+  updated_at    DateTime   @updatedAt
+  employee      employees? @relation(fields: [employee_id], references: [id])
+}
+
+model employees {
+  id           String   @id @default(uuid())
+  full_name    String
+  position     String
+  hire_date    DateTime
+  basic_salary Decimal
+  allowances   Json
+  users        users?
+}
+
+model Material {
+  id            String            @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  sbu           String?
+  system        String?
+  subsystem     String?
+  components    String?
+  item_name     String
+  brand         String?
+  owner_pn      String?           @map("owner_pn")
+  vendor        String?
+  status        MaterialStatus?
+  location      MaterialLocation?
+  cost_ori      Decimal?          @db.Decimal(14, 2)
+  curr          String?           @db.VarChar(3)
+  satuan        String?           @db.VarChar(50)
+  cost_rp       Decimal?          @db.Decimal(14, 2)
+  cost_date     DateTime          @default(now()) @db.Timestamptz(6)
+  cost_validity DateTime?         @db.Timestamptz(6)
+  created_at    DateTime          @default(now()) @db.Timestamptz(6)
+  updated_at    DateTime          @default(now()) @db.Timestamptz(6)
+}
+
+model Service {
+  id                      String      @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  service_name            String
+  service_code            String      @unique
+  item_type               String      @default("Service")
+  category                String?
+  unit                    ServiceUnit
+  internal_cost_per_hour  Decimal?    @db.Decimal(14, 2)
+  freelance_cost_per_hour Decimal?    @db.Decimal(14, 2)
+  default_duration        Decimal?    @db.Decimal(10, 2)
+  is_active               Boolean     @default(true)
+  created_at              DateTime    @default(now()) @db.Timestamptz(6)
+  updated_at              DateTime    @default(now()) @db.Timestamptz(6)
+}
+
+model hr_employees {
+  id                         String                   @id @default(uuid())
+  employee_id                String                   @unique
+  full_name                  String
+  first_name                 String
+  last_name                  String
+  email                      String                   @unique
+  phone                      String?
+  personal_email             String?
+  gender                     Gender?
+  date_of_birth              DateTime?
+  place_of_birth             String?
+  nationality                String                   @default("Indonesian")
+  religion                   String?
+  marital_status             MaritalStatus?
+  blood_type                 BloodType?
+  current_address            String?
+  permanent_address          String?
+  city                       String?
+  province                   String?
+  postal_code                String?
+  country                    String                   @default("Indonesia")
+  emergency_contact_name     String?
+  emergency_contact_phone    String?
+  emergency_contact_relation String?
+  position                   String
+  department                 String?
+  manager_id                 String?
+  employment_type            EmploymentType           @default(FULL_TIME)
+  status                     EmployeeStatus           @default(ACTIVE)
+  hire_date                  DateTime
+  probation_end_date         DateTime?
+  confirmation_date          DateTime?
+  termination_date           DateTime?
+  last_working_date          DateTime?
+  basic_salary               Decimal                  @db.Decimal(15, 2)
+  allowances                 Json?
+  bank_account_number        String?
+  bank_name                  String?
+  tax_id                     String?
+  social_security_id         String?
+  work_location              String?
+  work_schedule              String?
+  working_hours_per_week     Decimal?                 @db.Decimal(5, 2)
+  education_level            EducationLevel?
+  university                 String?
+  major                      String?
+  graduation_year            Int?
+  gpa                        Decimal?                 @db.Decimal(3, 2)
+  certifications             Json?
+  skills                     Json?
+  languages                  Json?
+  profile_picture            String?
+  notes                      String?
+  is_active                  Boolean                  @default(true)
+  created_at                 DateTime                 @default(now())
+  updated_at                 DateTime                 @updatedAt
+  created_by                 String?
+  updated_by                 String?
+  attendances                hr_attendances[]
+  documents                  hr_employee_documents[]
+  manager                    hr_employees?            @relation("EmployeeManager", fields: [manager_id], references: [id])
+  subordinates               hr_employees[]           @relation("EmployeeManager")
+  leave_requests             hr_leave_requests[]
+  performance_reviews        hr_performance_reviews[]
+  training_records           hr_training_records[]
+
+  @@map("hr_employees")
+}
+
+model hr_attendances {
+  id             String           @id @default(uuid())
+  employee_id    String
+  date           DateTime         @db.Date
+  check_in_time  DateTime?
+  check_out_time DateTime?
+  break_start    DateTime?
+  break_end      DateTime?
+  status         AttendanceStatus @default(PRESENT)
+  total_hours    Decimal?         @db.Decimal(5, 2)
+  overtime_hours Decimal?         @db.Decimal(5, 2)
+  notes          String?
+  location       String?
+  ip_address     String?
+  created_at     DateTime         @default(now())
+  updated_at     DateTime         @updatedAt
+  employee       hr_employees     @relation(fields: [employee_id], references: [id], onDelete: Cascade)
+
+  @@unique([employee_id, date])
+  @@map("hr_attendances")
+}
+
+model hr_leave_requests {
+  id               String       @id @default(uuid())
+  employee_id      String
+  leave_type       LeaveType
+  start_date       DateTime     @db.Date
+  end_date         DateTime     @db.Date
+  total_days       Int
+  reason           String
+  status           LeaveStatus  @default(PENDING)
+  approved_by      String?
+  approved_at      DateTime?
+  rejection_reason String?
+  created_at       DateTime     @default(now())
+  updated_at       DateTime     @updatedAt
+  employee         hr_employees @relation(fields: [employee_id], references: [id], onDelete: Cascade)
+
+  @@map("hr_leave_requests")
+}
+
+model hr_performance_reviews {
+  id                    String       @id @default(uuid())
+  employee_id           String
+  review_period         String
+  review_year           Int
+  review_quarter        Int?
+  overall_rating        Decimal      @db.Decimal(3, 2)
+  goals_rating          Decimal?     @db.Decimal(3, 2)
+  skills_rating         Decimal?     @db.Decimal(3, 2)
+  attitude_rating       Decimal?     @db.Decimal(3, 2)
+  strengths             String?
+  areas_for_improvement String?
+  goals_for_next_period String?
+  comments              String?
+  reviewed_by           String?
+  reviewed_at           DateTime?
+  created_at            DateTime     @default(now())
+  updated_at            DateTime     @updatedAt
+  employee              hr_employees @relation(fields: [employee_id], references: [id], onDelete: Cascade)
+
+  @@map("hr_performance_reviews")
+}
+
+model hr_training_records {
+  id                 String       @id @default(uuid())
+  employee_id        String
+  training_name      String
+  training_provider  String?
+  start_date         DateTime     @db.Date
+  end_date           DateTime     @db.Date
+  duration_hours     Decimal?     @db.Decimal(5, 2)
+  certificate_number String?
+  certificate_file   String?
+  status             String       @default("COMPLETED")
+  cost               Decimal?     @db.Decimal(15, 2)
+  notes              String?
+  created_at         DateTime     @default(now())
+  updated_at         DateTime     @updatedAt
+  employee           hr_employees @relation(fields: [employee_id], references: [id], onDelete: Cascade)
+
+  @@map("hr_training_records")
+}
+
+model hr_employee_documents {
+  id              String       @id @default(uuid())
+  employee_id     String
+  document_type   String
+  document_name   String
+  file_path       String
+  file_size       Int?
+  mime_type       String?
+  is_confidential Boolean      @default(false)
+  expiry_date     DateTime?    @db.Date
+  uploaded_by     String?
+  created_at      DateTime     @default(now())
+  updated_at      DateTime     @updatedAt
+  employee        hr_employees @relation(fields: [employee_id], references: [id], onDelete: Cascade)
+
+  @@map("hr_employee_documents")
 }
 
 enum UserRole {
@@ -22,27 +254,6 @@ enum UserRole {
   SYSTEM_ADMIN
 }
 
-model users {
-  id            String     @id @default(uuid())
-  email         String     @unique
-  password_hash String
-  role          UserRole
-  employee_id   String?    // Hapus @unique di sini
-  is_active     Boolean    @default(true)
-  employee      employees? @relation(fields: [employee_id], references: [id])
-  created_at    DateTime   @default(now())
-  updated_at    DateTime   @updatedAt
-}
-
-model employees {
-  id           String   @id @default(uuid())
-  full_name    String
-  position     String
-  hire_date    DateTime
-  basic_salary Decimal
-  allowances   Json
-  users        users[]
-}
 enum MaterialStatus {
   Active
   EndOfLife
@@ -60,337 +271,119 @@ enum ServiceUnit {
 }
 
 model Material {
-  id              String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  sbu             String?
-  system          String?   
-  subsystem       String?   
-  components      String?   
-  item_name       String
-  brand           String?
-  owner_pn        String?  @map("owner_pn") 
-  vendor          String?   
-  status          MaterialStatus? 
-  location        MaterialLocation? 
-  cost_ori        Decimal?  @db.Decimal(14,2) 
-  curr            String?   @db.VarChar(3)    
-  satuan          String?   @db.VarChar(50)   
-  cost_rp         Decimal?  @db.Decimal(14,2) 
-  cost_date       DateTime  @default(now()) @db.Timestamptz(6) 
-  cost_validity   DateTime? @db.Timestamptz(6)                  
-  created_at      DateTime  @default(now()) @db.Timestamptz(6)
-  updated_at      DateTime  @default(now()) @db.Timestamptz(6)
+  id            String            @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  sbu           String?
+  system        String?
+  subsystem     String?
+  components    String?
+  item_name     String
+  brand         String?
+  owner_pn      String?
+  vendor        String?
+  status        MaterialStatus?
+  location      MaterialLocation?
+  cost_ori      Decimal?          @db.Decimal(14, 2)
+  curr          String?           @db.VarChar(3)
+  satuan        String?           @db.VarChar(50)
+  cost_rp       Decimal?          @db.Decimal(14, 2)
+  cost_date     DateTime          @default(now()) @db.Timestamptz(6)
+  cost_validity DateTime?         @db.Timestamptz(6)
+  created_at    DateTime          @default(now()) @db.Timestamptz(6)
+  updated_at    DateTime          @default(now()) @db.Timestamptz(6)
 }
-
 
 model Service {
-  id                      String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  id                      String      @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   service_name            String
-  service_code            String   @unique
-  item_type               String   @default("Service")
+  service_code            String      @unique
+  item_type               String      @default("Service")
   category                String?
-  unit                    ServiceUnit 
-  internal_cost_per_hour   Decimal? @db.Decimal(14,2)
-  freelance_cost_per_hour  Decimal? @db.Decimal(14,2)
-  default_duration         Decimal? @db.Decimal(10,2) 
-  is_active                Boolean  @default(true)
-  created_at               DateTime @default(now()) @db.Timestamptz(6)
-  updated_at               DateTime @default(now()) @db.Timestamptz(6)
+  unit                    ServiceUnit
+  internal_cost_per_hour  Decimal?    @db.Decimal(14, 2)
+  freelance_cost_per_hour Decimal?    @db.Decimal(14, 2)
+  default_duration        Decimal?    @db.Decimal(10, 2)
+  is_active               Boolean     @default(true)
+  created_at              DateTime    @default(now()) @db.Timestamptz(6)
+  updated_at              DateTime    @default(now()) @db.Timestamptz(6)
 }
 
-// HR Service Enums
-enum EmployeeStatus {
+model customer_contacts {
+  id             String    @id
+  customer_id    String
+  name           String
+  position       String?
+  email          String?
+  phone          String?
+  contact_person String?
+  customers      customers @relation(fields: [customer_id], references: [id], onDelete: Cascade)
+}
+
+model customers {
+  id                String              @id
+  customer_name     String
+  channel           String
+  city              String
+  status            CustomerStatus
+  top_days          Int
+  assigned_sales_id String?
+  credit_limit      Float?
+  no_npwp           String?
+  sppkp             String?
+  createdAt         DateTime            @default(now())
+  updatedAt         DateTime
+  customer_contacts customer_contacts[]
+}
+
+enum UserRole {
+  CEO
+  FINANCE_ADMIN
+  SALES
+  SALES_MANAGER
+  PROJECT_MANAGER
+  PROJECT_ENGINEER
+  HR_ADMIN
+  EMPLOYEE
+  PROCUREMENT_ADMIN
+  ASSET_ADMIN
+  SYSTEM_ADMIN
+}
+
+enum CustomerStatus {
   ACTIVE
   INACTIVE
-  TERMINATED
-  ON_LEAVE
-  SUSPENDED
+  PROSPECT
 }
 
-enum EmploymentType {
-  FULL_TIME
-  PART_TIME
-  CONTRACT
-  INTERN
-  FREELANCE
+enum MaterialLocation {
+  Local
+  Import
 }
 
-enum Gender {
-  MALE
-  FEMALE
-  OTHER
-  PREFER_NOT_TO_SAY
+enum MaterialStatus {
+  Active
+  EndOfLife
+  Discontinue
 }
 
-enum MaritalStatus {
-  SINGLE
-  MARRIED
-  DIVORCED
-  WIDOWED
-  SEPARATED
+enum ServiceUnit {
+  Jam
+  Hari
 }
 
-enum BloodType {
-  A_POSITIVE
-  A_NEGATIVE
-  B_POSITIVE
-  B_NEGATIVE
-  AB_POSITIVE
-  AB_NEGATIVE
-  O_POSITIVE
-  O_NEGATIVE
+model ChartOfAccounts {
+  id            Int          @id @default(autoincrement())
+  account_code  String       @unique
+  account_name  String
+  account_type  AccountType
+  description   String?
+  created_at    DateTime     @default(now())
+  updated_at    DateTime     @updatedAt
 }
 
-enum EducationLevel {
-  HIGH_SCHOOL
-  DIPLOMA
-  BACHELOR
-  MASTER
-  DOCTORATE
-  CERTIFICATION
-  OTHER
-}
-
-enum LeaveType {
-  ANNUAL_LEAVE
-  SICK_LEAVE
-  MATERNITY_LEAVE
-  PATERNITY_LEAVE
-  EMERGENCY_LEAVE
-  UNPAID_LEAVE
-  STUDY_LEAVE
-  COMPENSATORY_LEAVE
-}
-
-enum LeaveStatus {
-  PENDING
-  APPROVED
-  REJECTED
-  CANCELLED
-}
-
-enum AttendanceStatus {
-  PRESENT
-  ABSENT
-  LATE
-  HALF_DAY
-  WORK_FROM_HOME
-  ON_LEAVE
-}
-
-// Enhanced Employee Model for HR Service
-model hr_employees {
-  id                String          @id @default(uuid())
-  employee_id       String          @unique // Employee ID/Number
-  full_name         String
-  first_name        String
-  last_name         String
-  email             String          @unique
-  phone             String?
-  personal_email    String?
-  
-  // Personal Information
-  gender            Gender?
-  date_of_birth     DateTime?
-  place_of_birth    String?
-  nationality       String          @default("Indonesian")
-  religion          String?
-  marital_status    MaritalStatus?
-  blood_type        BloodType?
-  
-  // Address Information
-  current_address   String?
-  permanent_address String?
-  city              String?
-  province          String?
-  postal_code       String?
-  country           String          @default("Indonesia")
-  
-  // Emergency Contact
-  emergency_contact_name     String?
-  emergency_contact_phone    String?
-  emergency_contact_relation String?
-  
-  // Employment Information
-  position             String
-  department           String?
-  manager_id           String?
-  manager              hr_employees? @relation("EmployeeManager", fields: [manager_id], references: [id])
-  subordinates         hr_employees[] @relation("EmployeeManager")
-  
-  employment_type      EmploymentType @default(FULL_TIME)
-  status               EmployeeStatus @default(ACTIVE)
-  hire_date            DateTime
-  probation_end_date   DateTime?
-  confirmation_date    DateTime?
-  termination_date     DateTime?
-  last_working_date    DateTime?
-  
-  // Salary Information
-  basic_salary         Decimal         @db.Decimal(15,2)
-  allowances           Json?           // JSON for various allowances
-  bank_account_number  String?
-  bank_name            String?
-  tax_id               String?         // NPWP
-  social_security_id   String?         // BPJS Kesehatan
-  
-  // Work Information
-  work_location        String?
-  work_schedule        String?         // e.g., "Monday-Friday 9AM-5PM"
-  working_hours_per_week Decimal?      @db.Decimal(5,2)
-  
-  // Education Information
-  education_level      EducationLevel?
-  university           String?
-  major                String?
-  graduation_year      Int?
-  gpa                  Decimal?         @db.Decimal(3,2)
-  certifications       Json?           // JSON array of certifications
-  
-  // Skills and Competencies
-  skills               Json?           // JSON array of skills
-  languages            Json?           // JSON array of languages with proficiency levels
-  
-  // System Information
-  profile_picture      String?
-  notes                String?
-  is_active            Boolean         @default(true)
-  created_at           DateTime        @default(now())
-  updated_at           DateTime        @updatedAt
-  created_by           String?
-  updated_by           String?
-  
-  // Relations
-  attendances          hr_attendances[]
-  leave_requests       hr_leave_requests[]
-  performance_reviews  hr_performance_reviews[]
-  training_records     hr_training_records[]
-  documents            hr_employee_documents[]
-  
-  @@map("hr_employees")
-}
-
-// HR Attendance Model
-model hr_attendances {
-  id              String            @id @default(uuid())
-  employee_id     String
-  employee        hr_employees      @relation(fields: [employee_id], references: [id], onDelete: Cascade)
-  
-  date            DateTime          @db.Date
-  check_in_time   DateTime?
-  check_out_time  DateTime?
-  break_start     DateTime?
-  break_end       DateTime?
-  
-  status          AttendanceStatus  @default(PRESENT)
-  total_hours     Decimal?          @db.Decimal(5,2)
-  overtime_hours  Decimal?          @db.Decimal(5,2)
-  
-  notes           String?
-  location        String?
-  ip_address      String?
-  
-  created_at      DateTime          @default(now())
-  updated_at      DateTime          @updatedAt
-  
-  @@unique([employee_id, date])
-  @@map("hr_attendances")
-}
-
-// HR Leave Request Model
-model hr_leave_requests {
-  id              String        @id @default(uuid())
-  employee_id     String
-  employee        hr_employees  @relation(fields: [employee_id], references: [id], onDelete: Cascade)
-  
-  leave_type      LeaveType
-  start_date      DateTime      @db.Date
-  end_date        DateTime      @db.Date
-  total_days      Int
-  reason          String
-  status          LeaveStatus   @default(PENDING)
-  
-  approved_by     String?
-  approved_at     DateTime?
-  rejection_reason String?
-  
-  created_at      DateTime      @default(now())
-  updated_at      DateTime      @updatedAt
-  
-  @@map("hr_leave_requests")
-}
-
-// HR Performance Review Model
-model hr_performance_reviews {
-  id              String        @id @default(uuid())
-  employee_id     String
-  employee        hr_employees  @relation(fields: [employee_id], references: [id], onDelete: Cascade)
-  
-  review_period   String        // e.g., "Q1 2024", "Annual 2024"
-  review_year     Int
-  review_quarter  Int?
-  
-  overall_rating  Decimal       @db.Decimal(3,2) // 1.00 - 5.00
-  goals_rating    Decimal?      @db.Decimal(3,2)
-  skills_rating   Decimal?      @db.Decimal(3,2)
-  attitude_rating Decimal?      @db.Decimal(3,2)
-  
-  strengths       String?
-  areas_for_improvement String?
-  goals_for_next_period String?
-  comments        String?
-  
-  reviewed_by     String?
-  reviewed_at     DateTime?
-  
-  created_at      DateTime      @default(now())
-  updated_at      DateTime      @updatedAt
-  
-  @@map("hr_performance_reviews")
-}
-
-// HR Training Record Model
-model hr_training_records {
-  id              String        @id @default(uuid())
-  employee_id     String
-  employee        hr_employees  @relation(fields: [employee_id], references: [id], onDelete: Cascade)
-  
-  training_name   String
-  training_provider String?
-  start_date      DateTime      @db.Date
-  end_date        DateTime      @db.Date
-  duration_hours  Decimal?      @db.Decimal(5,2)
-  
-  certificate_number String?
-  certificate_file   String?
-  status          String        @default("COMPLETED") // COMPLETED, IN_PROGRESS, CANCELLED
-  
-  cost            Decimal?      @db.Decimal(15,2)
-  notes           String?
-  
-  created_at      DateTime      @default(now())
-  updated_at      DateTime      @updatedAt
-  
-  @@map("hr_training_records")
-}
-
-// HR Employee Document Model
-model hr_employee_documents {
-  id              String        @id @default(uuid())
-  employee_id     String
-  employee        hr_employees  @relation(fields: [employee_id], references: [id], onDelete: Cascade)
-  
-  document_type   String        // e.g., "CV", "Contract", "Certificate", "ID_Copy"
-  document_name   String
-  file_path       String
-  file_size       Int?
-  mime_type       String?
-  
-  is_confidential Boolean       @default(false)
-  expiry_date     DateTime?     @db.Date
-  
-  uploaded_by     String?
-  created_at      DateTime      @default(now())
-  updated_at      DateTime      @updatedAt
-  
-  @@map("hr_employee_documents")
+enum AccountType {
+  Asset
+  Liability
+  Equity
+  Revenue
+  Expense
 }
