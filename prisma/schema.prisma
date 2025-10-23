@@ -1,7 +1,8 @@
 generator client {
-  provider      = "prisma-client-js"
-  binaryTargets = ["native", "darwin-arm64"]
+  provider = "prisma-client-js"
+  output  = "../services/finance-service/node_modules/.prisma/client"
 }
+
 
 datasource db {
   provider = "postgresql"
@@ -269,27 +270,9 @@ enum ServiceUnit {
   Hari
 }
 
-enum EmployeeStatus {
-  ACTIVE
-  INACTIVE
-  TERMINATED
-  ON_LEAVE
-  SUSPENDED
-}
-
-enum EmploymentType {
-  FULL_TIME
-  PART_TIME
-  CONTRACT
-  INTERN
-  FREELANCE
-}
-
 enum Gender {
   MALE
   FEMALE
-  OTHER
-  PREFER_NOT_TO_SAY
 }
 
 enum MaritalStatus {
@@ -297,18 +280,29 @@ enum MaritalStatus {
   MARRIED
   DIVORCED
   WIDOWED
-  SEPARATED
 }
 
 enum BloodType {
-  A_POSITIVE
-  A_NEGATIVE
-  B_POSITIVE
-  B_NEGATIVE
-  AB_POSITIVE
-  AB_NEGATIVE
-  O_POSITIVE
-  O_NEGATIVE
+  A
+  B
+  AB
+  O
+}
+
+enum EmploymentType {
+  FULL_TIME
+  PART_TIME
+  CONTRACT
+  INTERNSHIP
+  FREELANCE
+}
+
+enum EmployeeStatus {
+  ACTIVE
+  INACTIVE
+  TERMINATED
+  ON_LEAVE
+  PROBATION
 }
 
 enum EducationLevel {
@@ -317,19 +311,24 @@ enum EducationLevel {
   BACHELOR
   MASTER
   DOCTORATE
-  CERTIFICATION
-  OTHER
+}
+
+enum AttendanceStatus {
+  PRESENT
+  ABSENT
+  LATE
+  HALF_DAY
+  SICK_LEAVE
+  VACATION
 }
 
 enum LeaveType {
-  ANNUAL_LEAVE
-  SICK_LEAVE
-  MATERNITY_LEAVE
-  PATERNITY_LEAVE
-  EMERGENCY_LEAVE
-  UNPAID_LEAVE
-  STUDY_LEAVE
-  COMPENSATORY_LEAVE
+  ANNUAL
+  SICK
+  MATERNITY
+  PATERNITY
+  EMERGENCY
+  UNPAID
 }
 
 enum LeaveStatus {
@@ -339,11 +338,53 @@ enum LeaveStatus {
   CANCELLED
 }
 
-enum AttendanceStatus {
-  PRESENT
-  ABSENT
-  LATE
-  HALF_DAY
-  WORK_FROM_HOME
-  ON_LEAVE
+model customer_contacts {
+  id             String    @id
+  customer_id    String
+  name           String
+  position       String?
+  email          String?
+  phone          String?
+  contact_person String?
+  customers      customers @relation(fields: [customer_id], references: [id], onDelete: Cascade)
+}
+
+model customers {
+  id                String              @id
+  customer_name     String
+  channel           String
+  city              String
+  status            CustomerStatus
+  top_days          Int
+  assigned_sales_id String?
+  credit_limit      Float?
+  no_npwp           String?
+  sppkp             String?
+  createdAt         DateTime            @default(now())
+  updatedAt         DateTime
+  customer_contacts customer_contacts[]
+}
+
+enum CustomerStatus {
+  ACTIVE
+  INACTIVE
+  PROSPECT
+}
+
+model ChartOfAccounts {
+  id            Int          @id @default(autoincrement())
+  account_code  String       @unique
+  account_name  String
+  account_type  AccountType
+  description   String?
+  created_at    DateTime     @default(now())
+  updated_at    DateTime     @updatedAt
+}
+
+enum AccountType {
+  Asset
+  Liability
+  Equity
+  Revenue
+  Expense
 }

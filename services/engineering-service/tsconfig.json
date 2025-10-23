@@ -1,5 +1,4 @@
 {
-<<<<<<< HEAD
   "extends": "../../tsconfig.json",
   "compilerOptions": {
     "baseUrl": ".",
@@ -19,21 +18,3 @@
     "coverage"
   ]
 }
-=======
-	"compilerOptions": {
-		"target": "ES2020",
-		"module": "commonjs",
-		"lib": ["ES2020"],
-		"strict": true,
-		"esModuleInterop": true,
-		"allowSyntheticDefaultImports": true,
-		"skipLibCheck": true,
-		"forceConsistentCasingInFileNames": true,
-		"outDir": "dist",
-		"rootDir": "src",
-		"moduleResolution": "node"
-	},
-	"include": ["src/**/*"],
-	"exclude": ["node_modules", "dist"]
-}
->>>>>>> main
