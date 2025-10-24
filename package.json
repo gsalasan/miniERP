@@ -10,6 +10,7 @@
   ],
   "scripts": {
     "dev:identity": "npm --prefix services/identity-service run dev",
+    "dev:engineering": "npm --prefix services/engineering-service run dev",
     "dev:frontend": "npm --prefix frontend run dev",
     "build:frontend": "npm --prefix frontend run build",
     "build:services": "npm run build --workspaces --if-present",
