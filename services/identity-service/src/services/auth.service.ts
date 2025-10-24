@@ -102,21 +102,8 @@ export const createUser = async (
   
   mockUsers.push(newUser);
   console.log(`User created in mock data:`, newUser.email);
-<<<<<<< HEAD
-  return newUser;
-=======
-  return newUse
-  return prisma.users.create({
-    data: {
-      email,
-      password_hash,
-      roles: roles.length > 0 ? roles : ['EMPLOYEE'],
-      employee_id: employee_id || null,
-      is_active: true,
-    },
-  });
 
->>>>>>> e548ed33b343102f25db3f49a5ff818b42c36d09
+  return newUser;
 };
 
 // ✅ Generate JWT Token

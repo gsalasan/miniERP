@@ -153,3 +153,218 @@ export const validateEmployeeUserData = (data: CreateEmployeeWithUserRequest): s
 export const disconnectEmployeeService = async () => {
   await prisma.$disconnect();
 };
+
+// ========== READ OPERATIONS ==========
+
+// Get all employees with user info
+export const getAllEmployees = async () => {
+  try {
+    const employees = await prisma.employees.findMany({
+      include: {
+        users: {
+          select: {
+            id: true,
+            email: true,
+            roles: true,
+            is_active: true,
+            created_at: true,
+            updated_at: true,
+          }
+        }
+      }
+    });
+
+    return employees;
+  } catch (error: any) {
+    console.error('Error fetching employees:', error);
+    throw new Error('Gagal mengambil data employee: ' + error.message);
+  }
+};
+
+// Get employee by ID with user info
+export const getEmployeeById = async (employeeId: string) => {
+  try {
+    const employee = await prisma.employees.findUnique({
+      where: { id: employeeId },
+      include: {
+        users: {
+          select: {
+            id: true,
+            email: true,
+            roles: true,
+            is_active: true,
+            created_at: true,
+            updated_at: true,
+          }
+        }
+      }
+    });
+
+    return employee;
+  } catch (error: any) {
+    console.error('Error fetching employee:', error);
+    throw new Error('Gagal mengambil data employee: ' + error.message);
+  }
+};
+
+// ========== UPDATE OPERATIONS ==========
+
+interface UpdateEmployeeData {
+  full_name?: string;
+  position?: string;
+  hire_date?: Date | string;
+  basic_salary?: number | string;
+  allowances?: any;
+}
+
+export const updateEmployee = async (employeeId: string, updateData: UpdateEmployeeData) => {
+  try {
+    // First check if employee exists
+    const existingEmployee = await prisma.employees.findUnique({
+      where: { id: employeeId }
+    });
+
+    if (!existingEmployee) {
+      throw new Error('EMPLOYEE_NOT_FOUND');
+    }
+
+    // Prepare update data
+    const dataToUpdate: any = {};
+
+    if (updateData.full_name !== undefined) {
+      dataToUpdate.full_name = updateData.full_name;
+    }
+    if (updateData.position !== undefined) {
+      dataToUpdate.position = updateData.position;
+    }
+    if (updateData.hire_date !== undefined) {
+      dataToUpdate.hire_date = new Date(updateData.hire_date);
+    }
+    if (updateData.basic_salary !== undefined) {
+      dataToUpdate.basic_salary = typeof updateData.basic_salary === 'string'
+        ? parseFloat(updateData.basic_salary)
+        : updateData.basic_salary;
+    }
+    if (updateData.allowances !== undefined) {
+      dataToUpdate.allowances = updateData.allowances;
+    }
+
+    // Update employee
+    const updatedEmployee = await prisma.employees.update({
+      where: { id: employeeId },
+      data: dataToUpdate,
+      include: {
+        users: {
+          select: {
+            id: true,
+            email: true,
+            roles: true,
+            is_active: true,
+            created_at: true,
+            updated_at: true,
+          }
+        }
+      }
+    });
+
+    return updatedEmployee;
+  } catch (error: any) {
+    if (error.message === 'EMPLOYEE_NOT_FOUND') {
+      throw new Error('Employee tidak ditemukan');
+    }
+
+    console.error('Error updating employee:', error);
+    throw new Error('Gagal mengupdate employee: ' + error.message);
+  }
+};
+
+// Update user roles and status
+interface UpdateUserData {
+  roles?: UserRole[];
+  is_active?: boolean;
+}
+
+export const updateEmployeeUser = async (employeeId: string, updateData: UpdateUserData) => {
+  try {
+    // Find user by employee_id
+    const user = await prisma.users.findUnique({
+      where: { employee_id: employeeId }
+    });
+
+    if (!user) {
+      throw new Error('USER_NOT_FOUND');
+    }
+
+    // Validate roles if provided
+    if (updateData.roles) {
+      const validRoles: UserRole[] = [
+        'CEO', 'FINANCE_ADMIN', 'SALES', 'SALES_MANAGER', 'PROJECT_MANAGER',
+        'PROJECT_ENGINEER', 'HR_ADMIN', 'EMPLOYEE', 'PROCUREMENT_ADMIN',
+        'ASSET_ADMIN', 'SYSTEM_ADMIN'
+      ];
+
+      const invalidRoles = updateData.roles.filter(role => !validRoles.includes(role));
+      if (invalidRoles.length > 0) {
+        throw new Error(`Invalid roles: [${invalidRoles.join(', ')}]`);
+      }
+
+      if (updateData.roles.length === 0) {
+        throw new Error('Roles array cannot be empty');
+      }
+    }
+
+    // Update user
+    const updatedUser = await prisma.users.update({
+      where: { id: user.id },
+      data: {
+        ...(updateData.roles !== undefined && { roles: updateData.roles }),
+        ...(updateData.is_active !== undefined && { is_active: updateData.is_active })
+      },
+      select: {
+        id: true,
+        email: true,
+        roles: true,
+        is_active: true,
+        created_at: true,
+        updated_at: true,
+      }
+    });
+
+    return updatedUser;
+  } catch (error: any) {
+    if (error.message === 'USER_NOT_FOUND') {
+      throw new Error('User untuk employee ini tidak ditemukan');
+    }
+
+    console.error('Error updating user:', error);
+    throw new Error('Gagal mengupdate user: ' + error.message);
+  }
+};
+
+// ========== DELETE OPERATIONS ==========
+
+export const deleteEmployee = async (employeeId: string) => {
+  try {
+    // Start transaction to delete both employee and user
+    await prisma.$transaction(async (tx) => {
+      // First delete user (if exists)
+      await tx.users.deleteMany({
+        where: { employee_id: employeeId }
+      });
+
+      // Then delete employee
+      await tx.employees.delete({
+        where: { id: employeeId }
+      });
+    });
+
+    return { success: true, message: 'Employee dan user berhasil dihapus' };
+  } catch (error: any) {
+    if (error.code === 'P2025') {
+      throw new Error('Employee tidak ditemukan');
+    }
+
+    console.error('Error deleting employee:', error);
+    throw new Error('Gagal menghapus employee: ' + error.message);
+  }
+};

@@ -7,6 +7,7 @@ const express_1 = __importDefault(require("express"));
 const cors_1 = __importDefault(require("cors"));
 const dotenv_1 = __importDefault(require("dotenv"));
 const auth_routes_1 = __importDefault(require("./routes/auth.routes"));
+const employee_routes_1 = __importDefault(require("./routes/employee.routes"));
 // Load environment variables
 dotenv_1.default.config();
 const app = (0, express_1.default)();
@@ -26,8 +27,9 @@ app.get('/health', (req, res) => {
         service: 'identity-service'
     });
 });
-// API Routes
-app.use('/api/auth', auth_routes_1.default);
+// API Routes with versioning
+app.use('/api/v1/auth', auth_routes_1.default);
+app.use('/api/v1', employee_routes_1.default);
 // 404 handler
 app.use('*', (req, res) => {
     res.status(404).json({

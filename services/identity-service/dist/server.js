@@ -52,11 +52,11 @@ async function startServer() {
         await connectDatabase();
         // Start the server
         const server = app_1.default.listen(PORT, () => {
-            console.log('🚀 Identity Service started successfully');
-            console.log(`📍 Server running on port ${PORT}`);
-            console.log(`🌐 Health check: http://localhost:${PORT}/health`);
-            console.log(`🔐 Auth API: http://localhost:${PORT}/api/auth`);
-            console.log(`📝 Environment: ${process.env.NODE_ENV || 'development'}`);
+            console.log(' Identity Service started successfully');
+            console.log(` Server running on port ${PORT}`);
+            console.log(` Health check: http://localhost:${PORT}/health`);
+            console.log(` Auth API: http://localhost:${PORT}/api/v1/auth`);
+            console.log(` Environment: ${process.env.NODE_ENV || 'development'}`);
         });
         // Handle server errors
         server.on('error', (error) => {

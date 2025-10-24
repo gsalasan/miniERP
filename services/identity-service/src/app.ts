@@ -30,7 +30,6 @@ app.get('/health', (req, res) => {
 // API Routes with versioning
 app.use('/api/v1/auth', authRoutes);
 app.use('/api/v1', employeeRoutes);
-<<<<<<< HEAD
 
 // 404 handler
 app.use('*', (req, res) => {
@@ -52,36 +51,5 @@ app.use((err: any, req: express.Request, res: express.Response, next: express.Ne
   });
 });
 
-export default app; 
-=======
+export default app;
 
-// 404 handler
-app.use('*', (req, res) => {
-  res.status(404).json({
-    success: false,
-    message: 'Endpoint tidak ditemukan',
-    path: req.originalUrl
-  });
-});
-
-// 404 handler
-app.use('*', (req, res) => {
-  res.status(404).json({
-    success: false,
-    message: 'Endpoint tidak ditemukan',
-    path: req.originalUrl
-  });
-});
-
-// Global error handler
-app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
-  console.error('Error:', err);
-  
-  res.status(err.status || 500).json({
-    success: false,
-    message: err.message || 'Internal Server Error',
-    ...(process.env.NODE_ENV === 'development' && { stack: err.stack })
-  });
-});
-
->>>>>>> e548ed33b343102f25db3f49a5ff818b42c36d09
