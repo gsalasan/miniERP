@@ -1,9 +1,13 @@
 generator client {
   provider = "prisma-client-js"
+<<<<<<< HEAD
   output  = "../services/finance-service/node_modules/.prisma/client"
 }
 
 
+=======
+  
+>>>>>>> e548ed33b343102f25db3f49a5ff818b42c36d09
 datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")

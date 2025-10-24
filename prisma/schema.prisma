@@ -1,7 +1,13 @@
 generator client {
+<<<<<<< HEAD
   provider      = "prisma-client-js"
   binaryTargets = ["native", "darwin-arm64"]
+=======
+  provider = "prisma-client-js"
+  output  = "../services/finance-service/node_modules/.prisma/client"
+>>>>>>> e548ed33b343102f25db3f49a5ff818b42c36d09
 }
+
 
 datasource db {
   provider = "postgresql"
@@ -12,8 +18,13 @@ model users {
   id            String     @id @default(uuid())
   email         String     @unique
   password_hash String
+<<<<<<< HEAD
   roles         UserRole[] @default([EMPLOYEE])
   employee_id   String?    @unique
+=======
+  role          UserRole
+  employee_id   String?
+>>>>>>> e548ed33b343102f25db3f49a5ff818b42c36d09
   is_active     Boolean    @default(true)
   created_at    DateTime   @default(now())
   updated_at    DateTime   @updatedAt
@@ -269,6 +280,7 @@ enum ServiceUnit {
   Hari
 }
 
+<<<<<<< HEAD
 enum EmployeeStatus {
   ACTIVE
   INACTIVE
@@ -346,4 +358,122 @@ enum AttendanceStatus {
   HALF_DAY
   WORK_FROM_HOME
   ON_LEAVE
+=======
+model Material {
+  id            String            @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  sbu           String?
+  system        String?
+  subsystem     String?
+  components    String?
+  item_name     String
+  brand         String?
+  owner_pn      String?
+  vendor        String?
+  status        MaterialStatus?
+  location      MaterialLocation?
+  cost_ori      Decimal?          @db.Decimal(14, 2)
+  curr          String?           @db.VarChar(3)
+  satuan        String?           @db.VarChar(50)
+  cost_rp       Decimal?          @db.Decimal(14, 2)
+  cost_date     DateTime          @default(now()) @db.Timestamptz(6)
+  cost_validity DateTime?         @db.Timestamptz(6)
+  created_at    DateTime          @default(now()) @db.Timestamptz(6)
+  updated_at    DateTime          @default(now()) @db.Timestamptz(6)
+}
+
+model Service {
+  id                      String      @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  service_name            String
+  service_code            String      @unique
+  item_type               String      @default("Service")
+  category                String?
+  unit                    ServiceUnit
+  internal_cost_per_hour  Decimal?    @db.Decimal(14, 2)
+  freelance_cost_per_hour Decimal?    @db.Decimal(14, 2)
+  default_duration        Decimal?    @db.Decimal(10, 2)
+  is_active               Boolean     @default(true)
+  created_at              DateTime    @default(now()) @db.Timestamptz(6)
+  updated_at              DateTime    @default(now()) @db.Timestamptz(6)
+}
+
+model customer_contacts {
+  id             String    @id
+  customer_id    String
+  name           String
+  position       String?
+  email          String?
+  phone          String?
+  contact_person String?
+  customers      customers @relation(fields: [customer_id], references: [id], onDelete: Cascade)
+}
+
+model customers {
+  id                String              @id
+  customer_name     String
+  channel           String
+  city              String
+  status            CustomerStatus
+  top_days          Int
+  assigned_sales_id String?
+  credit_limit      Float?
+  no_npwp           String?
+  sppkp             String?
+  createdAt         DateTime            @default(now())
+  updatedAt         DateTime
+  customer_contacts customer_contacts[]
+}
+
+enum UserRole {
+  CEO
+  FINANCE_ADMIN
+  SALES
+  SALES_MANAGER
+  PROJECT_MANAGER
+  PROJECT_ENGINEER
+  HR_ADMIN
+  EMPLOYEE
+  PROCUREMENT_ADMIN
+  ASSET_ADMIN
+  SYSTEM_ADMIN
+}
+
+enum CustomerStatus {
+  ACTIVE
+  INACTIVE
+  PROSPECT
+}
+
+enum MaterialLocation {
+  Local
+  Import
+}
+
+enum MaterialStatus {
+  Active
+  EndOfLife
+  Discontinue
+}
+
+enum ServiceUnit {
+  Jam
+  Hari
+}
+
+model ChartOfAccounts {
+  id            Int          @id @default(autoincrement())
+  account_code  String       @unique
+  account_name  String
+  account_type  AccountType
+  description   String?
+  created_at    DateTime     @default(now())
+  updated_at    DateTime     @updatedAt
+}
+
+enum AccountType {
+  Asset
+  Liability
+  Equity
+  Revenue
+  Expense
+>>>>>>> e548ed33b343102f25db3f49a5ff818b42c36d09
 }

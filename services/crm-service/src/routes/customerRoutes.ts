@@ -1,10 +1,28 @@
-import { Router } from "express";
-import { verifyToken } from "../middlewares/authMiddleware";
-import { getAllCustomers } from "../controllers/customerController";
+import { Router } from 'express';
+import { verifyToken } from '../middlewares/auth.middlleware';
+import {
+  getAllCustomers,
+  getCustomerById,
+  createCustomer,
+  updateCustomer,
+  deleteCustomer,
+} from '../controllers/customerControllers';
 
 const router = Router();
 
 // GET /api/v1/customers
-router.get("/", verifyToken, getAllCustomers);
+router.get('/', verifyToken, getAllCustomers);
+
+// GET /api/v1/customers/:id
+router.get('/:id', verifyToken, getCustomerById);
+
+// POST /api/v1/customers
+router.post('/', verifyToken, createCustomer);
+
+// PUT /api/v1/customers/:id
+router.put('/:id', verifyToken, updateCustomer);
+
+// DELETE /api/v1/customers/:id
+router.delete('/:id', verifyToken, deleteCustomer);
 
 export default router;

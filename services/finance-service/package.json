@@ -1,6 +1,7 @@
 {
   "name": "finance-service",
   "version": "1.0.0",
+<<<<<<< HEAD
   "description": "Finance Service for miniERP",
   "main": "dist/index.js",
   "type": "commonjs",
@@ -31,3 +32,28 @@
     "typescript": "^5.6.3"
   }
 }
+=======
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "dev": "ts-node-dev --respawn --transpile-only src/utils/server.ts",
+    "build": "tsc",
+    "start": "node dist/utils/server.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@prisma/client": "^6.17.1",
+    "express": "^5.1.0",
+    "jsonwebtoken": "^9.0.2"
+  },
+  "devDependencies": {
+    "@types/express": "^5.0.3",
+    "ts-node": "^10.9.2",
+    "ts-node-dev": "^2.0.0",
+    "typescript": "^5.9.3"
+  }
+}
+>>>>>>> e548ed33b343102f25db3f49a5ff818b42c36d09
