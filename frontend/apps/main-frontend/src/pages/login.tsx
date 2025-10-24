@@ -44,7 +44,7 @@ const Login: React.FC = () => {
     } catch (err: any) {
       setError(
         err?.message ||
-          "Terjadi kesalahan saat login. Pastikan backend berjalan dan endpoint benar."
+          "Terjadi kesalahan saat login. Pastikan backend berjalan dan endpoint benar.",
       );
     } finally {
       setLoading(false);
@@ -93,11 +93,7 @@ const Login: React.FC = () => {
           />
         </Box>
 
-        <Typography
-          variant="body2"
-          color="text.secondary"
-          sx={{ mb: 3 }}
-        >
+        <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
           Silakan masuk ke akun Anda
         </Typography>
 
@@ -186,11 +182,7 @@ const Login: React.FC = () => {
               fontWeight: 600,
             }}
           >
-            {loading ? (
-              <CircularProgress size={24} color="inherit" />
-            ) : (
-              "MASUK"
-            )}
+            {loading ? <CircularProgress size={24} color="inherit" /> : "MASUK"}
           </Button>
         </Box>
 
