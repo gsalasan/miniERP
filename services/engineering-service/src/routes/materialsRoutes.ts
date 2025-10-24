@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import { verifyToken } from '../middlewares/auth.middleware';
+<<<<<<< HEAD
 import {
   validateCreateMaterial,
   validateUpdateMaterial,
@@ -7,10 +8,13 @@ import {
   validateQueryParams,
   handleErrors,
 } from '../middlewares/materialsValidation.middleware';
+=======
+>>>>>>> 6c6414a2e06e792d93f5a08b707d09549e5d8987
 import materialsController from '../controllers/materialsController';
 
 const router = Router();
 
+<<<<<<< HEAD
 // Health check endpoint (public)
 router.get('/health', materialsController.healthCheck);
 
@@ -65,5 +69,8 @@ router.delete(
 
 // Error handling middleware
 router.use(handleErrors);
+=======
+router.get('/api/v1/materials', materialsController.getMaterials);
+>>>>>>> 6c6414a2e06e792d93f5a08b707d09549e5d8987
 
 export default router;

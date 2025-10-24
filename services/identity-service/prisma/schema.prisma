@@ -1,6 +1,11 @@
 generator client {
   provider = "prisma-client-js"
+<<<<<<< HEAD
   
+=======
+}
+
+>>>>>>> 6c6414a2e06e792d93f5a08b707d09549e5d8987
 datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
@@ -28,6 +33,7 @@ model employees {
   users        users?
 }
 
+<<<<<<< HEAD
 model Material {
   id            String            @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   sbu           String?
@@ -237,6 +243,8 @@ model hr_employee_documents {
   @@map("hr_employee_documents")
 }
 
+=======
+>>>>>>> 6c6414a2e06e792d93f5a08b707d09549e5d8987
 enum UserRole {
   CEO
   FINANCE_ADMIN
@@ -249,6 +257,7 @@ enum UserRole {
   PROCUREMENT_ADMIN
   ASSET_ADMIN
   SYSTEM_ADMIN
+<<<<<<< HEAD
 }
 
 enum MaterialStatus {
@@ -384,4 +393,6 @@ enum AccountType {
   Equity
   Revenue
   Expense
+=======
+>>>>>>> 6c6414a2e06e792d93f5a08b707d09549e5d8987
 }

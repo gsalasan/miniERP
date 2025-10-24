@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 import prisma from '../utils/prisma';
 import { CustomerStatus } from '@prisma/client';
 
@@ -167,4 +168,10 @@ export const deleteCustomerService = async (id: string) => {
     console.error('Error in deleteCustomerService:', error);
     throw error;
   }
+=======
+import prisma from "../utils/prisma";
+
+export const getAllCustomersService = async () => {
+  return await prisma.customer.findMany();
+>>>>>>> 6c6414a2e06e792d93f5a08b707d09549e5d8987
 };

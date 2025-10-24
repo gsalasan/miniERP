@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 "use strict";
 var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
@@ -72,3 +73,20 @@ async function startServer() {
 // Start the application
 startServer();
 //# sourceMappingURL=server.js.map
+=======
+'use strict';
+var __importDefault =
+  (this && this.__importDefault) ||
+  function (mod) {
+    return mod && mod.__esModule ? mod : { default: mod };
+  };
+Object.defineProperty(exports, '__esModule', { value: true });
+const app_1 = __importDefault(require('./app'));
+const dotenv_1 = __importDefault(require('dotenv'));
+dotenv_1.default.config();
+console.log('>>> DEBUG JWT_SECRET =', process.env.JWT_SECRET);
+const PORT = process.env.PORT || 3001;
+app_1.default.listen(PORT, () =>
+  console.log(`Identity Service running on port ${PORT}`)
+);
+>>>>>>> 6c6414a2e06e792d93f5a08b707d09549e5d8987

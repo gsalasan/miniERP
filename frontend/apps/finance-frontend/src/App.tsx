@@ -1,15 +1,24 @@
 import React from "react";
-import { CssBaseline, Container, Typography } from "@mui/material";
+import { CssBaseline } from "@mui/material";
+import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
+import Dashboard from "./pages/Dashboard";
+import COA from "./pages/COA";
 
 function App() {
   return (
-    <Container maxWidth="sm">
+    <>
       <CssBaseline />
-      <Typography variant="h3" align="center" gutterBottom>
-        Finance Frontend
-      </Typography>
-      <Typography align="center">Modul Finance miniERP</Typography>
-    </Container>
+      <Router>
+        <Routes>
+          <Route path="/" element={<Navigate to="/dashboard" replace />} />
+          <Route path="/dashboard" element={<Dashboard />} />
+          <Route path="/coa" element={<COA />} />
+          <Route path="/journal" element={<Dashboard />} />
+          <Route path="/reports" element={<Dashboard />} />
+          <Route path="/settings" element={<Dashboard />} />
+        </Routes>
+      </Router>
+    </>
   );
 }
 

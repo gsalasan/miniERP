@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 import app from './app';
 
 // Use explicit port for CRM service to avoid conflicts
@@ -7,3 +8,12 @@ app.listen(PORT, () => {
   // eslint-disable-next-line no-console
   console.log(`CRM Service running on port ${PORT}`);
 });
+=======
+import app from "./app"
+
+const PORT = process.env.PORT || 3001
+
+app.listen(PORT, () => {
+  console.log(`Server running on port ${PORT}`)
+})
+>>>>>>> 6c6414a2e06e792d93f5a08b707d09549e5d8987

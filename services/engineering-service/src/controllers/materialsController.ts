@@ -1,4 +1,5 @@
 import { Request, Response } from 'express';
+<<<<<<< HEAD
 import { PrismaClient } from '@prisma/client';
 import materialsService from '../services/materialsService';
 
@@ -392,3 +393,18 @@ export default {
   getFilterOptions,
   healthCheck,
 };
+=======
+import prisma from '../prisma/client';
+
+const getMaterials = async (req: Request, res: Response) => {
+  try {
+    const materials = await prisma.material.findMany();
+    return res.json(materials);
+  } catch (error) {
+    console.error('Failed to fetch materials', error);
+    return res.status(500).json({ message: 'Failed to fetch materials' });
+  }
+};
+
+export default { getMaterials };
+>>>>>>> 6c6414a2e06e792d93f5a08b707d09549e5d8987
