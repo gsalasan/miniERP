@@ -1,5 +1,5 @@
-import React from 'react';
-import MaterialsList from '../../components/MaterialsList';
+import React from "react";
+import MaterialsList from "../../components/MaterialsList";
 
 const MaterialsPage: React.FC = () => {
   return <MaterialsList />;

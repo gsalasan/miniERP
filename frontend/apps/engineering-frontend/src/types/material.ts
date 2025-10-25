@@ -1,14 +1,14 @@
 // Material related types
 
 export enum MaterialStatus {
-  Active = 'Active',
-  EndOfLife = 'EndOfLife',
-  Discontinue = 'Discontinue',
+  Active = "Active",
+  EndOfLife = "EndOfLife",
+  Discontinue = "Discontinue",
 }
 
 export enum MaterialLocation {
-  Local = 'Local',
-  Import = 'Import',
+  Local = "Local",
+  Import = "Import",
 }
 
 export interface Material {

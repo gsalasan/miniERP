@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from "react";
 import {
   Box,
   Table,
@@ -13,7 +13,6 @@ import {
   Typography,
   Card,
   CardContent,
-  CircularProgress,
   Alert,
   Chip,
   FormControl,
@@ -25,7 +24,7 @@ import {
   Tooltip,
   Button,
   Collapse,
-} from '@mui/material';
+} from "@mui/material";
 import {
   Search as SearchIcon,
   Refresh as RefreshIcon,
@@ -35,10 +34,18 @@ import {
   Clear as ClearIcon,
   GetApp as ExportIcon,
   Add as AddIcon,
-} from '@mui/icons-material';
-import { materialsService } from '../api/materialsApi';
-import { Material, MaterialsQueryParams, MaterialStatus, MaterialLocation, FilterOptions } from '../types/material';
-import MaterialsStatsWidget from './MaterialsStatsWidget';
+  Edit as EditIcon,
+  Delete as DeleteIcon,
+  Visibility as VisibilityIcon,
+} from "@mui/icons-material";
+import { materialsService } from "../api/materialsApi";
+import { Material, MaterialsQueryParams, MaterialStatus, FilterOptions } from "../types/material";
+import MaterialsStatsWidget from "./MaterialsStatsWidget";
+import MaterialFormModal from "./MaterialFormModal";
+import MaterialDetailModal from "./MaterialDetailModal";
+import DeleteConfirmationModal from "./DeleteConfirmationModal";
+import MaterialsTableSkeleton from "./MaterialsTableSkeleton";
+import { useNotification } from "../contexts/NotificationContext";
 
 const MaterialsList: React.FC = () => {
   const [materials, setMaterials] = useState<Material[]>([]);
@@ -47,19 +54,36 @@ const MaterialsList: React.FC = () => {
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(10);
   const [totalCount, setTotalCount] = useState(0);
-  const [searchTerm, setSearchTerm] = useState('');
+  const [searchTerm, setSearchTerm] = useState("");
   const [filters, setFilters] = useState<Partial<MaterialsQueryParams>>({});
   const [filterOptions, setFilterOptions] = useState<FilterOptions | null>(null);
   const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
   const [searchDebounce, setSearchDebounce] = useState<NodeJS.Timeout | null>(null);
+
+  // Modal states
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [editingMaterial, setEditingMaterial] = useState<Material | null>(null);
+  const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
+  const [viewingMaterial, setViewingMaterial] = useState<Material | null>(null);
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [deletingMaterial, setDeletingMaterial] = useState<Material | null>(null);
+  const [deleteLoading, setDeleteLoading] = useState(false);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
+
+  // Notification hook
+  const { showSuccess, showError } = useNotification();
+
+  // Calculate active filters count
+  const activeFiltersCount =
+    Object.values(filters).filter((value) => value && value !== "").length + (searchTerm ? 1 : 0);
 
   // Fetch filter options
   const fetchFilterOptions = async () => {
     try {
       const options = await materialsService.getFilterOptions();
       setFilterOptions(options);
-    } catch (err) {
-      console.error('Error fetching filter options:', err);
+    } catch {
+      showError("Gagal memuat opsi filter");
     }
   };
 
@@ -67,7 +91,7 @@ const MaterialsList: React.FC = () => {
   const fetchMaterials = async () => {
     setLoading(true);
     setError(null);
-    
+
     try {
       const queryParams: MaterialsQueryParams = {
         page: page + 1, // API uses 1-based pagination
@@ -77,17 +101,16 @@ const MaterialsList: React.FC = () => {
       };
 
       const response = await materialsService.getMaterials(queryParams);
-      
+
       if (response.success) {
         setMaterials(response.data);
         // Backend returns pagination object, not meta
         setTotalCount(response.pagination?.total || 0);
       } else {
-        setError('Failed to fetch materials data');
+        setError("Failed to fetch materials data");
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'An error occurred while fetching materials');
-      console.error('Error fetching materials:', err);
+      setError(err instanceof Error ? err.message : "An error occurred while fetching materials");
     } finally {
       setLoading(false);
     }
@@ -107,14 +130,14 @@ const MaterialsList: React.FC = () => {
     if (searchDebounce) {
       clearTimeout(searchDebounce);
     }
-    
+
     const timeout = setTimeout(() => {
       setPage(0);
       fetchMaterials();
     }, 500);
-    
+
     setSearchDebounce(timeout);
-    
+
     return () => {
       if (timeout) clearTimeout(timeout);
     };
@@ -147,16 +170,16 @@ const MaterialsList: React.FC = () => {
   // Clear all filters
   const clearAllFilters = () => {
     setFilters({});
-    setSearchTerm('');
+    setSearchTerm("");
     setPage(0);
   };
 
   // Format currency
   const formatCurrency = (amount: number | null | undefined, currency?: string) => {
-    if (!amount) return '-';
-    return new Intl.NumberFormat('id-ID', {
-      style: 'currency',
-      currency: currency || 'IDR',
+    if (!amount) return "-";
+    return new Intl.NumberFormat("id-ID", {
+      style: "currency",
+      currency: currency || "IDR",
       minimumFractionDigits: 0,
       maximumFractionDigits: 0,
     }).format(amount);
@@ -166,13 +189,13 @@ const MaterialsList: React.FC = () => {
   const getStatusColor = (status?: MaterialStatus) => {
     switch (status) {
       case MaterialStatus.Active:
-        return 'success';
+        return "success";
       case MaterialStatus.EndOfLife:
-        return 'warning';
+        return "warning";
       case MaterialStatus.Discontinue:
-        return 'error';
+        return "error";
       default:
-        return 'default';
+        return "default";
     }
   };
 
@@ -182,33 +205,111 @@ const MaterialsList: React.FC = () => {
     fetchFilterOptions();
   };
 
+  // Modal handlers
+  const handleAddMaterial = () => {
+    setEditingMaterial(null);
+    setIsModalOpen(true);
+  };
+
+  const handleEditMaterial = (material: Material) => {
+    setEditingMaterial(material);
+    setIsModalOpen(true);
+  };
+
+  const handleCloseModal = () => {
+    setIsModalOpen(false);
+    setEditingMaterial(null);
+  };
+
+  const handleModalSuccess = () => {
+    fetchMaterials(); // Refresh data after successful add/edit
+  };
+
+  // Detail modal handlers
+  const handleViewMaterial = (material: Material) => {
+    setViewingMaterial(material);
+    setIsDetailModalOpen(true);
+  };
+
+  const handleCloseDetailModal = () => {
+    setIsDetailModalOpen(false);
+    setViewingMaterial(null);
+  };
+
+  // Delete modal handlers
+  const handleDeleteMaterial = (material: Material) => {
+    setDeletingMaterial(material);
+    setDeleteError(null);
+    setIsDeleteModalOpen(true);
+  };
+
+  const handleCloseDeleteModal = () => {
+    if (!deleteLoading) {
+      setIsDeleteModalOpen(false);
+      setDeletingMaterial(null);
+      setDeleteError(null);
+    }
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!deletingMaterial) return;
+
+    setDeleteLoading(true);
+    setDeleteError(null);
+
+    try {
+      await materialsService.deleteMaterial(deletingMaterial.id);
+      showSuccess(`Material "${deletingMaterial.item_name}" berhasil dihapus!`);
+      fetchMaterials(); // Refresh data after successful delete
+      setIsDeleteModalOpen(false);
+      setDeletingMaterial(null);
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : "Gagal menghapus material";
+      setDeleteError(errorMessage);
+      showError(errorMessage);
+    } finally {
+      setDeleteLoading(false);
+    }
+  };
+
   // Export data to CSV
   const handleExport = () => {
-    const headers = ['Item Name', 'SBU', 'System', 'Subsystem', 'Brand', 'Vendor', 'Status', 'Location', 'Cost (RP)', 'Owner PN'];
-    const csvData = materials.map(material => [
+    const headers = [
+      "Item Name",
+      "SBU",
+      "System",
+      "Subsystem",
+      "Brand",
+      "Vendor",
+      "Status",
+      "Location",
+      "Cost (RP)",
+      "Owner PN",
+    ];
+    const csvData = materials.map((material) => [
       material.item_name,
-      material.sbu || '',
-      material.system || '',
-      material.subsystem || '',
-      material.brand || '',
-      material.vendor || '',
-      material.status || '',
-      material.location || '',
-      material.cost_rp || '',
-      material.owner_pn || '',
+      material.sbu || "",
+      material.system || "",
+      material.subsystem || "",
+      material.brand || "",
+      material.vendor || "",
+      material.status || "",
+      material.location || "",
+      material.cost_rp || "",
+      material.owner_pn || "",
     ]);
 
     const csv = [headers, ...csvData]
-      .map(row => row.map(field => `"${field}"`).join(','))
-      .join('\n');
+      .map((row) => row.map((field) => `"${field}"`).join(","))
+      .join("\n");
 
-    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-    const link = document.createElement('a');
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+    const link = document.createElement("a");
     if (link.download !== undefined) {
       const url = URL.createObjectURL(blob);
-      link.setAttribute('href', url);
-      link.setAttribute('download', `materials_${new Date().toISOString().split('T')[0]}.csv`);
-      link.style.visibility = 'hidden';
+      link.setAttribute("href", url);
+      link.setAttribute("download", `materials_${new Date().toISOString().split("T")[0]}.csv`);
+      link.style.visibility = "hidden";
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
@@ -218,34 +319,106 @@ const MaterialsList: React.FC = () => {
   return (
     <Box sx={{ p: 3 }}>
       {/* Header */}
-      <Box sx={{ mb: 3, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <Box>
-          <Typography variant="h4" component="h1" gutterBottom>
-            Materials Management
-          </Typography>
-          <Typography variant="body1" color="textSecondary">
-            Kelola data materials engineering
-          </Typography>
+      <Box
+        sx={{
+          mb: 4,
+          p: 3,
+          backgroundColor: "background.paper",
+          borderRadius: 3,
+          boxShadow: "0 1px 3px 0 rgb(0 0 0 / 0.1)",
+          border: "1px solid",
+          borderColor: "grey.200",
+        }}
+      >
+        <Box
+          sx={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", mb: 2 }}
+        >
+          <Box>
+            <Typography
+              variant="h4"
+              component="h1"
+              sx={{ mb: 1, fontWeight: 700, color: "text.primary" }}
+            >
+              Materials Management
+            </Typography>
+            <Typography variant="body1" color="text.secondary" sx={{ fontSize: "1.1rem" }}>
+              Kelola dan monitor data materials engineering dengan mudah
+            </Typography>
+          </Box>
+          <Box sx={{ display: "flex", gap: 2 }}>
+            <Button
+              variant="outlined"
+              startIcon={<ExportIcon />}
+              onClick={handleExport}
+              disabled={materials.length === 0}
+              sx={{
+                minWidth: 140,
+                height: 44,
+                borderColor: "primary.main",
+                color: "primary.main",
+                "&:hover": {
+                  borderColor: "primary.dark",
+                  backgroundColor: "primary.50",
+                },
+              }}
+            >
+              Export CSV
+            </Button>
+            <Button
+              variant="contained"
+              startIcon={<AddIcon />}
+              onClick={handleAddMaterial}
+              sx={{
+                minWidth: 150,
+                height: 44,
+                background: "linear-gradient(135deg, #2563eb 0%, #3b82f6 100%)",
+                boxShadow: "0 4px 14px 0 rgba(37, 99, 235, 0.3)",
+                "&:hover": {
+                  background: "linear-gradient(135deg, #1d4ed8 0%, #2563eb 100%)",
+                  boxShadow: "0 6px 20px 0 rgba(37, 99, 235, 0.4)",
+                },
+              }}
+            >
+              Add Material
+            </Button>
+          </Box>
         </Box>
-        <Box sx={{ display: 'flex', gap: 1 }}>
-          <Button
-            variant="outlined"
-            startIcon={<ExportIcon />}
-            onClick={handleExport}
-            disabled={materials.length === 0}
-          >
-            Export CSV
-          </Button>
-          <Button
-            variant="contained"
-            startIcon={<AddIcon />}
-            onClick={() => {
-              // TODO: Implement add material functionality
-              console.log('Add material clicked');
-            }}
-          >
-            Add Material
-          </Button>
+
+        {/* Quick Stats */}
+        <Box
+          sx={{
+            display: "flex",
+            gap: 3,
+            mt: 3,
+            pt: 3,
+            borderTop: "1px solid",
+            borderColor: "grey.100",
+          }}
+        >
+          <Box sx={{ textAlign: "center" }}>
+            <Typography variant="h5" sx={{ fontWeight: 700, color: "primary.main" }}>
+              {totalCount}
+            </Typography>
+            <Typography variant="body2" color="text.secondary">
+              Total Materials
+            </Typography>
+          </Box>
+          <Box sx={{ textAlign: "center" }}>
+            <Typography variant="h5" sx={{ fontWeight: 700, color: "success.main" }}>
+              {materials.filter((m) => m.status === "Active").length}
+            </Typography>
+            <Typography variant="body2" color="text.secondary">
+              Active
+            </Typography>
+          </Box>
+          <Box sx={{ textAlign: "center" }}>
+            <Typography variant="h5" sx={{ fontWeight: 700, color: "warning.main" }}>
+              {materials.filter((m) => m.location === "Import").length}
+            </Typography>
+            <Typography variant="body2" color="text.secondary">
+              Import Items
+            </Typography>
+          </Box>
         </Box>
       </Box>
 
@@ -253,110 +426,113 @@ const MaterialsList: React.FC = () => {
       <MaterialsStatsWidget />
 
       {/* Filters and Search */}
-      <Card sx={{ mb: 3 }}>
-        <CardContent>
-          <Grid container spacing={2} alignItems="center">
-            <Grid item xs={12} md={4}>
-              <TextField
-                fullWidth
-                size="small"
-                placeholder="Cari materials..."
-                value={searchTerm}
-                onChange={handleSearchChange}
-                InputProps={{
-                  startAdornment: <SearchIcon sx={{ color: 'action.active', mr: 1 }} />,
-                }}
-              />
-            </Grid>
-            
-            <Grid item xs={12} md={2}>
-              <FormControl fullWidth size="small">
-                <InputLabel>Status</InputLabel>
-                <Select
-                  value={filters.status || ''}
-                  onChange={(e) => handleFilterChange('status', e.target.value)}
-                  label="Status"
-                >
-                  <MenuItem value="">All Status</MenuItem>
-                  {filterOptions?.statuses?.map((status: MaterialStatus) => (
-                    <MenuItem key={status} value={status}>
-                      {status}
-                    </MenuItem>
-                  ))}
-                </Select>
-              </FormControl>
-            </Grid>
+      <Card
+        sx={{
+          mb: 3,
+          overflow: "visible",
+          "& .MuiCardContent-root": {
+            background: "linear-gradient(135deg, #f8fafc 0%, #ffffff 100%)",
+          },
+        }}
+      >
+        <CardContent sx={{ p: 3 }}>
+          <Box sx={{ mb: 3 }}>
+            <Typography variant="h6" sx={{ mb: 2, fontWeight: 600, color: "text.primary" }}>
+              Search & Filters
+            </Typography>
 
-            <Grid item xs={12} md={2}>
-              <FormControl fullWidth size="small">
-                <InputLabel>Location</InputLabel>
-                <Select
-                  value={filters.location || ''}
-                  onChange={(e) => handleFilterChange('location', e.target.value)}
-                  label="Location"
-                >
-                  <MenuItem value="">All Locations</MenuItem>
-                  {filterOptions?.locations?.map((location: MaterialLocation) => (
-                    <MenuItem key={location} value={location}>
-                      {location}
-                    </MenuItem>
-                  ))}
-                </Select>
-              </FormControl>
-            </Grid>
+            <Grid container spacing={3} alignItems="center">
+              <Grid item xs={12} md={5}>
+                <TextField
+                  fullWidth
+                  placeholder="Cari materials berdasarkan nama, brand, vendor..."
+                  value={searchTerm}
+                  onChange={handleSearchChange}
+                  InputProps={{
+                    startAdornment: <SearchIcon sx={{ color: "action.active", mr: 1.5 }} />,
+                  }}
+                  sx={{
+                    "& .MuiOutlinedInput-root": {
+                      backgroundColor: "background.paper",
+                      "& input": {
+                        py: 1.5,
+                        fontSize: "1rem",
+                      },
+                    },
+                  }}
+                />
+              </Grid>
 
-            <Grid item xs={12} md={2}>
-              <FormControl fullWidth size="small">
-                <InputLabel>SBU</InputLabel>
-                <Select
-                  value={filters.sbu || ''}
-                  onChange={(e) => handleFilterChange('sbu', e.target.value)}
-                  label="SBU"
-                >
-                  <MenuItem value="">All SBU</MenuItem>
-                  {filterOptions?.sbus?.map((sbu: string) => (
-                    <MenuItem key={sbu} value={sbu}>
-                      {sbu}
-                    </MenuItem>
-                  ))}
-                </Select>
-              </FormControl>
-            </Grid>
-
-            <Grid item xs={12} md={2}>
-              <Box sx={{ display: 'flex', gap: 1 }}>
-                <Tooltip title="More Filters">
-                  <IconButton 
+              <Grid item xs={12} md={7}>
+                <Box sx={{ display: "flex", gap: 2, alignItems: "center", flexWrap: "wrap" }}>
+                  <Button
+                    variant={showAdvancedFilters ? "contained" : "outlined"}
+                    startIcon={<FilterIcon />}
                     onClick={() => setShowAdvancedFilters(!showAdvancedFilters)}
-                    color={showAdvancedFilters ? 'primary' : 'default'}
+                    size="medium"
+                    sx={{
+                      minWidth: 120,
+                      position: "relative",
+                      "&::after":
+                        activeFiltersCount > 0
+                          ? {
+                              content: `"${activeFiltersCount}"`,
+                              position: "absolute",
+                              top: -8,
+                              right: -8,
+                              backgroundColor: "error.main",
+                              color: "white",
+                              borderRadius: "50%",
+                              minWidth: 20,
+                              height: 20,
+                              fontSize: "0.75rem",
+                              display: "flex",
+                              alignItems: "center",
+                              justifyContent: "center",
+                              fontWeight: 600,
+                            }
+                          : {},
+                    }}
                   >
-                    <FilterIcon />
-                  </IconButton>
-                </Tooltip>
-                <Tooltip title="Clear Filters">
-                  <IconButton onClick={clearAllFilters}>
-                    <ClearIcon />
-                  </IconButton>
-                </Tooltip>
-                <Tooltip title="Refresh Data">
-                  <IconButton onClick={handleRefresh} disabled={loading}>
-                    <RefreshIcon />
-                  </IconButton>
-                </Tooltip>
-              </Box>
+                    Filters
+                    {showAdvancedFilters ? <ExpandLessIcon /> : <ExpandMoreIcon />}
+                  </Button>
+
+                  {activeFiltersCount > 0 && (
+                    <Button
+                      variant="text"
+                      startIcon={<ClearIcon />}
+                      onClick={clearAllFilters}
+                      color="error"
+                      size="small"
+                    >
+                      Clear All ({activeFiltersCount})
+                    </Button>
+                  )}
+
+                  <Button
+                    variant="text"
+                    startIcon={<RefreshIcon />}
+                    onClick={handleRefresh}
+                    size="small"
+                  >
+                    Refresh
+                  </Button>
+                </Box>
+              </Grid>
             </Grid>
-          </Grid>
+          </Box>
 
           {/* Advanced Filters */}
           <Collapse in={showAdvancedFilters}>
-            <Box sx={{ mt: 2, pt: 2, borderTop: 1, borderColor: 'divider' }}>
+            <Box sx={{ mt: 2, pt: 2, borderTop: 1, borderColor: "divider" }}>
               <Grid container spacing={2}>
                 <Grid item xs={12} md={3}>
                   <FormControl fullWidth size="small">
                     <InputLabel>System</InputLabel>
                     <Select
-                      value={filters.system || ''}
-                      onChange={(e) => handleFilterChange('system', e.target.value)}
+                      value={filters.system || ""}
+                      onChange={(e) => handleFilterChange("system", e.target.value)}
                       label="System"
                     >
                       <MenuItem value="">All Systems</MenuItem>
@@ -373,8 +549,8 @@ const MaterialsList: React.FC = () => {
                   <FormControl fullWidth size="small">
                     <InputLabel>Subsystem</InputLabel>
                     <Select
-                      value={filters.subsystem || ''}
-                      onChange={(e) => handleFilterChange('subsystem', e.target.value)}
+                      value={filters.subsystem || ""}
+                      onChange={(e) => handleFilterChange("subsystem", e.target.value)}
                       label="Subsystem"
                     >
                       <MenuItem value="">All Subsystems</MenuItem>
@@ -391,8 +567,8 @@ const MaterialsList: React.FC = () => {
                   <FormControl fullWidth size="small">
                     <InputLabel>Vendor</InputLabel>
                     <Select
-                      value={filters.vendor || ''}
-                      onChange={(e) => handleFilterChange('vendor', e.target.value)}
+                      value={filters.vendor || ""}
+                      onChange={(e) => handleFilterChange("vendor", e.target.value)}
                       label="Vendor"
                     >
                       <MenuItem value="">All Vendors</MenuItem>
@@ -409,8 +585,8 @@ const MaterialsList: React.FC = () => {
                   <FormControl fullWidth size="small">
                     <InputLabel>Brand</InputLabel>
                     <Select
-                      value={filters.brand || ''}
-                      onChange={(e) => handleFilterChange('brand', e.target.value)}
+                      value={filters.brand || ""}
+                      onChange={(e) => handleFilterChange("brand", e.target.value)}
                       label="Brand"
                     >
                       <MenuItem value="">All Brands</MenuItem>
@@ -432,8 +608,16 @@ const MaterialsList: React.FC = () => {
       {(Object.keys(filters).length > 0 || searchTerm) && (
         <Card sx={{ mb: 2 }}>
           <CardContent sx={{ py: 2 }}>
-            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 1 }}>
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
+            <Box
+              sx={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                flexWrap: "wrap",
+                gap: 1,
+              }}
+            >
+              <Box sx={{ display: "flex", alignItems: "center", gap: 1, flexWrap: "wrap" }}>
                 <Typography variant="body2" color="textSecondary">
                   Active filters:
                 </Typography>
@@ -441,20 +625,20 @@ const MaterialsList: React.FC = () => {
                   <Chip
                     label={`Search: "${searchTerm}"`}
                     size="small"
-                    onDelete={() => setSearchTerm('')}
+                    onDelete={() => setSearchTerm("")}
                     variant="outlined"
                   />
                 )}
-                {Object.entries(filters).map(([key, value]) => 
+                {Object.entries(filters).map(([key, value]) =>
                   value ? (
                     <Chip
                       key={key}
                       label={`${key}: ${value}`}
                       size="small"
-                      onDelete={() => handleFilterChange(key, '')}
+                      onDelete={() => handleFilterChange(key, "")}
                       variant="outlined"
                     />
-                  ) : null
+                  ) : null,
                 )}
               </Box>
               <Typography variant="body2" color="textSecondary">
@@ -476,121 +660,188 @@ const MaterialsList: React.FC = () => {
       <Card>
         <CardContent sx={{ p: 0 }}>
           <TableContainer component={Paper} elevation={0}>
-            <Table stickyHeader>
-              <TableHead>
-                <TableRow>
-                  <TableCell>Item Details</TableCell>
-                  <TableCell>SBU / System</TableCell>
-                  <TableCell>Brand / Vendor</TableCell>
-                  <TableCell>Status</TableCell>
-                  <TableCell>Location</TableCell>
-                  <TableCell align="right">Cost (RP)</TableCell>
-                  <TableCell>Components</TableCell>
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                {loading ? (
+            {loading ? (
+              <MaterialsTableSkeleton rows={rowsPerPage} />
+            ) : (
+              <Table stickyHeader>
+                <TableHead>
                   <TableRow>
-                    <TableCell colSpan={7} align="center" sx={{ py: 4 }}>
-                      <CircularProgress size={40} />
-                      <Typography variant="body2" sx={{ mt: 2 }}>
-                        Loading materials...
-                      </Typography>
-                    </TableCell>
+                    <TableCell>Item Details</TableCell>
+                    <TableCell>SBU / System</TableCell>
+                    <TableCell>Brand / Vendor</TableCell>
+                    <TableCell>Status</TableCell>
+                    <TableCell>Location</TableCell>
+                    <TableCell align="right">Cost (RP)</TableCell>
+                    <TableCell>Components</TableCell>
+                    <TableCell align="center">Actions</TableCell>
                   </TableRow>
-                ) : materials.length === 0 ? (
-                  <TableRow>
-                    <TableCell colSpan={7} align="center" sx={{ py: 4 }}>
-                      <Typography variant="body2" color="textSecondary">
-                        No materials found
-                      </Typography>
-                    </TableCell>
-                  </TableRow>
-                ) : (
-                  materials.map((material) => (
-                    <TableRow key={material.id} hover>
-                      <TableCell>
-                        <Box>
-                          <Tooltip title={material.item_name}>
-                            <Typography variant="body2" fontWeight="medium" noWrap sx={{ maxWidth: 200 }}>
-                              {material.item_name}
-                            </Typography>
-                          </Tooltip>
-                          {material.owner_pn && (
-                            <Typography variant="caption" color="textSecondary" sx={{ display: 'block' }}>
-                              PN: {material.owner_pn}
-                            </Typography>
-                          )}
-                          {material.satuan && (
-                            <Typography variant="caption" color="textSecondary" sx={{ display: 'block' }}>
-                              Unit: {material.satuan}
-                            </Typography>
-                          )}
-                        </Box>
-                      </TableCell>
-                      <TableCell>
-                        <Box>
-                          <Typography variant="body2" fontWeight="medium">
-                            {material.sbu || '-'}
-                          </Typography>
-                          <Typography variant="caption" color="textSecondary" sx={{ display: 'block' }}>
-                            {material.system || '-'}
-                          </Typography>
-                          {material.subsystem && (
-                            <Typography variant="caption" color="textSecondary" sx={{ display: 'block' }}>
-                              Sub: {material.subsystem}
-                            </Typography>
-                          )}
-                        </Box>
-                      </TableCell>
-                      <TableCell>
-                        <Box>
-                          <Typography variant="body2">
-                            {material.brand || '-'}
-                          </Typography>
-                          <Typography variant="caption" color="textSecondary" sx={{ display: 'block' }}>
-                            {material.vendor || '-'}
-                          </Typography>
-                        </Box>
-                      </TableCell>
-                      <TableCell>
-                        <Chip
-                          label={material.status || 'Unknown'}
-                          color={getStatusColor(material.status)}
-                          size="small"
-                        />
-                      </TableCell>
-                      <TableCell>
-                        <Chip
-                          label={material.location || 'Unknown'}
-                          variant="outlined"
-                          size="small"
-                        />
-                      </TableCell>
-                      <TableCell align="right">
-                        <Box sx={{ textAlign: 'right' }}>
-                          <Typography variant="body2" fontWeight="medium">
-                            {formatCurrency(material.cost_rp, 'IDR')}
-                          </Typography>
-                          {material.cost_ori && material.curr && (
-                            <Typography variant="caption" color="textSecondary" sx={{ display: 'block' }}>
-                              {formatCurrency(material.cost_ori, material.curr)}
-                            </Typography>
-                          )}
-                        </Box>
-                      </TableCell>
-                      <TableCell>
-                        <Tooltip title={material.components || 'No components specified'}>
-                          <Typography variant="caption" color="textSecondary" noWrap sx={{ maxWidth: 150, display: 'block' }}>
-                            {material.components || '-'}
-                          </Typography>
-                        </Tooltip>
+                </TableHead>
+                <TableBody>
+                  {materials.length === 0 ? (
+                    <TableRow>
+                      <TableCell colSpan={8} align="center" sx={{ py: 4 }}>
+                        <Typography variant="body2" color="textSecondary">
+                          No materials found
+                        </Typography>
                       </TableCell>
                     </TableRow>
-                  ))
-                )}
-              </TableBody>
-            </Table>
+                  ) : materials.length === 0 ? (
+                    <TableRow>
+                      <TableCell colSpan={8} align="center" sx={{ py: 4 }}>
+                        <Typography variant="body2" color="textSecondary">
+                          No materials found
+                        </Typography>
+                      </TableCell>
+                    </TableRow>
+                  ) : (
+                    materials.map((material) => (
+                      <TableRow key={material.id} hover>
+                        <TableCell>
+                          <Box>
+                            <Tooltip title={material.item_name}>
+                              <Typography
+                                variant="body2"
+                                fontWeight="medium"
+                                noWrap
+                                sx={{ maxWidth: 200 }}
+                              >
+                                {material.item_name}
+                              </Typography>
+                            </Tooltip>
+                            {material.owner_pn && (
+                              <Typography
+                                variant="caption"
+                                color="textSecondary"
+                                sx={{ display: "block" }}
+                              >
+                                PN: {material.owner_pn}
+                              </Typography>
+                            )}
+                            {material.satuan && (
+                              <Typography
+                                variant="caption"
+                                color="textSecondary"
+                                sx={{ display: "block" }}
+                              >
+                                Unit: {material.satuan}
+                              </Typography>
+                            )}
+                          </Box>
+                        </TableCell>
+                        <TableCell>
+                          <Box>
+                            <Typography variant="body2" fontWeight="medium">
+                              {material.sbu || "-"}
+                            </Typography>
+                            <Typography
+                              variant="caption"
+                              color="textSecondary"
+                              sx={{ display: "block" }}
+                            >
+                              {material.system || "-"}
+                            </Typography>
+                            {material.subsystem && (
+                              <Typography
+                                variant="caption"
+                                color="textSecondary"
+                                sx={{ display: "block" }}
+                              >
+                                Sub: {material.subsystem}
+                              </Typography>
+                            )}
+                          </Box>
+                        </TableCell>
+                        <TableCell>
+                          <Box>
+                            <Typography variant="body2">{material.brand || "-"}</Typography>
+                            <Typography
+                              variant="caption"
+                              color="textSecondary"
+                              sx={{ display: "block" }}
+                            >
+                              {material.vendor || "-"}
+                            </Typography>
+                          </Box>
+                        </TableCell>
+                        <TableCell>
+                          <Chip
+                            label={material.status || "Unknown"}
+                            color={getStatusColor(material.status)}
+                            size="small"
+                          />
+                        </TableCell>
+                        <TableCell>
+                          <Chip
+                            label={material.location || "Unknown"}
+                            variant="outlined"
+                            size="small"
+                          />
+                        </TableCell>
+                        <TableCell align="right">
+                          <Box sx={{ textAlign: "right" }}>
+                            <Typography variant="body2" fontWeight="medium">
+                              {formatCurrency(material.cost_rp, "IDR")}
+                            </Typography>
+                            {material.cost_ori && material.curr && (
+                              <Typography
+                                variant="caption"
+                                color="textSecondary"
+                                sx={{ display: "block" }}
+                              >
+                                {formatCurrency(material.cost_ori, material.curr)}
+                              </Typography>
+                            )}
+                          </Box>
+                        </TableCell>
+                        <TableCell>
+                          <Tooltip title={material.components || "No components specified"}>
+                            <Typography
+                              variant="caption"
+                              color="textSecondary"
+                              noWrap
+                              sx={{ maxWidth: 150, display: "block" }}
+                            >
+                              {material.components || "-"}
+                            </Typography>
+                          </Tooltip>
+                        </TableCell>
+                        <TableCell align="center">
+                          <Box sx={{ display: "flex", justifyContent: "center", gap: 0.5 }}>
+                            <Tooltip title="View Details">
+                              <IconButton
+                                size="small"
+                                onClick={() => handleViewMaterial(material)}
+                                color="info"
+                              >
+                                <VisibilityIcon fontSize="small" />
+                              </IconButton>
+                            </Tooltip>
+                            <Tooltip title="Edit Material">
+                              <IconButton
+                                size="small"
+                                onClick={() => handleEditMaterial(material)}
+                                color="primary"
+                              >
+                                <EditIcon fontSize="small" />
+                              </IconButton>
+                            </Tooltip>
+                            <Tooltip title="Delete Material">
+                              <IconButton
+                                size="small"
+                                onClick={() => handleDeleteMaterial(material)}
+                                color="error"
+                              >
+                                <DeleteIcon fontSize="small" />
+                              </IconButton>
+                            </Tooltip>
+                          </Box>
+                        </TableCell>
+                      </TableRow>
+                    ))
+                  )}
+                </TableBody>
+              </Table>
+            )}
           </TableContainer>
 
           {/* Pagination */}
@@ -609,6 +860,32 @@ const MaterialsList: React.FC = () => {
           />
         </CardContent>
       </Card>
+
+      {/* Material Form Modal */}
+      <MaterialFormModal
+        open={isModalOpen}
+        onClose={handleCloseModal}
+        onSuccess={handleModalSuccess}
+        material={editingMaterial}
+        filterOptions={filterOptions}
+      />
+
+      {/* Material Detail Modal */}
+      <MaterialDetailModal
+        open={isDetailModalOpen}
+        onClose={handleCloseDetailModal}
+        material={viewingMaterial}
+      />
+
+      {/* Delete Confirmation Modal */}
+      <DeleteConfirmationModal
+        open={isDeleteModalOpen}
+        onClose={handleCloseDeleteModal}
+        onConfirm={handleConfirmDelete}
+        material={deletingMaterial}
+        loading={deleteLoading}
+        error={deleteError}
+      />
     </Box>
   );
 };

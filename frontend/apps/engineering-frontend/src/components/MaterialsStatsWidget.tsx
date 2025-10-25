@@ -1,21 +1,13 @@
-import React, { useState, useEffect } from 'react';
-import {
-  Grid,
-  Card,
-  CardContent,
-  Typography,
-  Box,
-  CircularProgress,
-  Alert,
-} from '@mui/material';
+import React, { useState, useEffect } from "react";
+import { Grid, Card, CardContent, Typography, Box, CircularProgress, Alert } from "@mui/material";
 import {
   Inventory as TotalIcon,
   CheckCircle as ActiveIcon,
   Warning as EndOfLifeIcon,
   Cancel as DiscontinueIcon,
-} from '@mui/icons-material';
-import { materialsService } from '../api/materialsApi';
-import { MaterialsStats } from '../types/material';
+} from "@mui/icons-material";
+import { materialsService } from "../api/materialsApi";
+import { MaterialsStats } from "../types/material";
 
 interface StatsCardProps {
   title: string;
@@ -27,11 +19,11 @@ interface StatsCardProps {
 
 const StatsCard: React.FC<StatsCardProps> = ({ title, value, icon, color, backgroundColor }) => {
   return (
-    <Card sx={{ height: '100%' }}>
+    <Card sx={{ height: "100%" }}>
       <CardContent>
         <Box display="flex" alignItems="center" justifyContent="space-between">
           <Box>
-            <Typography variant="h4" component="div" sx={{ fontWeight: 'bold', color }}>
+            <Typography variant="h4" component="div" sx={{ fontWeight: "bold", color }}>
               {value}
             </Typography>
             <Typography variant="body2" color="text.secondary">
@@ -41,11 +33,11 @@ const StatsCard: React.FC<StatsCardProps> = ({ title, value, icon, color, backgr
           <Box
             sx={{
               p: 2,
-              borderRadius: '50%',
+              borderRadius: "50%",
               backgroundColor,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
             }}
           >
             {React.cloneElement(icon, { sx: { color, fontSize: 32 } })}
@@ -68,8 +60,7 @@ const MaterialsStatsWidget: React.FC = () => {
       setStats(statsData);
       setError(null);
     } catch (err) {
-      console.error('Error fetching stats:', err);
-      setError(err instanceof Error ? err.message : 'Failed to fetch statistics');
+      setError(err instanceof Error ? err.message : "Failed to fetch statistics");
     } finally {
       setLoading(false);
     }
@@ -101,32 +92,32 @@ const MaterialsStatsWidget: React.FC = () => {
 
   const statsCards = [
     {
-      title: 'Total Materials',
+      title: "Total Materials",
       value: stats.totalMaterials,
       icon: <TotalIcon />,
-      color: '#1976d2',
-      backgroundColor: '#e3f2fd',
+      color: "#1976d2",
+      backgroundColor: "#e3f2fd",
     },
     {
-      title: 'Active Materials',
+      title: "Active Materials",
       value: stats.activeMaterials,
       icon: <ActiveIcon />,
-      color: '#2e7d32',
-      backgroundColor: '#e8f5e8',
+      color: "#2e7d32",
+      backgroundColor: "#e8f5e8",
     },
     {
-      title: 'End of Life',
+      title: "End of Life",
       value: stats.endOfLifeMaterials,
       icon: <EndOfLifeIcon />,
-      color: '#ed6c02',
-      backgroundColor: '#fff3e0',
+      color: "#ed6c02",
+      backgroundColor: "#fff3e0",
     },
     {
-      title: 'Discontinued',
+      title: "Discontinued",
       value: stats.discontinuedMaterials,
       icon: <DiscontinueIcon />,
-      color: '#d32f2f',
-      backgroundColor: '#ffebee',
+      color: "#d32f2f",
+      backgroundColor: "#ffebee",
     },
   ];
 

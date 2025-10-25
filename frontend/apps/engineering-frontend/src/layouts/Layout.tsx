@@ -140,8 +140,7 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
                 <ListItemIcon
                   sx={{
                     minWidth: 36,
-                    color:
-                      location.pathname === item.path ? "#1976d2" : "#6c757d",
+                    color: location.pathname === item.path ? "#1976d2" : "#6c757d",
                   }}
                 >
                   {item.icon}
@@ -151,8 +150,7 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
                   primaryTypographyProps={{
                     fontSize: "0.95rem",
                     fontWeight: location.pathname === item.path ? 600 : 400,
-                    color:
-                      location.pathname === item.path ? "#1976d2" : "#495057",
+                    color: location.pathname === item.path ? "#1976d2" : "#495057",
                   }}
                 />
               </ListItemButton>
@@ -170,10 +168,7 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
           bgcolor: "#f8f9fa",
         }}
       >
-        <Typography
-          variant="caption"
-          sx={{ color: "#6c757d", fontSize: "0.75rem" }}
-        >
+        <Typography variant="caption" sx={{ color: "#6c757d", fontSize: "0.75rem" }}>
           miniERP Engineering
         </Typography>
       </Box>

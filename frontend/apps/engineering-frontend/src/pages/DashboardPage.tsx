@@ -160,10 +160,7 @@ export const DashboardPage: React.FC = () => {
                   },
                 }}
               >
-                <CardActionArea
-                  sx={{ height: "100%", p: 3 }}
-                  onClick={() => navigate(item.path)}
-                >
+                <CardActionArea sx={{ height: "100%", p: 3 }} onClick={() => navigate(item.path)}>
                   <CardContent sx={{ textAlign: "center", p: 0 }}>
                     <Avatar
                       sx={{
@@ -179,19 +176,10 @@ export const DashboardPage: React.FC = () => {
                     <Typography variant="h6" component="h3" gutterBottom>
                       {item.title}
                     </Typography>
-                    <Typography
-                      variant="body2"
-                      color="text.secondary"
-                      sx={{ mb: 2 }}
-                    >
+                    <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
                       {item.description}
                     </Typography>
-                    <Chip
-                      label={item.stats}
-                      size="small"
-                      color="primary"
-                      variant="outlined"
-                    />
+                    <Chip label={item.stats} size="small" color="primary" variant="outlined" />
                   </CardContent>
                 </CardActionArea>
               </Card>
