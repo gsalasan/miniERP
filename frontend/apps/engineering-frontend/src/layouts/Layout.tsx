@@ -19,6 +19,8 @@ import {
   Dashboard as DashboardIcon,
   Inventory as InventoryIcon,
   Engineering as EngineeringIcon,
+  Home as HomeIcon,
+  Logout as LogoutIcon,
 } from "@mui/icons-material";
 import { useNavigate, useLocation } from "react-router-dom";
 
@@ -197,9 +199,26 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
           >
             <MenuIcon />
           </IconButton>
-          <Typography variant="h6" noWrap component="div">
-            miniERP Engineering
+          <Typography variant="h6" noWrap component="div" sx={{ flexGrow: 1 }}>
+            miniERP Engineering - Cost Estimation
           </Typography>
+          <IconButton
+            color="inherit"
+            onClick={() => window.open("http://localhost:3000/dashboard", "_blank")}
+            sx={{ mr: 1 }}
+          >
+            <HomeIcon />
+          </IconButton>
+          <IconButton
+            color="inherit"
+            onClick={() => {
+              localStorage.removeItem("token");
+              localStorage.removeItem("user");
+              window.location.href = "http://localhost:3000";
+            }}
+          >
+            <LogoutIcon />
+          </IconButton>
         </Toolbar>
       </AppBar>
 

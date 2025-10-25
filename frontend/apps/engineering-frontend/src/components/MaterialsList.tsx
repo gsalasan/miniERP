@@ -80,7 +80,8 @@ const MaterialsList: React.FC = () => {
       
       if (response.success) {
         setMaterials(response.data);
-        setTotalCount(response.meta.total);
+        // Backend returns pagination object, not meta
+        setTotalCount(response.pagination?.total || 0);
       } else {
         setError('Failed to fetch materials data');
       }
