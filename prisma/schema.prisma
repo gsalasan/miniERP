@@ -1,6 +1,11 @@
 generator client {
+<<<<<<< HEAD
+  provider      = "prisma-client-js"
+  binaryTargets = ["native", "darwin-arm64"]
+=======
   provider = "prisma-client-js"
   output  = "../services/finance-service/node_modules/.prisma/client"
+>>>>>>> e548ed33b343102f25db3f49a5ff818b42c36d09
 }
 
 
@@ -13,8 +18,13 @@ model users {
   id            String     @id @default(uuid())
   email         String     @unique
   password_hash String
+<<<<<<< HEAD
+  roles         UserRole[] @default([EMPLOYEE])
+  employee_id   String?    @unique
+=======
   role          UserRole
   employee_id   String?
+>>>>>>> e548ed33b343102f25db3f49a5ff818b42c36d09
   is_active     Boolean    @default(true)
   created_at    DateTime   @default(now())
   updated_at    DateTime   @updatedAt
@@ -270,6 +280,85 @@ enum ServiceUnit {
   Hari
 }
 
+<<<<<<< HEAD
+enum EmployeeStatus {
+  ACTIVE
+  INACTIVE
+  TERMINATED
+  ON_LEAVE
+  SUSPENDED
+}
+
+enum EmploymentType {
+  FULL_TIME
+  PART_TIME
+  CONTRACT
+  INTERN
+  FREELANCE
+}
+
+enum Gender {
+  MALE
+  FEMALE
+  OTHER
+  PREFER_NOT_TO_SAY
+}
+
+enum MaritalStatus {
+  SINGLE
+  MARRIED
+  DIVORCED
+  WIDOWED
+  SEPARATED
+}
+
+enum BloodType {
+  A_POSITIVE
+  A_NEGATIVE
+  B_POSITIVE
+  B_NEGATIVE
+  AB_POSITIVE
+  AB_NEGATIVE
+  O_POSITIVE
+  O_NEGATIVE
+}
+
+enum EducationLevel {
+  HIGH_SCHOOL
+  DIPLOMA
+  BACHELOR
+  MASTER
+  DOCTORATE
+  CERTIFICATION
+  OTHER
+}
+
+enum LeaveType {
+  ANNUAL_LEAVE
+  SICK_LEAVE
+  MATERNITY_LEAVE
+  PATERNITY_LEAVE
+  EMERGENCY_LEAVE
+  UNPAID_LEAVE
+  STUDY_LEAVE
+  COMPENSATORY_LEAVE
+}
+
+enum LeaveStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  CANCELLED
+}
+
+enum AttendanceStatus {
+  PRESENT
+  ABSENT
+  LATE
+  HALF_DAY
+  WORK_FROM_HOME
+  ON_LEAVE
+=======
 model Material {
   id            String            @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   sbu           String?
@@ -386,4 +475,5 @@ enum AccountType {
   Equity
   Revenue
   Expense
+>>>>>>> e548ed33b343102f25db3f49a5ff818b42c36d09
 }

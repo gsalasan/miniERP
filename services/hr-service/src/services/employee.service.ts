@@ -1,5 +1,21 @@
 import bcrypt from 'bcryptjs';
-import { PrismaClient } from '@prisma/client';
+
+// Use relative path from root since Prisma is generated at root level
+const prismaClientPath = process.env.NODE_ENV === 'production' 
+  ? '@prisma/client' 
+  : '../../../../node_modules/@prisma/client';
+
+let PrismaClient: any;
+let Prisma: any;
+
+try {
+  const prismaModule = require(prismaClientPath);
+  PrismaClient = prismaModule.PrismaClient;
+  Prisma = prismaModule.Prisma;
+} catch (error) {
+  console.error('Failed to load Prisma client:', error);
+  throw new Error('Prisma client not available');
+}
 
 const prisma = new PrismaClient();
 
@@ -31,7 +47,7 @@ export const createEmployeeWithUser = async (data: CreateEmployeeWithUserRequest
 
   try {
     // Start a Prisma transaction
-    const result = await prisma.$transaction(async (tx) => {
+    const result = await prisma.$transaction(async (tx: any) => {
       // 1. Check if email already exists in users
       const existingUser = await tx.users.findUnique({
         where: { email }
@@ -346,7 +362,7 @@ export const updateEmployeeUser = async (employeeId: string, updateData: UpdateU
 export const deleteEmployee = async (employeeId: string) => {
   try {
     // Start transaction to delete both employee and user
-    await prisma.$transaction(async (tx) => {
+    await prisma.$transaction(async (tx: any) => {
       // First delete user (if exists)
       await tx.users.deleteMany({
         where: { employee_id: employeeId }
