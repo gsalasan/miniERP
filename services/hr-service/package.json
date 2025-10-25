@@ -1,0 +1,49 @@
+{
+  "name": "hr-service",
+  "version": "1.0.0",
+  "description": "HR Service for miniERP",
+  "main": "dist/index.js",
+  "type": "commonjs",
+  "scripts": {
+    "dev": "ts-node src/server.ts",
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "lint": "if [ -d src ]; then eslint src --ext .ts --fix; else echo No src directory found, skipping lint; fi",
+    "lint:check": "if [ -d src ]; then eslint src --ext .ts; else echo No src directory found, skipping lint check; fi",
+    "format": "prettier --write src/**/*.{ts,js,json,md}",
+    "format:check": "prettier --check src/**/*.{ts,js,json,md}",
+    "type-check": "tsc --noEmit",
+    "prisma:generate": "cd ../../ && npx prisma generate",
+    "prisma:studio": "cd ../../ && npx prisma studio",
+    "prisma:migrate": "cd ../../ && npx prisma migrate dev"
+  },
+  "dependencies": {
+    "@prisma/client": "^6.0.1",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.5",
+    "express": "^4.19.2",
+    "bcryptjs": "^2.4.3",
+    "jsonwebtoken": "^9.0.2",
+    "multer": "^1.4.5-lts.1",
+    "uuid": "^9.0.1"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.37.0",
+    "@typescript-eslint/eslint-plugin": "^8.46.0",
+    "@typescript-eslint/parser": "^8.46.0",
+    "@types/bcryptjs": "^2.4.2",
+    "@types/cors": "^2.8.17",
+    "@types/express": "^4.17.21",
+    "@types/jsonwebtoken": "^9.0.6",
+    "@types/multer": "^1.4.11",
+    "@types/node": "^22.7.5",
+    "@types/uuid": "^9.0.8",
+    "eslint": "^9.37.0",
+    "eslint-config-prettier": "^10.1.8",
+    "eslint-plugin-prettier": "^5.5.4",
+    "prettier": "^3.6.2",
+    "prisma": "^6.0.1",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.6.3"
+  }
+}
