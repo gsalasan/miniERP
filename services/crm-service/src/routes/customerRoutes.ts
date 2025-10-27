@@ -1,28 +1,25 @@
-import { Router } from 'express';
-import { verifyToken } from '../middlewares/auth.middlleware';
+import { Router } from "express";
 import {
   getAllCustomers,
   getCustomerById,
   createCustomer,
   updateCustomer,
   deleteCustomer,
-} from '../controllers/customerControllers';
+} from "../controllers/customerControllers";
+import { deleteCustomerContact } from "../controllers/customerContactsController";
 
 const router = Router();
 
-// GET /api/v1/customers
-router.get('/', verifyToken, getAllCustomers);
+// Test endpoint
+router.get("/test", getAllCustomers);
 
-// GET /api/v1/customers/:id
-router.get('/:id', verifyToken, getCustomerById);
+router.get("/", getAllCustomers);
+router.get("/:id", getCustomerById);
+router.post("/", createCustomer);
+router.put("/:id", updateCustomer);
+router.delete("/:id", deleteCustomer);
 
-// POST /api/v1/customers
-router.post('/', verifyToken, createCustomer);
-
-// PUT /api/v1/customers/:id
-router.put('/:id', verifyToken, updateCustomer);
-
-// DELETE /api/v1/customers/:id
-router.delete('/:id', verifyToken, deleteCustomer);
+// Delete customer contact via customer ID
+router.delete("/:customerId/contacts/:contactId", deleteCustomerContact);
 
 export default router;

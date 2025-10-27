@@ -19,8 +19,6 @@ import {
   Menu as MenuIcon,
   People as PeopleIcon,
   Dashboard as DashboardIcon,
-  TrendingUp as TrendingUpIcon,
-  Assignment as AssignmentIcon,
 } from "@mui/icons-material";
 import { useNavigate, useLocation } from "react-router-dom";
 
@@ -51,16 +49,6 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
       text: "Customers",
       icon: <PeopleIcon />,
       path: "/customers",
-    },
-    {
-      text: "Pipeline",
-      icon: <TrendingUpIcon />,
-      path: "/pipeline",
-    },
-    {
-      text: "Sales Orders",
-      icon: <AssignmentIcon />,
-      path: "/sales-orders",
     },
   ];
 

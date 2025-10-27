@@ -1,5 +1,5 @@
-import prisma from '../utils/prisma';
-import { CustomerStatus } from '@prisma/client';
+import prisma from "../utils/prisma";
+import { CustomerStatus } from "@prisma/client";
 
 export interface CreateCustomerData {
   customer_name: string;
@@ -41,21 +41,21 @@ export interface UpdateCustomerData {
 }
 
 export const getAllCustomersService = async () => {
-  return await prisma.customer.findMany({
+  return await prisma.customers.findMany({
     include: {
-      contacts: true,
+      customer_contacts: true,
     },
     orderBy: {
-      createdAt: 'desc',
+      createdAt: "desc",
     },
   });
 };
 
 export const getCustomerByIdService = async (id: string) => {
-  return await prisma.customer.findUnique({
+  return await prisma.customers.findUnique({
     where: { id },
     include: {
-      contacts: true,
+      customer_contacts: true,
     },
   });
 };
@@ -63,32 +63,34 @@ export const getCustomerByIdService = async (id: string) => {
 export const createCustomerService = async (data: CreateCustomerData) => {
   const { contacts, ...customerData } = data;
 
-  return await prisma.customer.create({
+  return await prisma.customers.create({
     data: {
+      id: crypto.randomUUID(),
       ...customerData,
-      contacts: contacts
+      updatedAt: new Date(),
+      customer_contacts: contacts
         ? {
-            create: contacts,
+            create: contacts.map((contact) => ({
+              id: crypto.randomUUID(),
+              ...contact,
+            })),
           }
         : undefined,
     },
     include: {
-      contacts: true,
+      customer_contacts: true,
     },
   });
 };
 
-export const updateCustomerService = async (
-  id: string,
-  data: UpdateCustomerData
-) => {
+export const updateCustomerService = async (id: string, data: UpdateCustomerData) => {
   try {
     const { contacts, ...customerData } = data;
 
     // Cek apakah customer exists
-    const existingCustomer = await prisma.customer.findUnique({
+    const existingCustomer = await prisma.customers.findUnique({
       where: { id },
-      include: { contacts: true },
+      include: { customer_contacts: true },
     });
 
     if (!existingCustomer) {
@@ -96,27 +98,28 @@ export const updateCustomerService = async (
     }
 
     // Update customer dan contacts dalam transaction
-    return await prisma.$transaction(async tx => {
+    return await prisma.$transaction(async (tx) => {
       // Update customer data
-      const updatedCustomer = await tx.customer.update({
+      const updatedCustomer = await tx.customers.update({
         where: { id },
         data: customerData,
         include: {
-          contacts: true,
+          customer_contacts: true,
         },
       });
 
       // Handle contacts update jika ada
       if (contacts) {
         // Delete existing contacts
-        await tx.customerContact.deleteMany({
+        await tx.customer_contacts.deleteMany({
           where: { customer_id: id },
         });
 
         // Create new contacts
         if (contacts.length > 0) {
-          await tx.customerContact.createMany({
-            data: contacts.map(contact => ({
+          await tx.customer_contacts.createMany({
+            data: contacts.map((contact) => ({
+              id: crypto.randomUUID(),
               customer_id: id,
               name: contact.name,
               position: contact.position,
@@ -128,10 +131,10 @@ export const updateCustomerService = async (
         }
 
         // Fetch updated customer with new contacts
-        return await tx.customer.findUnique({
+        return await tx.customers.findUnique({
           where: { id },
           include: {
-            contacts: true,
+            customer_contacts: true,
           },
         });
       }
@@ -140,7 +143,7 @@ export const updateCustomerService = async (
     });
   } catch (error) {
     // eslint-disable-next-line no-console
-    console.error('Error in updateCustomerService:', error);
+    console.error("Error in updateCustomerService:", error);
     throw error;
   }
 };
@@ -148,7 +151,7 @@ export const updateCustomerService = async (
 export const deleteCustomerService = async (id: string) => {
   try {
     // Cek apakah customer exists
-    const existingCustomer = await prisma.customer.findUnique({
+    const existingCustomer = await prisma.customers.findUnique({
       where: { id },
     });
 
@@ -157,14 +160,14 @@ export const deleteCustomerService = async (id: string) => {
     }
 
     // Delete customer (contacts akan terhapus otomatis karena onDelete: Cascade)
-    await prisma.customer.delete({
+    await prisma.customers.delete({
       where: { id },
     });
 
     return true;
   } catch (error) {
     // eslint-disable-next-line no-console
-    console.error('Error in deleteCustomerService:', error);
+    console.error("Error in deleteCustomerService:", error);
     throw error;
   }
 };
