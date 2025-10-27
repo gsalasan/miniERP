@@ -5,7 +5,11 @@
     "paths": {
       "@/*": ["./src/*"],
       "@shared/*": ["../../shared/*"]
-    }
+    },
+    "jsx": "react-jsx",
+    "lib": ["DOM", "DOM.Iterable", "ESNext"],
+    "module": "ESNext",
+    "types": ["vite/client"]
   },
   "include": [
     "src/**/*",

@@ -28,7 +28,7 @@ const mockUsers: Array<{
   email: string;
   password_hash: string;
   roles: UserRole[];
-  employee_id?: string;
+  // employee_id?: string; // removed
   is_active: boolean;
   created_at: Date;
   updated_at: Date;
@@ -62,8 +62,7 @@ export const findUserByEmail = async (email: string): Promise<any> => {
 export const createUser = async (
   email: string,
   password: string,
-  roles: UserRole[],
-  employee_id?: string
+  roles: UserRole[]
 ): Promise<any> => {
   const prisma = initializePrisma();
   const password_hash = await bcrypt.hash(password, 10);
@@ -75,7 +74,6 @@ export const createUser = async (
           email,
           password_hash,
           roles: roles.length > 0 ? roles : ['EMPLOYEE' as UserRole],
-          employee_id: employee_id || null,
           is_active: true,
         },
       });
@@ -86,7 +84,7 @@ export const createUser = async (
       throw error;
     }
   }
-  
+
   // Fallback to mock data
   console.log(`Fallback: creating user in mock data`);
   const newUser = {
@@ -94,7 +92,6 @@ export const createUser = async (
     email,
     password_hash,
     roles: roles.length > 0 ? roles : ['EMPLOYEE' as UserRole],
-    employee_id: employee_id || undefined,
     is_active: true,
     created_at: new Date(),
     updated_at: new Date(),
