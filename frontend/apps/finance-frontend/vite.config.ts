@@ -10,6 +10,10 @@ export default defineConfig({
         target: 'http://localhost:3001',
         changeOrigin: true,
         secure: false,
+        rewrite: (path) => {
+          console.log('🔄 Proxying:', path, '→ http://localhost:3001' + path);
+          return path;
+        },
       },
     },
   },
