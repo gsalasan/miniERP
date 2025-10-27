@@ -2,6 +2,7 @@
   "name": "finance-frontend",
   "version": "1.0.0",
   "private": true,
+  "type": "module",
   "scripts": {
     "dev": "vite",
     "build": "vite build",
@@ -13,16 +14,17 @@
     "type-check": "tsc --noEmit"
   },
   "dependencies": {
-    "react": "^18.2.0",
-    "react-dom": "^18.2.0",
-    "@mui/material": "^5.15.0",
     "@emotion/react": "^11.11.0",
     "@emotion/styled": "^11.11.0",
-    "zustand": "^4.4.0",
-    "axios": "^1.6.0"
+    "@heroicons/react": "^2.2.0",
+    "@mui/material": "^5.15.0",
+    "axios": "^1.6.0",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "react-router-dom": "^7.9.4",
+    "zustand": "^4.4.0"
   },
   "devDependencies": {
-    "typescript": "^5.2.2",
     "@types/react": "^18.2.21",
     "@types/react-dom": "^18.2.7",
     "vite": "^4.4.9",

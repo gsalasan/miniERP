@@ -1,0 +1,79 @@
+/* Finance Frontend Styles */
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Custom Animations */
+@keyframes slide-in {
+  from {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.animate-slide-in {
+  animation: slide-in 0.3s ease-out;
+}
+
+.animate-fade-in {
+  animation: fade-in 0.2s ease-out;
+}
+
+/* Line clamp utility */
+.line-clamp-2 {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/* Sophisticated Color Palette - Body Background */
+body {
+  background-color: #F4F4F4; /* Light Warm Gray */
+  color: #333333; /* Dark Charcoal */
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #F4F4F4;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #6B6E70;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #4E88BE;
+}
+
+/* Focus styles */
+*:focus-visible {
+  outline: 2px solid #4E88BE;
+  outline-offset: 2px;
+}
+
+/* Table hover effect */
+tbody tr {
+  transition: background-color 0.15s ease;
+}
