@@ -75,19 +75,25 @@ class SearchService {
       // Gabungkan dan format hasil
       const combinedResults: SearchResult[] = [
         ...materials.map(material => this.formatMaterialResult(material)),
-        ...services.map(service => this.formatServiceResult(service))
+        ...services.map(service => this.formatServiceResult(service)),
       ];
 
       // Sort berdasarkan relevance (nama yang mengandung query di awal lebih prioritas)
       combinedResults.sort((a, b) => {
-        const aStartsWith = a.name.toLowerCase().startsWith(query.toLowerCase());
-        const bStartsWith = b.name.toLowerCase().startsWith(query.toLowerCase());
-        
+        const aStartsWith = a.name
+          .toLowerCase()
+          .startsWith(query.toLowerCase());
+        const bStartsWith = b.name
+          .toLowerCase()
+          .startsWith(query.toLowerCase());
+
         if (aStartsWith && !bStartsWith) return -1;
         if (!aStartsWith && bStartsWith) return 1;
-        
+
         // Jika sama-sama starts with atau tidak, sort berdasarkan created_at
-        return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+        return (
+          new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+        );
       });
 
       // Terapkan pagination pada hasil gabungan
@@ -101,14 +107,13 @@ class SearchService {
           page,
           limit,
           total: totalItems,
-          totalPages
+          totalPages,
         },
         summary: {
           materials: totalMaterials,
-          services: totalServices
-        }
+          services: totalServices,
+        },
       };
-
     } catch (error) {
       console.error('Error in searchItems:', error);
       throw new Error('Failed to search items');
@@ -116,12 +121,16 @@ class SearchService {
   }
 
   // Pencarian khusus materials
-  private async searchMaterials(query: string, page: number = 1, limit: number = 10) {
+  private async searchMaterials(
+    query: string,
+    page: number = 1,
+    limit: number = 10
+  ) {
     try {
       // Gunakan raw query untuk pencarian materials yang lebih fleksibel
       const searchQuery = `%${query}%`;
-      
-      const countResult = await prisma.$queryRaw`
+
+      const countResult = (await prisma.$queryRaw`
         SELECT COUNT(*)::int as count 
         FROM "Material" 
         WHERE "item_name" ILIKE ${searchQuery}
@@ -131,11 +140,11 @@ class SearchService {
            OR "sbu" ILIKE ${searchQuery}
            OR "system" ILIKE ${searchQuery}
            OR "subsystem" ILIKE ${searchQuery}
-      ` as any[];
+      `) as any[];
 
       const total = countResult[0]?.count || 0;
 
-      const materials = await prisma.$queryRaw`
+      const materials = (await prisma.$queryRaw`
         SELECT * FROM "Material" 
         WHERE "item_name" ILIKE ${searchQuery}
            OR "brand" ILIKE ${searchQuery}
@@ -152,11 +161,11 @@ class SearchService {
           END,
           "created_at" DESC
         LIMIT ${limit} OFFSET ${(page - 1) * limit}
-      ` as any[];
+      `) as any[];
 
       return {
         data: materials,
-        total
+        total,
       };
     } catch (error) {
       console.error('Error searching materials:', error);
@@ -165,22 +174,26 @@ class SearchService {
   }
 
   // Pencarian khusus services
-  private async searchServices(query: string, page: number = 1, limit: number = 10) {
+  private async searchServices(
+    query: string,
+    page: number = 1,
+    limit: number = 10
+  ) {
     try {
       const searchQuery = `%${query}%`;
-      
-      const countResult = await prisma.$queryRaw`
+
+      const countResult = (await prisma.$queryRaw`
         SELECT COUNT(*)::int as count 
         FROM "Service" 
         WHERE "service_name" ILIKE ${searchQuery}
            OR "service_code" ILIKE ${searchQuery}
            OR "item_type" ILIKE ${searchQuery}
            OR "category" ILIKE ${searchQuery}
-      ` as any[];
+      `) as any[];
 
       const total = countResult[0]?.count || 0;
 
-      const services = await prisma.$queryRaw`
+      const services = (await prisma.$queryRaw`
         SELECT * FROM "Service" 
         WHERE "service_name" ILIKE ${searchQuery}
            OR "service_code" ILIKE ${searchQuery}
@@ -194,11 +207,11 @@ class SearchService {
           END,
           "created_at" DESC
         LIMIT ${limit} OFFSET ${(page - 1) * limit}
-      ` as any[];
+      `) as any[];
 
       return {
         data: services,
-        total
+        total,
       };
     } catch (error) {
       console.error('Error searching services:', error);
@@ -222,7 +235,7 @@ class SearchService {
       status: material.status,
       is_active: material.status === 'Active',
       created_at: material.created_at,
-      updated_at: material.updated_at
+      updated_at: material.updated_at,
     };
   }
 
@@ -239,7 +252,7 @@ class SearchService {
       status: service.is_active ? 'Active' : 'Inactive',
       is_active: service.is_active,
       created_at: service.created_at,
-      updated_at: service.updated_at
+      updated_at: service.updated_at,
     };
   }
 

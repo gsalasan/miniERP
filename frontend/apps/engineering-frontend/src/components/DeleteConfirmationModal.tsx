@@ -16,13 +16,13 @@ import {
   Close as CloseIcon,
   Delete as DeleteIcon,
 } from "@mui/icons-material";
-import { Material } from "../types/material";
 
 interface DeleteConfirmationModalProps {
   open: boolean;
   onClose: () => void;
   onConfirm: () => void;
-  material: Material | null;
+  title?: string;
+  message?: string;
   loading?: boolean;
   error?: string | null;
 }
@@ -31,12 +31,11 @@ const DeleteConfirmationModal: React.FC<DeleteConfirmationModalProps> = ({
   open,
   onClose,
   onConfirm,
-  material,
+  title = "Delete Confirmation",
+  message = "Are you sure you want to delete this item? This action cannot be undone.",
   loading = false,
   error = null,
 }) => {
-  if (!material) return null;
-
   return (
     <Dialog open={open} onClose={!loading ? onClose : undefined} maxWidth="sm" fullWidth>
       <DialogTitle sx={{ pb: 1 }}>
@@ -47,7 +46,7 @@ const DeleteConfirmationModal: React.FC<DeleteConfirmationModalProps> = ({
             sx={{ display: "flex", alignItems: "center", color: "error.main" }}
           >
             <WarningIcon sx={{ mr: 1 }} />
-            Delete Material
+            {title}
           </Typography>
           <IconButton onClick={onClose} disabled={loading}>
             <CloseIcon />
@@ -64,61 +63,12 @@ const DeleteConfirmationModal: React.FC<DeleteConfirmationModalProps> = ({
 
         <Alert severity="warning" sx={{ mb: 3 }}>
           <Typography variant="body2">
-            <strong>Warning:</strong> This action cannot be undone. The material data will be
-            permanently deleted from the system.
+            <strong>Warning:</strong> This action cannot be undone. The data will be permanently
+            deleted from the system.
           </Typography>
         </Alert>
 
-        <Typography variant="body1" gutterBottom>
-          Are you sure you want to delete the following material?
-        </Typography>
-
-        <Box
-          sx={{
-            mt: 2,
-            p: 2,
-            border: "1px solid",
-            borderColor: "grey.300",
-            borderRadius: 1,
-            bgcolor: "grey.50",
-          }}
-        >
-          <Typography variant="subtitle1" fontWeight="bold" gutterBottom>
-            {material.item_name}
-          </Typography>
-
-          <Box sx={{ display: "flex", flexDirection: "column", gap: 0.5 }}>
-            {material.brand && (
-              <Typography variant="body2" color="text.secondary">
-                <strong>Brand:</strong> {material.brand}
-              </Typography>
-            )}
-
-            {material.owner_pn && (
-              <Typography variant="body2" color="text.secondary">
-                <strong>Part Number:</strong> {material.owner_pn}
-              </Typography>
-            )}
-
-            {material.vendor && (
-              <Typography variant="body2" color="text.secondary">
-                <strong>Vendor:</strong> {material.vendor}
-              </Typography>
-            )}
-
-            <Typography variant="body2" color="text.secondary">
-              <strong>Status:</strong> {material.status || "Unknown"}
-            </Typography>
-
-            <Typography variant="body2" color="text.secondary">
-              <strong>Location:</strong> {material.location || "Unknown"}
-            </Typography>
-          </Box>
-        </Box>
-
-        <Typography variant="body2" color="text.secondary" sx={{ mt: 2 }}>
-          Material ID: <code>{material.id}</code>
-        </Typography>
+        <Typography variant="body1">{message}</Typography>
       </DialogContent>
 
       <DialogActions sx={{ p: 3 }}>
@@ -132,7 +82,7 @@ const DeleteConfirmationModal: React.FC<DeleteConfirmationModalProps> = ({
           color="error"
           startIcon={loading ? <CircularProgress size={20} /> : <DeleteIcon />}
         >
-          {loading ? "Deleting..." : "Delete Material"}
+          {loading ? "Deleting..." : "Delete"}
         </Button>
       </DialogActions>
     </Dialog>

@@ -40,14 +40,17 @@ import {
 } from "@mui/icons-material";
 import { materialsService } from "../api/materialsApi";
 import { Material, MaterialsQueryParams, MaterialStatus, FilterOptions } from "../types/material";
-import MaterialsStatsWidget from "./MaterialsStatsWidget";
 import MaterialFormModal from "./MaterialFormModal";
 import MaterialDetailModal from "./MaterialDetailModal";
 import DeleteConfirmationModal from "./DeleteConfirmationModal";
 import MaterialsTableSkeleton from "./MaterialsTableSkeleton";
 import { useNotification } from "../contexts/NotificationContext";
 
-const MaterialsList: React.FC = () => {
+interface MaterialsListProps {
+  globalSearch?: string;
+}
+
+const MaterialsList: React.FC<MaterialsListProps> = ({ globalSearch }) => {
   const [materials, setMaterials] = useState<Material[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -93,10 +96,13 @@ const MaterialsList: React.FC = () => {
     setError(null);
 
     try {
+      // Prioritize globalSearch over local searchTerm
+      const searchQuery = globalSearch || searchTerm;
+      
       const queryParams: MaterialsQueryParams = {
         page: page + 1, // API uses 1-based pagination
         limit: rowsPerPage,
-        search: searchTerm || undefined,
+        search: searchQuery || undefined,
         ...filters,
       };
 
@@ -124,6 +130,14 @@ const MaterialsList: React.FC = () => {
   useEffect(() => {
     fetchMaterials();
   }, [page, rowsPerPage, filters]);
+
+  // Handle global search from parent component
+  useEffect(() => {
+    if (globalSearch !== undefined) {
+      setPage(0);
+      fetchMaterials();
+    }
+  }, [globalSearch]);
 
   // Debounced search
   useEffect(() => {
@@ -318,113 +332,6 @@ const MaterialsList: React.FC = () => {
 
   return (
     <Box sx={{ p: 3 }}>
-      {/* Header */}
-      <Box
-        sx={{
-          mb: 4,
-          p: 3,
-          backgroundColor: "background.paper",
-          borderRadius: 3,
-          boxShadow: "0 1px 3px 0 rgb(0 0 0 / 0.1)",
-          border: "1px solid",
-          borderColor: "grey.200",
-        }}
-      >
-        <Box
-          sx={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", mb: 2 }}
-        >
-          <Box>
-            <Typography
-              variant="h4"
-              component="h1"
-              sx={{ mb: 1, fontWeight: 700, color: "text.primary" }}
-            >
-              Materials Management
-            </Typography>
-            <Typography variant="body1" color="text.secondary" sx={{ fontSize: "1.1rem" }}>
-              Kelola dan monitor data materials engineering dengan mudah
-            </Typography>
-          </Box>
-          <Box sx={{ display: "flex", gap: 2 }}>
-            <Button
-              variant="outlined"
-              startIcon={<ExportIcon />}
-              onClick={handleExport}
-              disabled={materials.length === 0}
-              sx={{
-                minWidth: 140,
-                height: 44,
-                borderColor: "primary.main",
-                color: "primary.main",
-                "&:hover": {
-                  borderColor: "primary.dark",
-                  backgroundColor: "primary.50",
-                },
-              }}
-            >
-              Export CSV
-            </Button>
-            <Button
-              variant="contained"
-              startIcon={<AddIcon />}
-              onClick={handleAddMaterial}
-              sx={{
-                minWidth: 150,
-                height: 44,
-                background: "linear-gradient(135deg, #2563eb 0%, #3b82f6 100%)",
-                boxShadow: "0 4px 14px 0 rgba(37, 99, 235, 0.3)",
-                "&:hover": {
-                  background: "linear-gradient(135deg, #1d4ed8 0%, #2563eb 100%)",
-                  boxShadow: "0 6px 20px 0 rgba(37, 99, 235, 0.4)",
-                },
-              }}
-            >
-              Add Material
-            </Button>
-          </Box>
-        </Box>
-
-        {/* Quick Stats */}
-        <Box
-          sx={{
-            display: "flex",
-            gap: 3,
-            mt: 3,
-            pt: 3,
-            borderTop: "1px solid",
-            borderColor: "grey.100",
-          }}
-        >
-          <Box sx={{ textAlign: "center" }}>
-            <Typography variant="h5" sx={{ fontWeight: 700, color: "primary.main" }}>
-              {totalCount}
-            </Typography>
-            <Typography variant="body2" color="text.secondary">
-              Total Materials
-            </Typography>
-          </Box>
-          <Box sx={{ textAlign: "center" }}>
-            <Typography variant="h5" sx={{ fontWeight: 700, color: "success.main" }}>
-              {materials.filter((m) => m.status === "Active").length}
-            </Typography>
-            <Typography variant="body2" color="text.secondary">
-              Active
-            </Typography>
-          </Box>
-          <Box sx={{ textAlign: "center" }}>
-            <Typography variant="h5" sx={{ fontWeight: 700, color: "warning.main" }}>
-              {materials.filter((m) => m.location === "Import").length}
-            </Typography>
-            <Typography variant="body2" color="text.secondary">
-              Import Items
-            </Typography>
-          </Box>
-        </Box>
-      </Box>
-
-      {/* Statistics */}
-      <MaterialsStatsWidget />
-
       {/* Filters and Search */}
       <Card
         sx={{
@@ -436,91 +343,129 @@ const MaterialsList: React.FC = () => {
         }}
       >
         <CardContent sx={{ p: 3 }}>
-          <Box sx={{ mb: 3 }}>
-            <Typography variant="h6" sx={{ mb: 2, fontWeight: 600, color: "text.primary" }}>
-              Search & Filters
-            </Typography>
+          <Box sx={{ 
+            display: "flex", 
+            gap: 3, 
+            alignItems: "center", 
+            flexWrap: "wrap",
+            justifyContent: "space-between"
+          }}>
+            {/* Search Box */}
+            <TextField
+              placeholder="Cari materials berdasarkan nama, brand, vendor..."
+              value={searchTerm}
+              onChange={handleSearchChange}
+              InputProps={{
+                startAdornment: <SearchIcon sx={{ color: "action.active", mr: 1.5 }} />,
+              }}
+              sx={{
+                flexGrow: 1,
+                minWidth: 300,
+                "& .MuiOutlinedInput-root": {
+                  backgroundColor: "background.paper",
+                  "& input": {
+                    py: 1.5,
+                    fontSize: "1rem",
+                  },
+                },
+              }}
+            />
 
-            <Grid container spacing={3} alignItems="center">
-              <Grid item xs={12} md={5}>
-                <TextField
-                  fullWidth
-                  placeholder="Cari materials berdasarkan nama, brand, vendor..."
-                  value={searchTerm}
-                  onChange={handleSearchChange}
-                  InputProps={{
-                    startAdornment: <SearchIcon sx={{ color: "action.active", mr: 1.5 }} />,
-                  }}
-                  sx={{
-                    "& .MuiOutlinedInput-root": {
-                      backgroundColor: "background.paper",
-                      "& input": {
-                        py: 1.5,
-                        fontSize: "1rem",
-                      },
-                    },
-                  }}
-                />
-              </Grid>
+            {/* Filter Controls */}
+            <Box sx={{ display: "flex", gap: 2, alignItems: "center", flexWrap: "wrap" }}>
+              <Button
+                variant={showAdvancedFilters ? "contained" : "outlined"}
+                startIcon={<FilterIcon />}
+                onClick={() => setShowAdvancedFilters(!showAdvancedFilters)}
+                size="medium"
+                sx={{
+                  minWidth: 120,
+                  position: "relative",
+                  "&::after":
+                    activeFiltersCount > 0
+                      ? {
+                          content: `"${activeFiltersCount}"`,
+                          position: "absolute",
+                          top: -8,
+                          right: -8,
+                          backgroundColor: "error.main",
+                          color: "white",
+                          borderRadius: "50%",
+                          minWidth: 20,
+                          height: 20,
+                          fontSize: "0.75rem",
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          fontWeight: 600,
+                        }
+                      : {},
+                }}
+              >
+                Filters
+                {showAdvancedFilters ? <ExpandLessIcon /> : <ExpandMoreIcon />}
+              </Button>
 
-              <Grid item xs={12} md={7}>
-                <Box sx={{ display: "flex", gap: 2, alignItems: "center", flexWrap: "wrap" }}>
-                  <Button
-                    variant={showAdvancedFilters ? "contained" : "outlined"}
-                    startIcon={<FilterIcon />}
-                    onClick={() => setShowAdvancedFilters(!showAdvancedFilters)}
-                    size="medium"
-                    sx={{
-                      minWidth: 120,
-                      position: "relative",
-                      "&::after":
-                        activeFiltersCount > 0
-                          ? {
-                              content: `"${activeFiltersCount}"`,
-                              position: "absolute",
-                              top: -8,
-                              right: -8,
-                              backgroundColor: "error.main",
-                              color: "white",
-                              borderRadius: "50%",
-                              minWidth: 20,
-                              height: 20,
-                              fontSize: "0.75rem",
-                              display: "flex",
-                              alignItems: "center",
-                              justifyContent: "center",
-                              fontWeight: 600,
-                            }
-                          : {},
-                    }}
-                  >
-                    Filters
-                    {showAdvancedFilters ? <ExpandLessIcon /> : <ExpandMoreIcon />}
-                  </Button>
+              {activeFiltersCount > 0 && (
+                <Button
+                  variant="text"
+                  startIcon={<ClearIcon />}
+                  onClick={clearAllFilters}
+                  color="error"
+                  size="small"
+                >
+                  Clear All ({activeFiltersCount})
+                </Button>
+              )}
 
-                  {activeFiltersCount > 0 && (
-                    <Button
-                      variant="text"
-                      startIcon={<ClearIcon />}
-                      onClick={clearAllFilters}
-                      color="error"
-                      size="small"
-                    >
-                      Clear All ({activeFiltersCount})
-                    </Button>
-                  )}
+              <Button
+                variant="text"
+                startIcon={<RefreshIcon />}
+                onClick={handleRefresh}
+                size="small"
+              >
+                Refresh
+              </Button>
+            </Box>
 
-                  <Button
-                    variant="text"
-                    startIcon={<RefreshIcon />}
-                    onClick={handleRefresh}
-                    size="small"
-                  >
-                    Refresh
-                  </Button>
-                </Box>
-              </Grid>
-            </Grid>
+            {/* Action Buttons */}
+            <Box sx={{ display: "flex", gap: 2 }}>
+              <Button
+                variant="outlined"
+                startIcon={<ExportIcon />}
+                onClick={handleExport}
+                disabled={materials.length === 0}
+                size="medium"
+                sx={{
+                  minWidth: 100,
+                  borderColor: "primary.main",
+                  color: "primary.main",
+                  "&:hover": {
+                    borderColor: "primary.dark",
+                    backgroundColor: "primary.50",
+                  },
+                }}
+              >
+                Export
+              </Button>
+              <Button
+                variant="contained"
+                startIcon={<AddIcon />}
+                onClick={handleAddMaterial}
+                size="medium"
+                sx={{
+                  minWidth: 100,
+                  background: "linear-gradient(135deg, #2563eb 0%, #3b82f6 100%)",
+                  boxShadow: "0 4px 14px 0 rgba(37, 99, 235, 0.3)",
+                  "&:hover": {
+                    background: "linear-gradient(135deg, #1d4ed8 0%, #2563eb 100%)",
+                    boxShadow: "0 6px 20px 0 rgba(37, 99, 235, 0.4)",
+                  },
+                }}
+              >
+                Add
+              </Button>
+            </Box>
           </Box>
 
           {/* Advanced Filters */}

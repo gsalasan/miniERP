@@ -5,6 +5,7 @@ import { Layout } from "./layouts/Layout";
 import { DashboardPage } from "./pages/DashboardPage";
 import { ItemsPage } from "./pages/items";
 import { MaterialsPage } from "./pages/materials";
+import { ServicesPage } from "./pages/services";
 import { NotificationProvider } from "./contexts/NotificationContext";
 
 // Create modern MUI theme
@@ -290,6 +291,7 @@ function App() {
               <Route path="/dashboard" element={<DashboardPage />} />
               <Route path="/items" element={<ItemsPage />} />
               <Route path="/items/materials" element={<MaterialsPage />} />
+              <Route path="/items/services" element={<ServicesPage />} />
               {/* Add more routes as needed */}
             </Routes>
           </Layout>

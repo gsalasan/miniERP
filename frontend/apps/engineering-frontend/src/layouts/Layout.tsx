@@ -17,10 +17,10 @@ import {
 import {
   Menu as MenuIcon,
   Dashboard as DashboardIcon,
-  Inventory as InventoryIcon,
   Engineering as EngineeringIcon,
   Home as HomeIcon,
   Logout as LogoutIcon,
+  Build as BuildIcon,
 } from "@mui/icons-material";
 import { useNavigate, useLocation } from "react-router-dom";
 
@@ -60,16 +60,22 @@ const LogoContainer: React.FC = () => {
   );
 };
 
-const menuItems = [
+interface MenuItem {
+  text: string;
+  icon: React.ReactNode;
+  path: string;
+}
+
+const menuItems: MenuItem[] = [
   {
     text: "Dashboard",
     icon: <DashboardIcon />,
-    path: "/",
+    path: "/dashboard",
   },
   {
     text: "Items",
-    icon: <InventoryIcon />,
-    path: "/items/materials",
+    icon: <BuildIcon />,
+    path: "/items",
   },
   {
     text: "Engineering",
@@ -94,6 +100,16 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
     if (isMobile) {
       setMobileOpen(false);
     }
+  };
+
+  const isItemSelected = (item: MenuItem): boolean => {
+    if (item.path === "/dashboard" && location.pathname === "/") {
+      return true;
+    }
+    if (item.path === "/items") {
+      return location.pathname.startsWith("/items");
+    }
+    return location.pathname === item.path;
   };
 
   const drawer = (
@@ -122,7 +138,7 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
           {menuItems.map((item) => (
             <ListItem key={item.text} disablePadding sx={{ mb: 1 }}>
               <ListItemButton
-                selected={location.pathname === item.path}
+                selected={isItemSelected(item)}
                 onClick={() => handleMenuClick(item.path)}
                 sx={{
                   borderRadius: 3,
@@ -140,7 +156,7 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
                 <ListItemIcon
                   sx={{
                     minWidth: 36,
-                    color: location.pathname === item.path ? "#1976d2" : "#6c757d",
+                    color: isItemSelected(item) ? "#1976d2" : "#6c757d",
                   }}
                 >
                   {item.icon}
@@ -149,8 +165,8 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
                   primary={item.text}
                   primaryTypographyProps={{
                     fontSize: "0.95rem",
-                    fontWeight: location.pathname === item.path ? 600 : 400,
-                    color: location.pathname === item.path ? "#1976d2" : "#495057",
+                    fontWeight: isItemSelected(item) ? 600 : 400,
+                    color: isItemSelected(item) ? "#1976d2" : "#495057",
                   }}
                 />
               </ListItemButton>

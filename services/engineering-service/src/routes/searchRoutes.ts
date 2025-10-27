@@ -8,16 +8,8 @@ const router = Router();
 router.get('/health/search', searchController.healthCheck);
 
 // Search endpoints (protected with authentication)
-router.get(
-  '/api/v1/search/items',
-  verifyToken,
-  searchController.searchItems
-);
+router.get('/api/v1/search/items', verifyToken, searchController.searchItems);
 
-router.get(
-  '/api/v1/search/quick',
-  verifyToken,
-  searchController.quickSearch
-);
+router.get('/api/v1/search/quick', verifyToken, searchController.quickSearch);
 
 export default router;

@@ -341,7 +341,7 @@ class ServiceService {
     }
   }
 
-  // Delete service by ID (soft delete by setting is_active to false)
+  // Delete service by ID (hard delete)
   async deleteService(id: string): Promise<Service> {
     try {
       const existingServices = (await prisma.$queryRaw`
@@ -353,10 +353,7 @@ class ServiceService {
       }
 
       const deletedServices = (await prisma.$queryRaw`
-        UPDATE "Service" 
-        SET "is_active" = false, "updated_at" = ${new Date()}
-        WHERE "id" = ${id}::uuid
-        RETURNING *
+        DELETE FROM "Service" WHERE "id" = ${id}::uuid RETURNING *
       `) as Service[];
 
       return deletedServices[0];

@@ -63,7 +63,7 @@ class SearchController {
         q.trim(),
         pageNum,
         limitNum,
-        type as 'material' | 'service' | 'both',
+        type as 'material' | 'service' | 'both'
       );
 
       // Response sukses
@@ -87,8 +87,8 @@ class SearchController {
         message: 'Internal server error during search',
         data: null,
         error:
-          process.env.NODE_ENV === 'development' 
-            ? (error as Error).message 
+          process.env.NODE_ENV === 'development'
+            ? (error as Error).message
             : undefined,
       });
     }
@@ -137,8 +137,8 @@ class SearchController {
         message: 'Internal server error during quick search',
         data: [],
         error:
-          process.env.NODE_ENV === 'development' 
-            ? (error as Error).message 
+          process.env.NODE_ENV === 'development'
+            ? (error as Error).message
             : undefined,
       });
     }
@@ -159,8 +159,8 @@ class SearchController {
         success: false,
         message: 'Search service health check failed',
         error:
-          process.env.NODE_ENV === 'development' 
-            ? (error as Error).message 
+          process.env.NODE_ENV === 'development'
+            ? (error as Error).message
             : undefined,
       });
     }
