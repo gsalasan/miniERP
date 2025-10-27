@@ -57,37 +57,38 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
       {/* Logo Section */}
       <Box
         sx={{
-          p: 0,
+          p: 2,
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
-          height: "140px",
+          height: "120px",
           width: "100%",
+          borderBottom: "1px solid #E0E0E0",
+          mb: 1,
         }}
       >
         <img
-          src="/logo-unais.png"
+          src="/unais.png"
           alt="UNAIS Logo"
           style={{
-            height: "100%",
-            width: "100%",
+            height: "60px",
+            maxWidth: "180px",
             objectFit: "contain",
-            padding: "4px",
           }}
         />
       </Box>
-      <List sx={{ px: 1, py: 2 }}>
+      <List sx={{ px: 2, py: 1 }}>
         {menuItems.map((item) => {
           const isActive = location.pathname === item.path;
           return (
-            <ListItem key={item.text} disablePadding sx={{ mb: 0.5 }}>
+            <ListItem key={item.text} disablePadding sx={{ mb: 1 }}>
               <ListItemButton
                 onClick={() => navigate(item.path)}
                 sx={{
                   borderRadius: 2,
-                  mx: 1,
                   backgroundColor: isActive ? "#06103A" : "transparent",
                   color: isActive ? "white" : "#333333",
+                  py: 1.5,
                   "&:hover": {
                     backgroundColor: isActive ? "#4E88BE" : "rgba(6, 16, 58, 0.08)",
                   },

@@ -18,11 +18,11 @@ app.use(express.urlencoded({ extended: true }));
 
 // Health check endpoint
 app.get('/health', (req, res) => {
-  res.json({ 
-    ok: true, 
+  res.json({
+    ok: true,
     service: 'HR Service',
     timestamp: new Date().toISOString(),
-    version: '1.0.0'
+    version: '1.0.0',
   });
 });
 
@@ -33,21 +33,21 @@ app.get('/api/v1/test-hr-models', async (req, res) => {
     const employeeCount = await prisma.hr_employees.count();
     const attendanceCount = await prisma.hr_attendances.count();
     const leaveCount = await prisma.hr_leave_requests.count();
-    
+
     res.json({
       success: true,
       message: 'HR models are working correctly',
       data: {
         hr_employees: employeeCount,
         hr_attendances: attendanceCount,
-        hr_leave_requests: leaveCount
-      }
+        hr_leave_requests: leaveCount,
+      },
     });
   } catch (error) {
     res.status(500).json({
       success: false,
       message: 'Error testing HR models',
-      error: error instanceof Error ? error.message : 'Unknown error'
+      error: error instanceof Error ? error.message : 'Unknown error',
     });
   }
 });
@@ -63,18 +63,28 @@ app.use('*', (req, res) => {
   res.status(404).json({
     success: false,
     message: 'Route not found',
-    path: req.originalUrl
+    path: req.originalUrl,
   });
 });
 
 // Error handler
-app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
-  console.error('Error:', err);
-  res.status(500).json({
-    success: false,
-    message: 'Internal server error',
-    error: process.env.NODE_ENV === 'development' ? err.message : 'Something went wrong'
-  });
-});
+app.use(
+  (
+    err: any,
+    req: express.Request,
+    res: express.Response,
+    next: express.NextFunction
+  ) => {
+    console.error('Error:', err);
+    res.status(500).json({
+      success: false,
+      message: 'Internal server error',
+      error:
+        process.env.NODE_ENV === 'development'
+          ? err.message
+          : 'Something went wrong',
+    });
+  }
+);
 
 export default app;
