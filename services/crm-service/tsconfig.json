@@ -1,5 +1,8 @@
 {
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+>>>>>>> main
   "extends": "../../tsconfig.json",
   "compilerOptions": {
     "baseUrl": ".",
@@ -9,6 +12,7 @@
     "outDir": "./dist",
     "rootDir": "./src"
   },
+<<<<<<< HEAD
   "include": [
     "src/**/*"
   ],
@@ -31,3 +35,8 @@
   }
 >>>>>>> main
 }
+=======
+  "include": ["src/**/*"],
+  "exclude": ["node_modules", "dist", "build", "coverage"]
+}
+>>>>>>> main

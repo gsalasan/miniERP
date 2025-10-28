@@ -1,8 +1,12 @@
 import { PrismaClient } from '@prisma/client';
 
+<<<<<<< HEAD
 
 declare global {
   
+=======
+declare global {
+>>>>>>> main
   var __prisma__: PrismaClient | undefined;
 }
 
