@@ -1,7 +1,36 @@
 .env
 node_modules
 bun.lock
-services/identity-service/node_modules/send/node_modules
-services/identity-service/node_modules
-frontend/node_modules
-frontend/apps/main-frontend/node_modules
+# Environment files
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Dependencies
+node_modules/
+*/node_modules/
+*/*/node_modules/
+*/*/*/node_modules/
+
+# Lock files
+bun.lock
+package-lock.json
+yarn.lock
+
+# Build outputs
+dist/
+build/
+.next/
+out/
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS files
+.DS_Store
+Thumbs.db
