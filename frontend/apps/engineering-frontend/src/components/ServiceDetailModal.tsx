@@ -12,7 +12,7 @@ import {
   Divider,
 } from "@mui/material";
 import { Close as CloseIcon } from "@mui/icons-material";
-import { Service, ServiceStatus, ServiceType } from "../types/service";
+import { Service } from "../types/service";
 
 interface ServiceDetailModalProps {
   open: boolean;
@@ -78,11 +78,7 @@ const ServiceDetailModal: React.FC<ServiceDetailModalProps> = ({ open, onClose, 
       <DialogTitle>
         <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
           <Typography variant="h6">Service Details</Typography>
-          <Button
-            onClick={onClose}
-            sx={{ minWidth: "auto", p: 1 }}
-            color="inherit"
-          >
+          <Button onClick={onClose} sx={{ minWidth: "auto", p: 1 }} color="inherit">
             <CloseIcon />
           </Button>
         </Box>
@@ -102,13 +98,7 @@ const ServiceDetailModal: React.FC<ServiceDetailModalProps> = ({ open, onClose, 
             <DetailRow label="Category" value={service.category || "-"} />
             <DetailRow
               label="Unit"
-              value={
-                <Chip
-                  label={service.unit}
-                  color={getUnitColor(service.unit)}
-                  size="small"
-                />
-              }
+              value={<Chip label={service.unit} color={getUnitColor(service.unit)} size="small" />}
             />
             <DetailRow
               label="Status"
@@ -139,10 +129,11 @@ const ServiceDetailModal: React.FC<ServiceDetailModalProps> = ({ open, onClose, 
               label="Freelance Cost per Hour"
               value={formatCurrency(service.freelance_cost_per_hour)}
             />
-            <DetailRow label="Default Duration" value={service.default_duration ? `${service.default_duration} ${service.unit}` : "-"} />
+            <DetailRow
+              label="Default Duration"
+              value={service.default_duration ? `${service.default_duration} ${service.unit}` : "-"}
+            />
           </Grid>
-
-
 
           <Grid item xs={12}>
             <Divider />
@@ -153,14 +144,8 @@ const ServiceDetailModal: React.FC<ServiceDetailModalProps> = ({ open, onClose, 
             <Typography variant="h6" sx={{ mb: 2, color: "primary.main" }}>
               Timestamps
             </Typography>
-            <DetailRow
-              label="Created At"
-              value={formatDate(service.created_at)}
-            />
-            <DetailRow
-              label="Updated At"
-              value={formatDate(service.updated_at)}
-            />
+            <DetailRow label="Created At" value={formatDate(service.created_at)} />
+            <DetailRow label="Updated At" value={formatDate(service.updated_at)} />
           </Grid>
         </Grid>
       </DialogContent>
