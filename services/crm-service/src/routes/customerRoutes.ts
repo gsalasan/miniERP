@@ -1,4 +1,13 @@
 import { Router } from "express";
+<<<<<<< HEAD
+import { verifyToken } from "../middlewares/authMiddleware";
+import { getAllCustomers } from "../controllers/customerController";
+
+const router = Router();
+
+// GET /api/v1/customers
+router.get("/", verifyToken, getAllCustomers);
+=======
 import {
   getAllCustomers,
   getCustomerById,
@@ -21,5 +30,6 @@ router.delete("/:id", deleteCustomer);
 
 // Delete customer contact via customer ID
 router.delete("/:customerId/contacts/:contactId", deleteCustomerContact);
+>>>>>>> main
 
 export default router;

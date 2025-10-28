@@ -1,4 +1,14 @@
 import express = require('express');
+<<<<<<< HEAD
+import materialsRoutes from './routes/materialsRoutes';
+
+const app = express();
+app.use(express.json());
+
+// mount engineering-related routes (materials)
+app.use('/', materialsRoutes);
+
+=======
 import cors from 'cors';
 import materialsRoutes from './routes/materialsRoutes';
 import serviceRoutes from './routes/serviceRoutes';
@@ -31,4 +41,5 @@ app.use('/', materialsRoutes);
 // mount engineering-related routes (services)
 app.use('/', serviceRoutes);
 
+>>>>>>> main
 export default app;

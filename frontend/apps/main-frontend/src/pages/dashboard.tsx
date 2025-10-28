@@ -7,6 +7,10 @@ interface User {
   employee_id?: string;
 }
 
+<<<<<<< HEAD
+const Dashboard: React.FC = () => {
+  const [user, setUser] = useState<User | null>(null);
+=======
 interface Module {
   id: string;
   name: string;
@@ -112,6 +116,7 @@ const Dashboard: React.FC = () => {
       color: "#6B7280",
     },
   ];
+>>>>>>> main
 
   useEffect(() => {
     // Ambil token dari localStorage
@@ -134,7 +139,12 @@ const Dashboard: React.FC = () => {
           window.location.href = "/";
         }
       })
+<<<<<<< HEAD
+      .catch((error) => {
+        console.error("Error fetching user data:", error);
+=======
       .catch(() => {
+>>>>>>> main
         window.location.href = "/";
       });
   }, []);
@@ -170,6 +180,18 @@ const Dashboard: React.FC = () => {
   };
 
   return (
+<<<<<<< HEAD
+    <div style={{ padding: 32 }}>
+      <h2>Berhasil Login!</h2>
+      {user ? (
+        <div>
+          <p>
+            Selamat datang, <b>{user.email}</b>
+          </p>
+          <p>
+            Role: <b>{user.roles && user.roles.length > 0 ? user.roles.join(', ') : 'Tidak ada role'}</b>
+          </p>
+=======
     <div
       style={{
         minHeight: "100vh",
@@ -309,6 +331,7 @@ const Dashboard: React.FC = () => {
               Logout
             </button>
           </div>
+>>>>>>> main
         </div>
 
         {/* Modules Grid */}

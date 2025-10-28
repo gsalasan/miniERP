@@ -18,11 +18,19 @@ app.use(express.urlencoded({ extended: true }));
 
 // Health check endpoint
 app.get('/health', (req, res) => {
+<<<<<<< HEAD
+  res.json({ 
+    ok: true, 
+    service: 'HR Service',
+    timestamp: new Date().toISOString(),
+    version: '1.0.0'
+=======
   res.json({
     ok: true,
     service: 'HR Service',
     timestamp: new Date().toISOString(),
     version: '1.0.0',
+>>>>>>> main
   });
 });
 
@@ -33,21 +41,34 @@ app.get('/api/v1/test-hr-models', async (req, res) => {
     const employeeCount = await prisma.hr_employees.count();
     const attendanceCount = await prisma.hr_attendances.count();
     const leaveCount = await prisma.hr_leave_requests.count();
+<<<<<<< HEAD
+    
+=======
 
+>>>>>>> main
     res.json({
       success: true,
       message: 'HR models are working correctly',
       data: {
         hr_employees: employeeCount,
         hr_attendances: attendanceCount,
+<<<<<<< HEAD
+        hr_leave_requests: leaveCount
+      }
+=======
         hr_leave_requests: leaveCount,
       },
+>>>>>>> main
     });
   } catch (error) {
     res.status(500).json({
       success: false,
       message: 'Error testing HR models',
+<<<<<<< HEAD
+      error: error instanceof Error ? error.message : 'Unknown error'
+=======
       error: error instanceof Error ? error.message : 'Unknown error',
+>>>>>>> main
     });
   }
 });
@@ -63,11 +84,25 @@ app.use('*', (req, res) => {
   res.status(404).json({
     success: false,
     message: 'Route not found',
+<<<<<<< HEAD
+    path: req.originalUrl
+=======
     path: req.originalUrl,
+>>>>>>> main
   });
 });
 
 // Error handler
+<<<<<<< HEAD
+app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
+  console.error('Error:', err);
+  res.status(500).json({
+    success: false,
+    message: 'Internal server error',
+    error: process.env.NODE_ENV === 'development' ? err.message : 'Something went wrong'
+  });
+});
+=======
 app.use(
   (
     err: any,
@@ -86,5 +121,6 @@ app.use(
     });
   }
 );
+>>>>>>> main
 
 export default app;

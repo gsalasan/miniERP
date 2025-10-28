@@ -1,3 +1,7 @@
+<<<<<<< HEAD
+import React from "react";
+import { CssBaseline, Container, Typography } from "@mui/material";
+=======
 import React, { useEffect, useState } from "react";
 import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
 import { CssBaseline, ThemeProvider, createTheme } from "@mui/material";
@@ -213,6 +217,7 @@ const theme = createTheme({
     },
   },
 });
+>>>>>>> main
 
 function App() {
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
@@ -283,6 +288,13 @@ function App() {
   return (
     <ThemeProvider theme={theme}>
       <CssBaseline />
+<<<<<<< HEAD
+      <Typography variant="h3" align="center" gutterBottom>
+        Engineering Frontend
+      </Typography>
+      <Typography align="center">Modul Engineering miniERP</Typography>
+    </Container>
+=======
       <NotificationProvider>
         <Router>
           <Layout>
@@ -298,6 +310,7 @@ function App() {
         </Router>
       </NotificationProvider>
     </ThemeProvider>
+>>>>>>> main
   );
 }
 
