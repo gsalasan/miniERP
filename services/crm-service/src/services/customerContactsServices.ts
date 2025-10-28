@@ -1,4 +1,4 @@
-import prisma from '../utils/prisma';
+import prisma from "../utils/prisma";
 
 export interface CreateCustomerContactData {
   customer_id: string;
@@ -18,9 +18,9 @@ export interface UpdateCustomerContactData {
 }
 
 export const getAllCustomerContactsService = async () => {
-  return await prisma.customerContact.findMany({
+  return await prisma.customer_contacts.findMany({
     include: {
-      customer: {
+      customers: {
         select: {
           id: true,
           customer_name: true,
@@ -31,16 +31,16 @@ export const getAllCustomerContactsService = async () => {
       },
     },
     orderBy: {
-      name: 'asc',
+      name: "asc",
     },
   });
 };
 
 export const getCustomerContactByIdService = async (id: string) => {
-  return await prisma.customerContact.findUnique({
+  return await prisma.customer_contacts.findUnique({
     where: { id },
     include: {
-      customer: {
+      customers: {
         select: {
           id: true,
           customer_name: true,
@@ -53,13 +53,11 @@ export const getCustomerContactByIdService = async (id: string) => {
   });
 };
 
-export const getCustomerContactsByCustomerIdService = async (
-  customerId: string
-) => {
-  return await prisma.customerContact.findMany({
+export const getCustomerContactsByCustomerIdService = async (customerId: string) => {
+  return await prisma.customer_contacts.findMany({
     where: { customer_id: customerId },
     include: {
-      customer: {
+      customers: {
         select: {
           id: true,
           customer_name: true,
@@ -70,25 +68,24 @@ export const getCustomerContactsByCustomerIdService = async (
       },
     },
     orderBy: {
-      name: 'asc',
+      name: "asc",
     },
   });
 };
 
-export const createCustomerContactService = async (
-  data: CreateCustomerContactData
-) => {
+export const createCustomerContactService = async (data: CreateCustomerContactData) => {
   // Check if customer exists
-  const customer = await prisma.customer.findUnique({
+  const customer = await prisma.customers.findUnique({
     where: { id: data.customer_id },
   });
 
   if (!customer) {
-    throw new Error('Foreign key constraint failed: Customer not found');
+    throw new Error("Foreign key constraint failed: Customer not found");
   }
 
-  return await prisma.customerContact.create({
+  return await prisma.customer_contacts.create({
     data: {
+      id: crypto.randomUUID(),
       customer_id: data.customer_id,
       name: data.name,
       position: data.position,
@@ -97,7 +94,7 @@ export const createCustomerContactService = async (
       contact_person: data.contact_person,
     },
     include: {
-      customer: {
+      customers: {
         select: {
           id: true,
           customer_name: true,
@@ -110,13 +107,10 @@ export const createCustomerContactService = async (
   });
 };
 
-export const updateCustomerContactService = async (
-  id: string,
-  data: UpdateCustomerContactData
-) => {
+export const updateCustomerContactService = async (id: string, data: UpdateCustomerContactData) => {
   try {
     // Check if contact exists
-    const existingContact = await prisma.customerContact.findUnique({
+    const existingContact = await prisma.customer_contacts.findUnique({
       where: { id },
     });
 
@@ -124,11 +118,11 @@ export const updateCustomerContactService = async (
       return null;
     }
 
-    return await prisma.customerContact.update({
+    return await prisma.customer_contacts.update({
       where: { id },
       data,
       include: {
-        customer: {
+        customers: {
           select: {
             id: true,
             customer_name: true,
@@ -141,7 +135,7 @@ export const updateCustomerContactService = async (
     });
   } catch (error) {
     // eslint-disable-next-line no-console
-    console.error('Error in updateCustomerContactService:', error);
+    console.error("Error in updateCustomerContactService:", error);
     throw error;
   }
 };
@@ -149,7 +143,7 @@ export const updateCustomerContactService = async (
 export const deleteCustomerContactService = async (id: string) => {
   try {
     // Check if contact exists
-    const existingContact = await prisma.customerContact.findUnique({
+    const existingContact = await prisma.customer_contacts.findUnique({
       where: { id },
     });
 
@@ -157,14 +151,14 @@ export const deleteCustomerContactService = async (id: string) => {
       return null;
     }
 
-    await prisma.customerContact.delete({
+    await prisma.customer_contacts.delete({
       where: { id },
     });
 
     return true;
   } catch (error) {
     // eslint-disable-next-line no-console
-    console.error('Error in deleteCustomerContactService:', error);
+    console.error("Error in deleteCustomerContactService:", error);
     throw error;
   }
 };

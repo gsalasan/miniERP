@@ -67,6 +67,7 @@
     "mime": "^1.6.0",
     "mime-db": "^1.52.0",
     "mime-types": "^2.1.35",
+    "minierp": "file:../..",
     "ms": "^2.0.0",
     "negotiator": "^0.6.3",
     "object-assign": "^4.1.1",
@@ -101,11 +102,11 @@
     "yn": "^3.1.1"
   },
   "devDependencies": {
-    "@types/node": "^22.7.5",
-    "@types/express": "^4.17.21",
     "@types/bcryptjs": "^2.4.2",
+    "@types/cors": "^2.8.17",
+    "@types/express": "^4.17.21",
     "@types/jsonwebtoken": "^9.0.6",
-    "@types/cors": "^2.8.17"
+    "@types/node": "^22.7.5"
   },
   "scripts": {
     "dev": "ts-node src/server.ts",

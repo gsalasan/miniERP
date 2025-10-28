@@ -40,6 +40,15 @@ app.use('*', (req, res) => {
   });
 });
 
+// 404 handler
+app.use('*', (req, res) => {
+  res.status(404).json({
+    success: false,
+    message: 'Endpoint tidak ditemukan',
+    path: req.originalUrl
+  });
+});
+
 // Global error handler
 app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
   console.error('Error:', err);

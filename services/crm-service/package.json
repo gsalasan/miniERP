@@ -8,8 +8,8 @@
     "dev": "ts-node-dev --respawn --transpile-only src/server.ts",
     "build": "tsc",
     "start": "node dist/index.js",
-    "lint": "if [ -d src ]; then eslint src --ext .ts --fix; else echo No src directory found, skipping lint; fi",
-    "lint:check": "if [ -d src ]; then eslint src --ext .ts; else echo No src directory found, skipping lint check; fi",
+    "lint": "eslint src --ext .ts --fix",
+    "lint:check": "eslint src --ext .ts",
     "format": "prettier --write src/**/*.{ts,js,json,md}",
     "format:check": "prettier --check src/**/*.{ts,js,json,md}",
     "type-check": "tsc --noEmit"

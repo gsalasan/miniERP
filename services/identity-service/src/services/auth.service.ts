@@ -102,7 +102,6 @@ export const createUser = async (
   
   mockUsers.push(newUser);
   console.log(`User created in mock data:`, newUser.email);
-
   return newUser;
 };
 

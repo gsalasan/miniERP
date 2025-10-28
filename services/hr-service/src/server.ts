@@ -1,13 +1,7 @@
 import app from './app';
 import dotenv from 'dotenv';
-import path from 'path';
 
-// Load .env from hr-service directory specifically with override
-dotenv.config({ path: path.join(__dirname, '..', '.env'), override: true });
-
-console.log('HR Service DEBUG - Environment variables:');
-console.log('process.env.PORT:', process.env.PORT);
-console.log('dotenv path:', path.join(__dirname, '..', '.env'));
+dotenv.config();
 
 const PORT = process.env.PORT || 3002;
 

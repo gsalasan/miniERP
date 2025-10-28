@@ -1,11 +1,6 @@
 generator client {
-<<<<<<< HEAD
-  provider      = "prisma-client-js"
-  binaryTargets = ["native", "darwin-arm64"]
-=======
   provider = "prisma-client-js"
   output  = "../services/finance-service/node_modules/.prisma/client"
->>>>>>> e548ed33b343102f25db3f49a5ff818b42c36d09
 }
 
 
@@ -18,16 +13,11 @@ model users {
   id            String     @id @default(uuid())
   email         String     @unique
   password_hash String
-<<<<<<< HEAD
-  roles         UserRole[] @default([EMPLOYEE])
   employee_id   String?    @unique
-=======
-  role          UserRole
-  employee_id   String?
->>>>>>> e548ed33b343102f25db3f49a5ff818b42c36d09
   is_active     Boolean    @default(true)
   created_at    DateTime   @default(now())
   updated_at    DateTime   @updatedAt
+  roles         UserRole[] @default([EMPLOYEE])
   employee      employees? @relation(fields: [employee_id], references: [id])
 }
 
@@ -250,152 +240,6 @@ model hr_employee_documents {
   @@map("hr_employee_documents")
 }
 
-enum UserRole {
-  CEO
-  FINANCE_ADMIN
-  SALES
-  SALES_MANAGER
-  PROJECT_MANAGER
-  PROJECT_ENGINEER
-  HR_ADMIN
-  EMPLOYEE
-  PROCUREMENT_ADMIN
-  ASSET_ADMIN
-  SYSTEM_ADMIN
-}
-
-enum MaterialStatus {
-  Active
-  EndOfLife
-  Discontinue
-}
-
-enum MaterialLocation {
-  Local
-  Import
-}
-
-enum ServiceUnit {
-  Jam
-  Hari
-}
-
-<<<<<<< HEAD
-enum EmployeeStatus {
-  ACTIVE
-  INACTIVE
-  TERMINATED
-  ON_LEAVE
-  SUSPENDED
-}
-
-enum EmploymentType {
-  FULL_TIME
-  PART_TIME
-  CONTRACT
-  INTERN
-  FREELANCE
-}
-
-enum Gender {
-  MALE
-  FEMALE
-  OTHER
-  PREFER_NOT_TO_SAY
-}
-
-enum MaritalStatus {
-  SINGLE
-  MARRIED
-  DIVORCED
-  WIDOWED
-  SEPARATED
-}
-
-enum BloodType {
-  A_POSITIVE
-  A_NEGATIVE
-  B_POSITIVE
-  B_NEGATIVE
-  AB_POSITIVE
-  AB_NEGATIVE
-  O_POSITIVE
-  O_NEGATIVE
-}
-
-enum EducationLevel {
-  HIGH_SCHOOL
-  DIPLOMA
-  BACHELOR
-  MASTER
-  DOCTORATE
-  CERTIFICATION
-  OTHER
-}
-
-enum LeaveType {
-  ANNUAL_LEAVE
-  SICK_LEAVE
-  MATERNITY_LEAVE
-  PATERNITY_LEAVE
-  EMERGENCY_LEAVE
-  UNPAID_LEAVE
-  STUDY_LEAVE
-  COMPENSATORY_LEAVE
-}
-
-enum LeaveStatus {
-  PENDING
-  APPROVED
-  REJECTED
-  CANCELLED
-}
-
-enum AttendanceStatus {
-  PRESENT
-  ABSENT
-  LATE
-  HALF_DAY
-  WORK_FROM_HOME
-  ON_LEAVE
-=======
-model Material {
-  id            String            @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  sbu           String?
-  system        String?
-  subsystem     String?
-  components    String?
-  item_name     String
-  brand         String?
-  owner_pn      String?
-  vendor        String?
-  status        MaterialStatus?
-  location      MaterialLocation?
-  cost_ori      Decimal?          @db.Decimal(14, 2)
-  curr          String?           @db.VarChar(3)
-  satuan        String?           @db.VarChar(50)
-  cost_rp       Decimal?          @db.Decimal(14, 2)
-  cost_date     DateTime          @default(now()) @db.Timestamptz(6)
-  cost_validity DateTime?         @db.Timestamptz(6)
-  created_at    DateTime          @default(now()) @db.Timestamptz(6)
-  updated_at    DateTime          @default(now()) @db.Timestamptz(6)
-}
-
-model Service {
-  id                      String      @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  service_name            String
-  service_code            String      @unique
-  item_type               String      @default("Service")
-  category                String?
-  unit                    ServiceUnit
-  internal_cost_per_hour  Decimal?    @db.Decimal(14, 2)
-  freelance_cost_per_hour Decimal?    @db.Decimal(14, 2)
-  default_duration        Decimal?    @db.Decimal(10, 2)
-  is_active               Boolean     @default(true)
-  created_at              DateTime    @default(now()) @db.Timestamptz(6)
-  updated_at              DateTime    @default(now()) @db.Timestamptz(6)
-}
-
 model customer_contacts {
   id             String    @id
   customer_id    String
@@ -423,6 +267,64 @@ model customers {
   customer_contacts customer_contacts[]
 }
 
+model ChartOfAccounts {
+  id           Int         @id @default(autoincrement())
+  account_code String      @unique
+  account_name String
+  account_type AccountType
+  description  String?
+  created_at   DateTime    @default(now())
+  updated_at   DateTime    @updatedAt
+}
+
+model exchange_rates {
+  id             Int      @id @default(autoincrement())
+  currency_from  String   @db.VarChar(3)
+  currency_to    String   @db.VarChar(3)
+  rate           Decimal  @db.Decimal(18, 6)
+  effective_date DateTime @db.Date
+  is_active      Boolean  @default(true)
+  created_at     DateTime @default(now())
+  updated_at     DateTime @default(now())
+
+  @@unique([currency_from, currency_to, effective_date])
+}
+
+model invoices {
+  id               String        @id
+  invoice_number   String        @unique
+  invoice_date     DateTime      @db.Date
+  due_date         DateTime      @db.Date
+  customer_id      String?
+  customer_name    String
+  customer_address String?
+  customer_phone   String?
+  customer_email   String?
+  subtotal         Decimal       @db.Decimal(15, 2)
+  tax_amount       Decimal       @default(0) @db.Decimal(15, 2)
+  discount_amount  Decimal       @default(0) @db.Decimal(15, 2)
+  total_amount     Decimal       @db.Decimal(15, 2)
+  currency         String        @default("IDR") @db.VarChar(3)
+  status           InvoiceStatus @default(DRAFT)
+  notes            String?
+  payment_terms    String?
+  created_by       String?
+  updated_by       String?
+  created_at       DateTime      @default(now())
+  updated_at       DateTime
+}
+
+model tax_rates {
+  id          Int      @id @default(autoincrement())
+  tax_name    String   @unique
+  tax_code    String   @unique
+  rate        Decimal  @db.Decimal(5, 2)
+  description String?
+  is_active   Boolean  @default(true)
+  created_at  DateTime @default(now())
+  updated_at  DateTime @default(now())
+}
+
 enum UserRole {
   CEO
   FINANCE_ADMIN
@@ -437,10 +339,10 @@ enum UserRole {
   SYSTEM_ADMIN
 }
 
-enum CustomerStatus {
-  ACTIVE
-  INACTIVE
-  PROSPECT
+enum MaterialStatus {
+  Active
+  EndOfLife
+  Discontinue
 }
 
 enum MaterialLocation {
@@ -448,25 +350,83 @@ enum MaterialLocation {
   Import
 }
 
-enum MaterialStatus {
-  Active
-  EndOfLife
-  Discontinue
-}
-
 enum ServiceUnit {
   Jam
   Hari
 }
 
-model ChartOfAccounts {
-  id            Int          @id @default(autoincrement())
-  account_code  String       @unique
-  account_name  String
-  account_type  AccountType
-  description   String?
-  created_at    DateTime     @default(now())
-  updated_at    DateTime     @updatedAt
+enum Gender {
+  MALE
+  FEMALE
+}
+
+enum MaritalStatus {
+  SINGLE
+  MARRIED
+  DIVORCED
+  WIDOWED
+}
+
+enum BloodType {
+  A
+  B
+  AB
+  O
+}
+
+enum EmploymentType {
+  FULL_TIME
+  PART_TIME
+  CONTRACT
+  INTERNSHIP
+  FREELANCE
+}
+
+enum EmployeeStatus {
+  ACTIVE
+  INACTIVE
+  TERMINATED
+  ON_LEAVE
+  PROBATION
+}
+
+enum EducationLevel {
+  HIGH_SCHOOL
+  DIPLOMA
+  BACHELOR
+  MASTER
+  DOCTORATE
+}
+
+enum AttendanceStatus {
+  PRESENT
+  ABSENT
+  LATE
+  HALF_DAY
+  SICK_LEAVE
+  VACATION
+}
+
+enum LeaveType {
+  ANNUAL
+  SICK
+  MATERNITY
+  PATERNITY
+  EMERGENCY
+  UNPAID
+}
+
+enum LeaveStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  CANCELLED
+}
+
+enum CustomerStatus {
+  ACTIVE
+  INACTIVE
+  PROSPECT
 }
 
 enum AccountType {
@@ -475,5 +435,32 @@ enum AccountType {
   Equity
   Revenue
   Expense
->>>>>>> e548ed33b343102f25db3f49a5ff818b42c36d09
+}
+
+enum InvoiceStatus {
+  DRAFT
+  SENT
+  PAID
+  OVERDUE
+  CANCELLED
+}
+
+model vendors {
+  id             String              @id @default(uuid())
+  vendor_name    String
+  category       String?
+  classification VendorClassification
+  is_preferred   Boolean             @default(false)
+  created_at     DateTime            @default(now())
+  updated_at     DateTime            @updatedAt
+
+  @@map("vendors")
+}
+
+enum VendorClassification {
+  SMALL
+  MEDIUM
+  LARGE
+  ENTERPRISE
+  GOVERNMENT
 }
