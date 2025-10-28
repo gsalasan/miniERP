@@ -8,8 +8,8 @@
     "dev": "ts-node-dev --respawn --transpile-only src/server.ts",
     "build": "tsc",
     "start": "node dist/index.js",
-    "lint": "if [ -d src ]; then eslint src --ext .ts --fix; else echo No src directory found, skipping lint; fi",
-    "lint:check": "if [ -d src ]; then eslint src --ext .ts; else echo No src directory found, skipping lint check; fi",
+    "lint": "eslint src --ext .ts --fix",
+    "lint:check": "eslint src --ext .ts",
     "format": "prettier --write src/**/*.{ts,js,json,md}",
     "format:check": "prettier --check src/**/*.{ts,js,json,md}",
     "type-check": "tsc --noEmit"
@@ -22,12 +22,15 @@
   },
   "devDependencies": {
     "@eslint/js": "^9.37.0",
+    "@types/jsonwebtoken": "^9.0.10",
     "@typescript-eslint/eslint-plugin": "^8.46.0",
     "@typescript-eslint/parser": "^8.46.0",
     "eslint": "^9.37.0",
     "eslint-config-prettier": "^10.1.8",
     "eslint-plugin-prettier": "^5.5.4",
+    "jsonwebtoken": "^9.0.2",
     "prettier": "^3.6.2",
+    "ts-node-dev": "^2.0.0",
     "typescript": "^5.6.3"
   }
 }
