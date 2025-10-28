@@ -1,0 +1,197 @@
+{
+  "info": {
+    "name": "Finance Service - Invoice API",
+    "description": "Collection untuk testing Invoice CRUD operations",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Get All Invoices",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "http://localhost:3001/api/invoices?page=1&limit=10",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "3001",
+          "path": ["api", "invoices"],
+          "query": [
+            {
+              "key": "page",
+              "value": "1",
+              "description": "Page number"
+            },
+            {
+              "key": "limit",
+              "value": "10",
+              "description": "Items per page"
+            },
+            {
+              "key": "status",
+              "value": "",
+              "description": "Filter by status (DRAFT, SENT, PAID, CANCELLED, OVERDUE)",
+              "disabled": true
+            },
+            {
+              "key": "customer_name",
+              "value": "",
+              "description": "Filter by customer name (contains search)",
+              "disabled": true
+            }
+          ]
+        },
+        "description": "Get list of all invoices with pagination and filtering"
+      },
+      "response": []
+    },
+    {
+      "name": "Get Invoice by ID",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "http://localhost:3001/api/invoices/f8a71abb-0d70-4e22-86d4-4c106bab2492",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "3001",
+          "path": ["api", "invoices", "f8a71abb-0d70-4e22-86d4-4c106bab2492"]
+        },
+        "description": "Get single invoice by ID (replace ID in URL with actual invoice ID)"
+      },
+      "response": []
+    },
+    {
+      "name": "Create Invoice",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"invoice_number\": \"INV-2024-TEST-001\",\n  \"invoice_date\": \"2024-10-25\",\n  \"due_date\": \"2024-11-08\",\n  \"customer_name\": \"PT. Testing Company\",\n  \"customer_address\": \"Jl. Testing No. 1, Jakarta\",\n  \"customer_phone\": \"021-99999999\",\n  \"customer_email\": \"test@company.com\",\n  \"subtotal\": 8000000,\n  \"tax_amount\": 880000,\n  \"discount_amount\": 200000,\n  \"total_amount\": 8680000,\n  \"currency\": \"IDR\",\n  \"status\": \"DRAFT\",\n  \"notes\": \"Testing invoice creation\",\n  \"payment_terms\": \"Net 14\",\n  \"created_by\": \"test_user\"\n}"
+        },
+        "url": {
+          "raw": "http://localhost:3001/api/invoices",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "3001",
+          "path": ["api", "invoices"]
+        },
+        "description": "Create new invoice. Required fields: invoice_number, invoice_date, due_date, customer_name, subtotal, total_amount"
+      },
+      "response": []
+    },
+    {
+      "name": "Update Invoice",
+      "request": {
+        "method": "PUT",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"status\": \"SENT\",\n  \"notes\": \"Updated invoice status to SENT\",\n  \"updated_by\": \"test_user\"\n}"
+        },
+        "url": {
+          "raw": "http://localhost:3001/api/invoices/f8a71abb-0d70-4e22-86d4-4c106bab2492",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "3001",
+          "path": ["api", "invoices", "f8a71abb-0d70-4e22-86d4-4c106bab2492"]
+        },
+        "description": "Update existing invoice. Replace ID in URL. All fields are optional - only send fields you want to update"
+      },
+      "response": []
+    },
+    {
+      "name": "Delete Invoice",
+      "request": {
+        "method": "DELETE",
+        "header": [],
+        "url": {
+          "raw": "http://localhost:3001/api/invoices/f8a71abb-0d70-4e22-86d4-4c106bab2492",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "3001",
+          "path": ["api", "invoices", "f8a71abb-0d70-4e22-86d4-4c106bab2492"]
+        },
+        "description": "Delete invoice by ID. Replace ID in URL with invoice you want to delete"
+      },
+      "response": []
+    },
+    {
+      "name": "Filter by Status - DRAFT",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "http://localhost:3001/api/invoices?status=DRAFT",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "3001",
+          "path": ["api", "invoices"],
+          "query": [
+            {
+              "key": "status",
+              "value": "DRAFT"
+            }
+          ]
+        },
+        "description": "Get invoices with DRAFT status"
+      },
+      "response": []
+    },
+    {
+      "name": "Filter by Status - PAID",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "http://localhost:3001/api/invoices?status=PAID",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "3001",
+          "path": ["api", "invoices"],
+          "query": [
+            {
+              "key": "status",
+              "value": "PAID"
+            }
+          ]
+        },
+        "description": "Get invoices with PAID status"
+      },
+      "response": []
+    },
+    {
+      "name": "Search by Customer Name",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "http://localhost:3001/api/invoices?customer_name=PT",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "3001",
+          "path": ["api", "invoices"],
+          "query": [
+            {
+              "key": "customer_name",
+              "value": "PT"
+            }
+          ]
+        },
+        "description": "Search invoices by customer name (case-insensitive contains)"
+      },
+      "response": []
+    }
+  ]
+}
