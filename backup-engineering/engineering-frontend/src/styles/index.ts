@@ -1,1 +1,0 @@
-// Engineering style definitions
