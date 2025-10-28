@@ -1,5 +1,10 @@
 import { Router } from 'express';
 import { verifyToken } from '../middlewares/auth.middleware';
+<<<<<<< HEAD
+=======
+<<<<<<< HEAD
+=======
+>>>>>>> main
 import {
   validateCreateMaterial,
   validateUpdateMaterial,
@@ -7,10 +12,20 @@ import {
   validateQueryParams,
   handleErrors,
 } from '../middlewares/materialsValidation.middleware';
+<<<<<<< HEAD
+=======
+>>>>>>> main
+>>>>>>> main
 import materialsController from '../controllers/materialsController';
 
 const router = Router();
 
+<<<<<<< HEAD
+=======
+<<<<<<< HEAD
+router.get('/api/v1/materials', materialsController.getMaterials);
+=======
+>>>>>>> main
 // Health check endpoint (public)
 router.get('/health', materialsController.healthCheck);
 
@@ -65,5 +80,9 @@ router.delete(
 
 // Error handling middleware
 router.use(handleErrors);
+<<<<<<< HEAD
+=======
+>>>>>>> main
+>>>>>>> main
 
 export default router;

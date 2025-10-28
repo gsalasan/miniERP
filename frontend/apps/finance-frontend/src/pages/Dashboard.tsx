@@ -11,56 +11,61 @@ import { Link } from 'react-router-dom';
 const Dashboard: React.FC = () => {
   const stats = [
     {
-      name: 'Total Accounts',
+      name: 'Chart of Accounts',
       value: '142',
-      change: '+12%',
+      description: 'Total Accounts',
       icon: DocumentTextIcon,
       color: 'from-blue-500 to-blue-600',
+      textColor: 'text-blue-600',
+      bgColor: 'bg-blue-50',
     },
     {
-      name: 'Total Assets',
+      name: 'Kokpit Finansial',
       value: 'Rp 1.2M',
-      change: '+8%',
-      icon: BanknotesIcon,
+      description: 'Total Balance',
+      icon: ChartBarIcon,
       color: 'from-green-500 to-green-600',
+      textColor: 'text-green-600',
+      bgColor: 'bg-green-50',
     },
     {
-      name: 'Revenue',
-      value: 'Rp 850K',
-      change: '+15%',
-      icon: ArrowTrendingUpIcon,
+      name: 'Journal Entries',
+      value: '6',
+      description: 'Recent Entries',
+      icon: BanknotesIcon,
       color: 'from-purple-500 to-purple-600',
+      textColor: 'text-purple-600',
+      bgColor: 'bg-purple-50',
     },
     {
       name: 'Reports',
       value: '24',
-      change: '+4%',
-      icon: ChartBarIcon,
+      description: 'Available Reports',
+      icon: ArrowTrendingUpIcon,
       color: 'from-orange-500 to-orange-600',
+      textColor: 'text-orange-600',
+      bgColor: 'bg-orange-50',
     },
   ];
 
   const quickLinks = [
     {
       title: 'Chart of Accounts',
-      description: 'Manage your financial accounts',
+      description: 'Manage your financial accounts and ledger',
       path: '/coa',
       icon: DocumentTextIcon,
-      color: 'blue',
+      gradient: 'from-blue-500 to-blue-600',
+      iconBg: 'bg-blue-100',
+      iconColor: 'text-blue-600',
     },
     {
-      title: 'Journal Entry',
-      description: 'Record financial transactions',
-      path: '/journal',
-      icon: DocumentTextIcon,
-      color: 'green',
-    },
-    {
-      title: 'Financial Reports',
-      description: 'View and generate reports',
-      path: '/reports',
+      title: 'Kokpit Finansial',
+      description: 'View financial dashboard and analytics',
+      path: '/financial-cockpit',
       icon: ChartBarIcon,
-      color: 'purple',
+      gradient: 'from-green-500 to-green-600',
+      iconBg: 'bg-green-100',
+      iconColor: 'text-green-600',
     },
   ];
 
@@ -68,9 +73,13 @@ const Dashboard: React.FC = () => {
     <Layout title="Dashboard">
       {/* Welcome Section */}
       <div className="mb-8">
-        <div className="bg-gradient-to-r from-blue-600 to-purple-600 rounded-xl shadow-lg p-8 text-white">
-          <h1 className="text-3xl font-bold mb-2">Welcome back, Admin! 👋</h1>
-          <p className="text-blue-100">Here's what's happening with your finance today.</p>
+        <div className="bg-gradient-to-r from-primary-dark via-primary to-accent-gold rounded-2xl shadow-xl p-8 text-white relative overflow-hidden">
+          <div className="relative z-10">
+            <h1 className="text-4xl font-bold mb-2">Welcome to Finance Module! 👋</h1>
+            <p className="text-primary-light text-lg">Manage your financial data efficiently and effectively.</p>
+          </div>
+          <div className="absolute top-0 right-0 w-64 h-64 bg-white opacity-5 rounded-full -mr-32 -mt-32"></div>
+          <div className="absolute bottom-0 right-0 w-48 h-48 bg-white opacity-5 rounded-full -mr-24 -mb-24"></div>
         </div>
       </div>
 
@@ -79,55 +88,78 @@ const Dashboard: React.FC = () => {
         {stats.map((stat, index) => (
           <div
             key={index}
-            className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 hover:shadow-md transition-shadow"
+            className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 hover:shadow-lg transition-all duration-300 hover:-translate-y-1"
           >
             <div className="flex items-center justify-between mb-4">
-              <div className={`w-12 h-12 bg-gradient-to-br ${stat.color} rounded-lg flex items-center justify-center shadow-lg`}>
-                <stat.icon className="h-6 w-6 text-white" />
+              <div className={`w-14 h-14 ${stat.bgColor} rounded-xl flex items-center justify-center`}>
+                <stat.icon className={`h-7 w-7 ${stat.textColor}`} />
               </div>
-              <span className="text-sm font-medium text-green-600 bg-green-50 px-2 py-1 rounded-full">
-                {stat.change}
-              </span>
             </div>
-            <h3 className="text-2xl font-bold text-gray-900 mb-1">{stat.value}</h3>
-            <p className="text-sm text-gray-600">{stat.name}</p>
+            <h3 className="text-3xl font-bold text-gray-900 mb-1">{stat.value}</h3>
+            <p className="text-sm font-medium text-gray-600">{stat.description}</p>
+            <p className="text-xs text-gray-400 mt-1">{stat.name}</p>
           </div>
         ))}
       </div>
 
       {/* Quick Links */}
       <div className="mb-8">
-        <h2 className="text-xl font-bold text-gray-900 mb-4">Quick Access</h2>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <h2 className="text-2xl font-bold text-gray-900 mb-6 flex items-center">
+          <span className="w-1 h-8 bg-accent-gold rounded-full mr-3"></span>
+          Quick Access
+        </h2>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {quickLinks.map((link, index) => (
             <Link
               key={index}
               to={link.path}
-              className="group bg-white rounded-xl shadow-sm border border-gray-200 p-6 hover:shadow-lg hover:border-blue-300 transition-all"
+              className="group bg-white rounded-xl shadow-sm border border-gray-100 p-8 hover:shadow-xl hover:border-accent-gold transition-all duration-300 hover:-translate-y-1"
             >
-              <div className={`w-12 h-12 bg-${link.color}-100 rounded-lg flex items-center justify-center mb-4 group-hover:scale-110 transition-transform`}>
-                <link.icon className={`h-6 w-6 text-${link.color}-600`} />
+              <div className="flex items-start space-x-4">
+                <div className={`w-16 h-16 ${link.iconBg} rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform duration-300`}>
+                  <link.icon className={`h-8 w-8 ${link.iconColor}`} />
+                </div>
+                <div className="flex-1">
+                  <h3 className="text-xl font-bold text-gray-900 mb-2 group-hover:text-accent-gold transition-colors">
+                    {link.title}
+                  </h3>
+                  <p className="text-sm text-gray-600">{link.description}</p>
+                </div>
+                <svg 
+                  className="w-6 h-6 text-gray-400 group-hover:text-accent-gold group-hover:translate-x-1 transition-all" 
+                  fill="none" 
+                  viewBox="0 0 24 24" 
+                  stroke="currentColor"
+                >
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                </svg>
               </div>
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">{link.title}</h3>
-              <p className="text-sm text-gray-600">{link.description}</p>
             </Link>
           ))}
         </div>
       </div>
 
       {/* Recent Activity */}
-      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-        <h2 className="text-xl font-bold text-gray-900 mb-4">Recent Activity</h2>
-        <div className="space-y-4">
-          {[1, 2, 3].map((item) => (
-            <div key={item} className="flex items-center space-x-4 p-4 bg-gray-50 rounded-lg">
-              <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
-                <DocumentTextIcon className="h-5 w-5 text-blue-600" />
+      <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+        <h2 className="text-xl font-bold text-gray-900 mb-6 flex items-center">
+          <span className="w-1 h-6 bg-accent-gold rounded-full mr-3"></span>
+          Recent Activity
+        </h2>
+        <div className="space-y-3">
+          {[
+            { action: 'Chart of Accounts updated', time: '2 hours ago', icon: DocumentTextIcon, color: 'blue' },
+            { action: 'New journal entry created', time: '5 hours ago', icon: BanknotesIcon, color: 'green' },
+            { action: 'Financial report generated', time: '1 day ago', icon: ChartBarIcon, color: 'purple' },
+          ].map((item, index) => (
+            <div key={index} className="flex items-center space-x-4 p-4 bg-gray-50 rounded-xl hover:bg-gray-100 transition-colors">
+              <div className={`w-12 h-12 bg-${item.color}-100 rounded-xl flex items-center justify-center flex-shrink-0`}>
+                <item.icon className={`h-6 w-6 text-${item.color}-600`} />
               </div>
-              <div className="flex-1">
-                <p className="text-sm font-medium text-gray-900">New account created</p>
-                <p className="text-xs text-gray-500">2 hours ago</p>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-semibold text-gray-900 truncate">{item.action}</p>
+                <p className="text-xs text-gray-500">{item.time}</p>
               </div>
+              <div className="w-2 h-2 bg-accent-gold rounded-full"></div>
             </div>
           ))}
         </div>

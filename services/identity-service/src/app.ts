@@ -2,6 +2,10 @@ import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import authRoutes from './routes/auth.routes';
+<<<<<<< HEAD
+=======
+import employeeRoutes from './routes/employee.routes';
+>>>>>>> main
 
 
 // Load environment variables
@@ -29,6 +33,7 @@ app.get('/health', (req, res) => {
 
 // API Routes with versioning
 app.use('/api/v1/auth', authRoutes);
+<<<<<<< HEAD
 
 
 // 404 handler
@@ -52,4 +57,42 @@ app.use((err: any, req: express.Request, res: express.Response, next: express.Ne
 });
 
 export default app;
+<<<<<<< HEAD
 
+=======
+=======
+app.use('/api/v1', employeeRoutes);
+
+// 404 handler
+app.use('*', (req, res) => {
+  res.status(404).json({
+    success: false,
+    message: 'Endpoint tidak ditemukan',
+    path: req.originalUrl
+  });
+});
+
+// 404 handler
+app.use('*', (req, res) => {
+  res.status(404).json({
+    success: false,
+    message: 'Endpoint tidak ditemukan',
+    path: req.originalUrl
+  });
+});
+
+// Global error handler
+app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
+  console.error('Error:', err);
+  
+  res.status(err.status || 500).json({
+    success: false,
+    message: err.message || 'Internal Server Error',
+    ...(process.env.NODE_ENV === 'development' && { stack: err.stack })
+  });
+});
+
+export default app;
+
+>>>>>>> main
+>>>>>>> main

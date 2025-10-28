@@ -1,4 +1,5 @@
 import React from "react";
+<<<<<<< HEAD
 import { CssBaseline, Container, Typography, Box } from "@mui/material";
 
 // Contoh komponen
@@ -34,17 +35,28 @@ function MainContent() {
     </Box>
   );
 }
+=======
+import { ThemeProvider } from "@mui/material/styles";
+import { CssBaseline } from "@mui/material";
+import { theme } from "./theme";
+import AppRouter from "./router";
+>>>>>>> main
 
 function App() {
   return (
-    <Box>
+    <ThemeProvider theme={theme}>
       <CssBaseline />
+<<<<<<< HEAD
       <Header />
       <Box sx={{ display: "flex" }}>
         <Sidebar />
         <MainContent />
       </Box>
     </Box>
+=======
+      <AppRouter />
+    </ThemeProvider>
+>>>>>>> main
   );
 }
 

@@ -9,6 +9,7 @@ import { ACCOUNT_TYPES } from '../config';
 import { Layout, Modal, ConfirmDialog, Toast } from '../components';
 import { useToast } from '../hooks/useToast';
 import { exportToCSV, exportToJSON } from '../utils/exportUtils';
+import JournalEntriesTab from './COA/JournalEntriesTab';
 import {
   MagnifyingGlassIcon,
   PlusIcon,
@@ -17,9 +18,12 @@ import {
   TrashIcon,
   FunnelIcon,
   XMarkIcon,
+  ChartBarIcon,
+  DocumentTextIcon,
 } from '@heroicons/react/24/outline';
 
 const COA: React.FC = () => {
+  const [activeTab, setActiveTab] = useState<'accounts' | 'journal-entries'>('accounts');
   const [accounts, setAccounts] = useState<ChartOfAccount[]>([]);
   const [loading, setLoading] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -270,7 +274,7 @@ const COA: React.FC = () => {
           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
             <div>
               <h2 className="text-2xl font-bold text-primary-dark">Chart of Accounts</h2>
-              <p className="text-text-secondary mt-1">Kelola daftar akun keuangan perusahaan Anda</p>
+              <p className="text-text-secondary mt-1">Kelola daftar akun keuangan dan journal entries perusahaan</p>
               <div className="mt-4 flex items-center gap-4 text-sm text-text-primary">
                 <div className="flex items-center gap-2">
                   <div className="w-2 h-2 bg-accent-gold rounded-full animate-pulse"></div>
@@ -282,51 +286,88 @@ const COA: React.FC = () => {
                 </div>
               </div>
             </div>
-            <div className="flex gap-3">
-              <div className="relative">
+            {activeTab === 'accounts' && (
+              <div className="flex gap-3">
+                <div className="relative">
+                  <button
+                    onClick={() => setShowFilters(!showFilters)}
+                    className="flex items-center gap-2 px-4 py-2 bg-surface-card text-primary-dark border border-gray-300 rounded-lg hover:bg-surface-bg transition-colors shadow-sm"
+                  >
+                    <ArrowDownTrayIcon className="h-5 w-5" />
+                    Export
+                  </button>
+                  {showFilters && (
+                    <div className="absolute right-0 mt-2 w-40 bg-surface-card rounded-lg shadow-lg border border-gray-200 py-1 z-10">
+                      <button
+                        onClick={() => {
+                          handleExport('csv');
+                          setShowFilters(false);
+                        }}
+                        className="w-full text-left px-4 py-2 hover:bg-surface-bg text-sm text-text-primary"
+                      >
+                        Export CSV
+                      </button>
+                      <button
+                        onClick={() => {
+                          handleExport('json');
+                          setShowFilters(false);
+                        }}
+                        className="w-full text-left px-4 py-2 hover:bg-surface-bg text-sm text-text-primary"
+                      >
+                        Export JSON
+                      </button>
+                    </div>
+                  )}
+                </div>
                 <button
-                  onClick={() => setShowFilters(!showFilters)}
-                  className="flex items-center gap-2 px-4 py-2 bg-surface-card text-primary-dark border border-gray-300 rounded-lg hover:bg-surface-bg transition-colors shadow-sm"
+                  onClick={openCreateModal}
+                  className="flex items-center gap-2 px-6 py-3 bg-accent-gold text-primary-dark rounded-lg hover:bg-accent-gold-alt transition-colors shadow-md font-semibold"
                 >
-                  <ArrowDownTrayIcon className="h-5 w-5" />
-                  Export
+                  <PlusIcon className="h-5 w-5" />
+                  Tambah Akun Baru
                 </button>
-                {showFilters && (
-                  <div className="absolute right-0 mt-2 w-40 bg-surface-card rounded-lg shadow-lg border border-gray-200 py-1 z-10">
-                    <button
-                      onClick={() => {
-                        handleExport('csv');
-                        setShowFilters(false);
-                      }}
-                      className="w-full text-left px-4 py-2 hover:bg-surface-bg text-sm text-text-primary"
-                    >
-                      Export CSV
-                    </button>
-                    <button
-                      onClick={() => {
-                        handleExport('json');
-                        setShowFilters(false);
-                      }}
-                      className="w-full text-left px-4 py-2 hover:bg-surface-bg text-sm text-text-primary"
-                    >
-                      Export JSON
-                    </button>
-                  </div>
-                )}
               </div>
-              <button
-                onClick={openCreateModal}
-                className="flex items-center gap-2 px-6 py-3 bg-accent-gold text-primary-dark rounded-lg hover:bg-accent-gold-alt transition-colors shadow-md font-semibold"
-              >
-                <PlusIcon className="h-5 w-5" />
-                Tambah Akun Baru
-              </button>
-            </div>
+            )}
           </div>
         </div>
       </div>
 
-      {/* Filters & Search */}
+      {/* Tab Navigation */}
+      <div className="mb-6">
+        <div className="bg-surface-card rounded-xl shadow-sm border border-gray-200 p-1">
+          <div className="flex gap-2">
+            <button
+              onClick={() => setActiveTab('accounts')}
+              className={`flex items-center gap-2 px-6 py-3 rounded-lg font-medium transition-all ${
+                activeTab === 'accounts'
+                  ? 'bg-accent-gold text-primary-dark shadow-md'
+                  : 'text-text-secondary hover:text-text-primary hover:bg-surface-bg'
+              }`}
+            >
+              <ChartBarIcon className="h-5 w-5" />
+              Chart of Accounts
+            </button>
+            <button
+              onClick={() => setActiveTab('journal-entries')}
+              className={`flex items-center gap-2 px-6 py-3 rounded-lg font-medium transition-all ${
+                activeTab === 'journal-entries'
+                  ? 'bg-accent-gold text-primary-dark shadow-md'
+                  : 'text-text-secondary hover:text-text-primary hover:bg-surface-bg'
+              }`}
+            >
+              <DocumentTextIcon className="h-5 w-5" />
+              Journal Entries
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* Tab Content */}
+      {activeTab === 'journal-entries' ? (
+        <JournalEntriesTab onSuccess={success} onError={error} />
+      ) : (
+        <>
+          {/* Filters & Search */}
       <div className="mb-6">
         <div className="bg-surface-card rounded-xl shadow-sm border border-gray-200 p-4">
           <div className="flex flex-col md:flex-row gap-4">
@@ -705,6 +746,8 @@ const COA: React.FC = () => {
         onCancel={() => setDeleteConfirm({ isOpen: false, accountId: null })}
         type="danger"
       />
+        </>
+      )}
     </Layout>
   );
 };

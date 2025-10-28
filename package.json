@@ -10,7 +10,18 @@
   ],
   "scripts": {
     "dev:identity": "npm --prefix services/identity-service run dev",
+<<<<<<< HEAD
     "dev:frontend": "npm --prefix frontend run dev",
+=======
+<<<<<<< HEAD
+    "dev:frontend": "npm --prefix frontend run dev",
+=======
+    "dev:crm": "npm --prefix services/crm-service run dev",
+    "dev:frontend/crm": "npm --prefix frontend/apps/crm-frontend run dev",
+    "dev:frontend": "npm --prefix frontend run dev",
+    "dev:all": "concurrently \"npm run dev:identity\" \"npm run dev:crm\" \"npm run dev:frontend/crm\"",
+>>>>>>> main
+>>>>>>> main
     "build:frontend": "npm --prefix frontend run build",
     "build:services": "npm run build --workspaces --if-present",
     "lint": "npm run lint --workspaces --if-present",
@@ -29,7 +40,16 @@
     "eslint-config-prettier": "^10.1.8",
     "eslint-plugin-prettier": "^5.5.4",
     "prettier": "^3.6.2",
+<<<<<<< HEAD
     "typescript": "^5.6.3"
+=======
+<<<<<<< HEAD
+    "typescript": "^5.6.3"
+=======
+    "typescript": "^5.6.3",
+    "concurrently": "^8.2.2"
+>>>>>>> main
+>>>>>>> main
   },
   "dependencies": {
     "@prisma/client": "^6.17.1"

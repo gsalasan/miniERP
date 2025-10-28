@@ -1,0 +1,394 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Journal Entries CRUD</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1200px;
+            margin: 20px auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        h1 {
+            color: #333;
+            border-bottom: 2px solid #4CAF50;
+            padding-bottom: 10px;
+        }
+        h2 {
+            color: #666;
+            margin-top: 0;
+        }
+        button {
+            background-color: #4CAF50;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            margin: 5px;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+        button.delete {
+            background-color: #f44336;
+        }
+        button.delete:hover {
+            background-color: #da190b;
+        }
+        button.update {
+            background-color: #2196F3;
+        }
+        button.update:hover {
+            background-color: #0b7dda;
+        }
+        pre {
+            background-color: #f4f4f4;
+            padding: 15px;
+            border-radius: 4px;
+            overflow-x: auto;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+        .success {
+            color: #4CAF50;
+            font-weight: bold;
+        }
+        .error {
+            color: #f44336;
+            font-weight: bold;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+            color: #555;
+        }
+        input, textarea, select {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+        textarea {
+            min-height: 60px;
+        }
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+        }
+    </style>
+</head>
+<body>
+    <h1>🧪 Test Journal Entries CRUD Operations</h1>
+
+    <!-- GET ALL -->
+    <div class="container">
+        <h2>1. GET All Journal Entries</h2>
+        <button onclick="testGetAll()">Test GET All</button>
+        <button onclick="testGetAllFiltered()">Test GET with Filters (Account ID 1)</button>
+        <pre id="getAllResult">Click button to test...</pre>
+    </div>
+
+    <!-- GET BY ID -->
+    <div class="container">
+        <h2>2. GET Journal Entry by ID</h2>
+        <div class="form-group">
+            <label>Entry ID:</label>
+            <input type="text" id="getByIdInput" placeholder="Enter journal entry ID">
+        </div>
+        <button onclick="testGetById()">Test GET by ID</button>
+        <pre id="getByIdResult">Enter ID and click button...</pre>
+    </div>
+
+    <!-- CREATE -->
+    <div class="container">
+        <h2>3. CREATE New Journal Entry</h2>
+        <div class="form-row">
+            <div class="form-group">
+                <label>Transaction Date:</label>
+                <input type="date" id="createDate" value="2025-01-15">
+            </div>
+            <div class="form-group">
+                <label>Account ID:</label>
+                <input type="number" id="createAccountId" value="1" placeholder="1, 2, or 3">
+            </div>
+        </div>
+        <div class="form-group">
+            <label>Description:</label>
+            <textarea id="createDescription" placeholder="Test journal entry">Test journal entry from HTML</textarea>
+        </div>
+        <div class="form-row">
+            <div class="form-group">
+                <label>Debit Amount:</label>
+                <input type="number" id="createDebit" placeholder="Leave empty for credit" step="0.01">
+            </div>
+            <div class="form-group">
+                <label>Credit Amount:</label>
+                <input type="number" id="createCredit" placeholder="Leave empty for debit" step="0.01">
+            </div>
+        </div>
+        <div class="form-group">
+            <label>Created By:</label>
+            <input type="text" id="createCreatedBy" value="test-user" placeholder="User ID">
+        </div>
+        <button onclick="testCreate()">Test CREATE</button>
+        <pre id="createResult">Fill form and click button...</pre>
+    </div>
+
+    <!-- UPDATE -->
+    <div class="container">
+        <h2>4. UPDATE Journal Entry</h2>
+        <div class="form-group">
+            <label>Entry ID to Update:</label>
+            <input type="text" id="updateId" placeholder="Enter journal entry ID">
+        </div>
+        <div class="form-group">
+            <label>New Description:</label>
+            <textarea id="updateDescription" placeholder="Updated description">Updated from test HTML</textarea>
+        </div>
+        <div class="form-row">
+            <div class="form-group">
+                <label>New Debit (optional):</label>
+                <input type="number" id="updateDebit" placeholder="Leave empty to keep current" step="0.01">
+            </div>
+            <div class="form-group">
+                <label>New Credit (optional):</label>
+                <input type="number" id="updateCredit" placeholder="Leave empty to keep current" step="0.01">
+            </div>
+        </div>
+        <button class="update" onclick="testUpdate()">Test UPDATE</button>
+        <pre id="updateResult">Enter ID and click button...</pre>
+    </div>
+
+    <!-- DELETE -->
+    <div class="container">
+        <h2>5. DELETE Journal Entry</h2>
+        <div class="form-group">
+            <label>Entry ID to Delete:</label>
+            <input type="text" id="deleteId" placeholder="Enter journal entry ID">
+        </div>
+        <button class="delete" onclick="testDelete()">Test DELETE</button>
+        <pre id="deleteResult">⚠️ WARNING: This will permanently delete the entry!</pre>
+    </div>
+
+    <!-- GET ACCOUNT BALANCE -->
+    <div class="container">
+        <h2>6. GET Account Balance</h2>
+        <div class="form-group">
+            <label>Account ID:</label>
+            <input type="number" id="balanceAccountId" value="1" placeholder="Enter account ID">
+        </div>
+        <button onclick="testGetBalance()">Test GET Balance</button>
+        <pre id="balanceResult">Enter account ID and click button...</pre>
+    </div>
+
+    <script>
+        const API_BASE = 'http://localhost:3001/api/finance/journal-entries';
+
+        // Helper function to format output
+        function formatOutput(result, isSuccess = true) {
+            const status = isSuccess ? '<span class="success">✅ SUCCESS</span>' : '<span class="error">❌ ERROR</span>';
+            return `${status}\n\n${JSON.stringify(result, null, 2)}`;
+        }
+
+        // Test GET All
+        async function testGetAll() {
+            const resultEl = document.getElementById('getAllResult');
+            resultEl.textContent = 'Loading...';
+            
+            try {
+                const response = await fetch(API_BASE);
+                const data = await response.json();
+                resultEl.innerHTML = formatOutput(data, response.ok);
+            } catch (error) {
+                resultEl.innerHTML = formatOutput({ error: error.message }, false);
+            }
+        }
+
+        // Test GET All with Filters
+        async function testGetAllFiltered() {
+            const resultEl = document.getElementById('getAllResult');
+            resultEl.textContent = 'Loading...';
+            
+            try {
+                const response = await fetch(`${API_BASE}?account_id=1`);
+                const data = await response.json();
+                resultEl.innerHTML = formatOutput(data, response.ok);
+            } catch (error) {
+                resultEl.innerHTML = formatOutput({ error: error.message }, false);
+            }
+        }
+
+        // Test GET by ID
+        async function testGetById() {
+            const id = document.getElementById('getByIdInput').value;
+            const resultEl = document.getElementById('getByIdResult');
+            
+            if (!id) {
+                resultEl.innerHTML = formatOutput({ error: 'Please enter an ID' }, false);
+                return;
+            }
+            
+            resultEl.textContent = 'Loading...';
+            
+            try {
+                const response = await fetch(`${API_BASE}/${id}`);
+                const data = await response.json();
+                resultEl.innerHTML = formatOutput(data, response.ok);
+            } catch (error) {
+                resultEl.innerHTML = formatOutput({ error: error.message }, false);
+            }
+        }
+
+        // Test CREATE
+        async function testCreate() {
+            const resultEl = document.getElementById('createResult');
+            
+            const debit = document.getElementById('createDebit').value;
+            const credit = document.getElementById('createCredit').value;
+            
+            if (!debit && !credit) {
+                resultEl.innerHTML = formatOutput({ error: 'Please enter either debit or credit amount' }, false);
+                return;
+            }
+            
+            if (debit && credit) {
+                resultEl.innerHTML = formatOutput({ error: 'Please enter only debit OR credit (not both)' }, false);
+                return;
+            }
+            
+            const payload = {
+                transaction_date: document.getElementById('createDate').value,
+                description: document.getElementById('createDescription').value,
+                account_id: parseInt(document.getElementById('createAccountId').value),
+                debit: debit ? parseFloat(debit) : null,
+                credit: credit ? parseFloat(credit) : null,
+                created_by: document.getElementById('createCreatedBy').value
+            };
+            
+            resultEl.textContent = 'Creating...';
+            
+            try {
+                const response = await fetch(API_BASE, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                const data = await response.json();
+                resultEl.innerHTML = formatOutput(data, response.ok);
+                
+                if (response.ok && data.data && data.data.id) {
+                    alert(`✅ Created successfully! ID: ${data.data.id}`);
+                }
+            } catch (error) {
+                resultEl.innerHTML = formatOutput({ error: error.message }, false);
+            }
+        }
+
+        // Test UPDATE
+        async function testUpdate() {
+            const id = document.getElementById('updateId').value;
+            const resultEl = document.getElementById('updateResult');
+            
+            if (!id) {
+                resultEl.innerHTML = formatOutput({ error: 'Please enter an ID' }, false);
+                return;
+            }
+            
+            const debit = document.getElementById('updateDebit').value;
+            const credit = document.getElementById('updateCredit').value;
+            
+            const payload = {
+                description: document.getElementById('updateDescription').value
+            };
+            
+            if (debit) payload.debit = parseFloat(debit);
+            if (credit) payload.credit = parseFloat(credit);
+            
+            resultEl.textContent = 'Updating...';
+            
+            try {
+                const response = await fetch(`${API_BASE}/${id}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                const data = await response.json();
+                resultEl.innerHTML = formatOutput(data, response.ok);
+            } catch (error) {
+                resultEl.innerHTML = formatOutput({ error: error.message }, false);
+            }
+        }
+
+        // Test DELETE
+        async function testDelete() {
+            const id = document.getElementById('deleteId').value;
+            const resultEl = document.getElementById('deleteResult');
+            
+            if (!id) {
+                resultEl.innerHTML = formatOutput({ error: 'Please enter an ID' }, false);
+                return;
+            }
+            
+            if (!confirm(`⚠️ Are you sure you want to delete entry ${id}?`)) {
+                return;
+            }
+            
+            resultEl.textContent = 'Deleting...';
+            
+            try {
+                const response = await fetch(`${API_BASE}/${id}`, {
+                    method: 'DELETE'
+                });
+                const data = await response.json();
+                resultEl.innerHTML = formatOutput(data, response.ok);
+            } catch (error) {
+                resultEl.innerHTML = formatOutput({ error: error.message }, false);
+            }
+        }
+
+        // Test GET Account Balance
+        async function testGetBalance() {
+            const accountId = document.getElementById('balanceAccountId').value;
+            const resultEl = document.getElementById('balanceResult');
+            
+            if (!accountId) {
+                resultEl.innerHTML = formatOutput({ error: 'Please enter an account ID' }, false);
+                return;
+            }
+            
+            resultEl.textContent = 'Loading...';
+            
+            try {
+                const response = await fetch(`${API_BASE}/account/${accountId}/balance`);
+                const data = await response.json();
+                resultEl.innerHTML = formatOutput(data, response.ok);
+            } catch (error) {
+                resultEl.innerHTML = formatOutput({ error: error.message }, false);
+            }
+        }
+
+        // Auto-load data on page load
+        window.onload = () => {
+            console.log('🧪 Test page loaded. Ready to test CRUD operations!');
+        };
+    </script>
+</body>
+</html>

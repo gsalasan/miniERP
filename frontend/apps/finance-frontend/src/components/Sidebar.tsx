@@ -45,13 +45,8 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, setIsOpen }) => {
           icon: DocumentTextIcon,
         },
         {
-          name: 'Journal Entry',
-          path: '/journal',
-          icon: DocumentTextIcon,
-        },
-        {
-          name: 'Reports',
-          path: '/reports',
+          name: 'Kokpit Finansial',
+          path: '/financial-cockpit',
           icon: ChartBarIcon,
         },
       ],
@@ -94,21 +89,19 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, setIsOpen }) => {
         } w-64 bg-primary-dark text-white shadow-2xl`}
       >
         {/* Header */}
-        <div className="flex items-center justify-between p-6 border-b border-white/10">
-          <div className="flex items-center space-x-3">
-            <div className="w-10 h-10 bg-accent-gold rounded-lg flex items-center justify-center shadow-lg">
-              <span className="text-xl font-bold text-primary-dark">M</span>
-            </div>
-            <div>
-              <h2 className="text-xl font-bold text-white">
-                miniERP
-              </h2>
-              <p className="text-xs text-primary-light">Finance Module</p>
-            </div>
+        <div className="flex flex-col items-center justify-center pt-1 bg-gradient-to-b from-accent-gold to-accent-gold/90 border-b-4 border-accent-gold">
+          {/* Logo Image */}
+          <div className="w-36 h-36 flex items-center justify-center">
+            <img 
+              src="/logo.png" 
+              alt="Logo" 
+              className="w-full h-full object-contain"
+            />
           </div>
+          <p className="text-sm font-semibold text-primary-dark -mt-6 pb-0.5">Finance Module</p>
           <button
             onClick={() => setIsOpen(false)}
-            className="lg:hidden text-primary-light hover:text-white transition-colors"
+            className="lg:hidden text-primary-dark hover:text-primary transition-colors absolute top-2 right-2"
           >
             <XMarkIcon className="h-6 w-6" />
           </button>

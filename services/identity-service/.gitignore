@@ -1,2 +1,9 @@
+<<<<<<< HEAD
 node_modules
+=======
+# Dependencies
+node_modules/
+
+# Environment variables
+>>>>>>> main
 .env
