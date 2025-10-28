@@ -112,101 +112,7 @@ const Dashboard: React.FC = () => {
       color: "#6B7280",
     },
   ];
->>>>>>> main
 
-  // Available modules
-  const modules: Module[] = [
-    {
-      id: "cost-estimation",
-      name: "Cost Estimation",
-      description: "Manage material costs and project estimations",
-      icon: (
-        <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-          <path
-            d="M11.8 10.9C9.53 10.31 8.8 9.7 8.8 8.75C8.8 7.66 9.81 6.9 11.5 6.9C13.28 6.9 13.94 7.75 14 9H16.21C16.14 7.28 15.09 5.7 13 5.19V3H10V5.16C8.06 5.58 6.5 6.84 6.5 8.77C6.5 11.08 8.41 12.23 11.2 12.9C13.7 13.5 14.2 14.38 14.2 15.31C14.2 16 13.71 17.1 11.5 17.1C9.44 17.1 8.63 16.18 8.5 15H6.32C6.44 17.19 8.08 18.42 10 18.83V21H13V18.85C14.95 18.5 16.5 17.35 16.5 15.3C16.5 12.46 14.07 11.5 11.8 10.9Z"
-            fill="currentColor"
-          />
-        </svg>
-      ),
-      url: "http://localhost:3011", // Engineering frontend URL
-      color: "#10B981",
-    },
-    {
-      id: "crm",
-      name: "CRM",
-      description: "Customer Relationship Management",
-      icon: (
-        <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-          <path
-            d="M16 4C18.2 4 20 5.8 20 8C20 10.2 18.2 12 16 12C13.8 12 12 10.2 12 8C12 5.8 13.8 4 16 4ZM16 14C20.4 14 24 15.8 24 18V20H8V18C8 15.8 11.6 14 16 14ZM8 12C10.2 12 12 10.2 12 8C12 5.8 10.2 4 8 4C5.8 4 4 5.8 4 8C4 10.2 5.8 12 8 12ZM8 14C3.6 14 0 15.8 0 18V20H8V18C8 16.9 8.7 15.5 10.1 14.7C9.5 14.3 8.8 14 8 14Z"
-            fill="currentColor"
-          />
-        </svg>
-      ),
-      url: "http://localhost:5171", // CRM frontend URL (placeholder)
-      color: "#3B82F6",
-    },
-    {
-      id: "hr",
-      name: "Human Resources",
-      description: "Employee and HR management",
-      icon: (
-        <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-          <path
-            d="M12 12C14.21 12 16 10.21 16 8C16 5.79 14.21 4 12 4C9.79 4 8 5.79 8 8C8 10.21 9.79 12 12 12ZM12 14C9.33 14 4 15.34 4 18V20H20V18C20 15.34 14.67 14 12 14Z"
-            fill="currentColor"
-          />
-        </svg>
-      ),
-      url: "http://localhost:3013", // HR frontend URL (placeholder)
-      color: "#F59E0B",
-    },
-    {
-      id: "finance",
-      name: "Finance",
-      description: "Financial management and accounting",
-      icon: (
-        <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-          <path
-            d="M16 6L18.29 8.29L13.41 13.17L9.41 9.17L2 16.59L3.41 18L9.41 12L13.41 16L19.71 9.7L22 12V6H16Z"
-            fill="currentColor"
-          />
-        </svg>
-      ),
-      url: "http://localhost:5172", // Finance frontend URL (placeholder)
-      color: "#8B5CF6",
-    },
-    {
-      id: "procurement",
-      name: "Procurement",
-      description: "Purchase orders and supplier management",
-      icon: (
-        <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-          <path
-            d="M19 7H16V6C16 3.79 14.21 2 12 2C9.79 2 8 3.79 8 6V7H5C3.9 7 3 7.9 3 9V19C3 20.1 3.9 21 5 21H19C20.1 21 21 20.1 21 19V9C21 7.9 20.1 7 19 7ZM10 6C10 4.9 10.9 4 12 4C13.1 4 14 4.9 14 6V7H10V6ZM19 19H5V9H19V19ZM12 12C10.9 12 10 12.9 10 14C10 15.1 10.9 16 12 16C13.1 16 14 15.1 14 14C14 12.9 13.1 12 12 12Z"
-            fill="currentColor"
-          />
-        </svg>
-      ),
-      url: "http://localhost:5176", // Procurement frontend URL (placeholder)
-      color: "#EF4444",
-    },
-    {
-      id: "project",
-      name: "Project Management",
-      description: "Project planning and tracking",
-      icon: (
-        <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-          <path
-            d="M14 2H6C4.9 2 4 2.9 4 4V20C4 21.1 4.89 22 5.99 22H18C19.1 22 20 21.1 20 20V8L14 2ZM18 20H6V4H13V9H18V20ZM8 15.01L9.41 16.42L11 14.84L8 11.83L5 14.84L6.41 16.25L8 15.01Z"
-            fill="currentColor"
-          />
-        </svg>
-      ),
-      url: "http://localhost:5177", // Project frontend URL (placeholder)
-      color: "#6B7280",
-    },
-  ];
 
   useEffect(() => {
     // Ambil token dari localStorage
@@ -229,8 +135,8 @@ const Dashboard: React.FC = () => {
           if (typeof window !== 'undefined') window.location.href = "/";
         }
       })
+      .catch(() => {
         window.location.href = "/";
->>>>>>> main
       });
   }, []);
 
@@ -257,6 +163,11 @@ const Dashboard: React.FC = () => {
   };
 
   const logout = () => {
+    localStorage.removeItem("token");
+    window.location.href = "/";
+  };
+
+  return (
     <div
       style={{
         minHeight: "100vh",
@@ -390,7 +301,6 @@ const Dashboard: React.FC = () => {
               Logout
             </button>
           </div>
->>>>>>> main
         </div>
 
         {/* Modules Grid */}
