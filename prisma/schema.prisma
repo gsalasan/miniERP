@@ -1,6 +1,5 @@
 generator client {
   provider = "prisma-client-js"
-  output  = "../services/finance-service/node_modules/.prisma/client"
 }
 
 
