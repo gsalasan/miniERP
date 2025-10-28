@@ -1,5 +1,4 @@
 {
-<<<<<<< HEAD
   "extends": "../../tsconfig.json",
   "compilerOptions": {
     "baseUrl": ".",
@@ -19,16 +18,3 @@
     "coverage"
   ]
 }
-=======
-  "compilerOptions": {
-    "target": "es2019",
-    "module": "commonjs",
-    "esModuleInterop": true,
-    "moduleResolution": "node",
-    "strict": true,
-    "skipLibCheck": true,
-    "outDir": "dist"
-  },
-  "include": ["src"]
-}
->>>>>>> e548ed33b343102f25db3f49a5ff818b42c36d09

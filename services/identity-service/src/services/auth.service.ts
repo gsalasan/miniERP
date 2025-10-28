@@ -1,22 +1,10 @@
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
-<<<<<<< HEAD
-=======
-<<<<<<< HEAD
 import { PrismaClient } from '@prisma/client';
->>>>>>> main
 
 // UserRole type definition matching the database enum
 type UserRole = 'CEO' | 'FINANCE_ADMIN' | 'SALES' | 'SALES_MANAGER' | 'PROJECT_MANAGER' | 'PROJECT_ENGINEER' | 'HR_ADMIN' | 'EMPLOYEE' | 'PROCUREMENT_ADMIN' | 'ASSET_ADMIN' | 'SYSTEM_ADMIN';
-=======
->>>>>>> main
 
-<<<<<<< HEAD
-=======
-// UserRole type definition matching the database enum
-type UserRole = 'CEO' | 'FINANCE_ADMIN' | 'SALES' | 'SALES_MANAGER' | 'PROJECT_MANAGER' | 'PROJECT_ENGINEER' | 'HR_ADMIN' | 'EMPLOYEE' | 'PROCUREMENT_ADMIN' | 'ASSET_ADMIN' | 'SYSTEM_ADMIN';
-
->>>>>>> main
 // Initialize Prisma Client with error handling
 let prismaClient: any = null;
 
@@ -41,11 +29,7 @@ const mockUsers: Array<{
   email: string;
   password_hash: string;
   roles: UserRole[];
-<<<<<<< HEAD
-  // employee_id?: string; // removed
-=======
   employee_id?: string;
->>>>>>> main
   is_active: boolean;
   created_at: Date;
   updated_at: Date;
@@ -79,29 +63,11 @@ export const findUserByEmail = async (email: string): Promise<any> => {
 export const createUser = async (
   email: string,
   password: string,
-<<<<<<< HEAD
-  roles: UserRole[]
-): Promise<any> => {
-  const prisma = initializePrisma();
-  const password_hash = await bcrypt.hash(password, 10);
-=======
   roles: UserRole[],
   employee_id?: string
 ): Promise<any> => {
   const prisma = initializePrisma();
   const password_hash = await bcrypt.hash(password, 10);
-<<<<<<< HEAD
-  return prisma.users.create({
-    data: {
-      email,
-      password_hash,
-      roles: roles.length > 0 ? roles : ['EMPLOYEE'],
-      employee_id: employee_id || null,
-      is_active: true,
-    },
-  });
-=======
->>>>>>> main
   
   if (prisma) {
     try {
@@ -110,10 +76,7 @@ export const createUser = async (
           email,
           password_hash,
           roles: roles.length > 0 ? roles : ['EMPLOYEE' as UserRole],
-<<<<<<< HEAD
-=======
           employee_id: employee_id || null,
->>>>>>> main
           is_active: true,
         },
       });
@@ -124,11 +87,7 @@ export const createUser = async (
       throw error;
     }
   }
-<<<<<<< HEAD
-
-=======
   
->>>>>>> main
   // Fallback to mock data
   console.log(`Fallback: creating user in mock data`);
   const newUser = {
@@ -136,10 +95,7 @@ export const createUser = async (
     email,
     password_hash,
     roles: roles.length > 0 ? roles : ['EMPLOYEE' as UserRole],
-<<<<<<< HEAD
-=======
     employee_id: employee_id || undefined,
->>>>>>> main
     is_active: true,
     created_at: new Date(),
     updated_at: new Date(),
@@ -147,13 +103,7 @@ export const createUser = async (
   
   mockUsers.push(newUser);
   console.log(`User created in mock data:`, newUser.email);
-<<<<<<< HEAD
-
   return newUser;
-=======
-  return newUser;
->>>>>>> main
->>>>>>> main
 };
 
 // ✅ Generate JWT Token

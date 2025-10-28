@@ -1,11 +1,4 @@
 {
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-=======
-=======
->>>>>>> main
->>>>>>> main
   "extends": "../../tsconfig.json",
   "compilerOptions": {
     "baseUrl": ".",
@@ -15,7 +8,6 @@
     "outDir": "./dist",
     "rootDir": "./src"
   },
-<<<<<<< HEAD
   "include": [
     "src/**/*"
   ],
@@ -25,37 +17,4 @@
     "build",
     "coverage"
   ]
-=======
-  "compilerOptions": {
-    "target": "ES2020",
-    "module": "CommonJS",
-    "moduleResolution": "node",
-    "outDir": "dist",
-    "rootDir": "src",
-    "esModuleInterop": true,
-    "strict": true,
-    "skipLibCheck": true
-  }
->>>>>>> main
 }
-=======
-<<<<<<< HEAD
-  "extends": "../../tsconfig.json",
-  "compilerOptions": {
-    "baseUrl": ".",
-    "paths": {
-      "@/*": ["./src/*"]
-    },
-    "outDir": "./dist",
-    "rootDir": "./src"
-  },
-  "include": ["src/**/*"],
-  "exclude": ["node_modules", "dist", "build", "coverage"]
-}
->>>>>>> e548ed33b343102f25db3f49a5ff818b42c36d09
-=======
-  "include": ["src/**/*"],
-  "exclude": ["node_modules", "dist", "build", "coverage"]
-}
->>>>>>> main
->>>>>>> main
