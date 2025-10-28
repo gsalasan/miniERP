@@ -6,9 +6,13 @@
   "scripts": {
     "dev": "vite",
 <<<<<<< HEAD
+    "build": "vite build",
+=======
+<<<<<<< HEAD
     "build": "tsc && vite build",
 =======
     "build": "vite build",
+>>>>>>> main
 >>>>>>> main
     "preview": "vite preview",
     "lint": "eslint src --ext .ts,.tsx --fix",
@@ -32,6 +36,12 @@
     "@types/react": "^18.2.21",
     "@types/react-dom": "^18.2.7",
 <<<<<<< HEAD
+    "vite": "^4.4.9",
+    "@vitejs/plugin-react": "^4.0.4",
+    "eslint": "^9.37.0",
+    "prettier": "^3.6.2"
+=======
+<<<<<<< HEAD
     "@vitejs/plugin-react": "^4.0.4",
     "autoprefixer": "^10.4.16",
     "eslint": "^9.37.0",
@@ -54,6 +64,7 @@
 =======
     "eslint": "^9.37.0",
     "prettier": "^3.6.2"
+>>>>>>> main
 >>>>>>> main
   }
 }

@@ -1,16 +1,7 @@
-import React from "react";
-import { CssBaseline, Container, Typography } from "@mui/material";
 
-function App() {
-  return (
-    <Container maxWidth="sm">
-      <CssBaseline />
-      <Typography variant="h3" align="center" gutterBottom>
-        HR Frontend
-      </Typography>
-      <Typography align="center">Modul HR miniERP</Typography>
-    </Container>
-  );
+import React from 'react';
+import AppRouter from './router';
+
+export default function App() {
+  return <AppRouter />;
 }
-
-export default App;

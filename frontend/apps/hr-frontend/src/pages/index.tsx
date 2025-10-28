@@ -1,1 +1,1 @@
-// HR page components
+// placeholder index for pages

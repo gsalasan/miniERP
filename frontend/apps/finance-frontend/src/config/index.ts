@@ -1,5 +1,7 @@
 // Finance config and constants
 <<<<<<< HEAD
+=======
+<<<<<<< HEAD
 
 // Use relative path for API calls - Vite will proxy to backend
 export const API_BASE_URL = '';  // Empty for relative URLs
@@ -25,4 +27,5 @@ export const ACCOUNT_TYPES = [
 
 export type AccountType = typeof ACCOUNT_TYPES[number]['value'];
 =======
+>>>>>>> main
 >>>>>>> main

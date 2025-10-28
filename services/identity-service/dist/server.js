@@ -1,4 +1,15 @@
 <<<<<<< HEAD
+"use strict";
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+const app_1 = __importDefault(require("./app"));
+const dotenv_1 = __importDefault(require("dotenv"));
+const client_1 = require("@prisma/client");
+// Load environment variables
+=======
+<<<<<<< HEAD
 'use strict';
 var __importDefault =
   (this && this.__importDefault) ||
@@ -8,9 +19,11 @@ var __importDefault =
 Object.defineProperty(exports, '__esModule', { value: true });
 const app_1 = __importDefault(require('./app'));
 const dotenv_1 = __importDefault(require('dotenv'));
+>>>>>>> main
 dotenv_1.default.config();
-console.log('>>> DEBUG JWT_SECRET =', process.env.JWT_SECRET);
 const PORT = process.env.PORT || 3001;
+<<<<<<< HEAD
+=======
 app_1.default.listen(PORT, () =>
   console.log(`Identity Service running on port ${PORT}`)
 );
@@ -26,6 +39,7 @@ const client_1 = require("@prisma/client");
 // Load environment variables
 dotenv_1.default.config();
 const PORT = process.env.PORT || 3001;
+>>>>>>> main
 const prisma = new client_1.PrismaClient();
 // Database connection check
 async function connectDatabase() {
@@ -69,11 +83,19 @@ async function startServer() {
         await connectDatabase();
         // Start the server
         const server = app_1.default.listen(PORT, () => {
+<<<<<<< HEAD
+            console.log(' Identity Service started successfully');
+            console.log(` Server running on port ${PORT}`);
+            console.log(` Health check: http://localhost:${PORT}/health`);
+            console.log(` Auth API: http://localhost:${PORT}/api/v1/auth`);
+            console.log(` Environment: ${process.env.NODE_ENV || 'development'}`);
+=======
             console.log('🚀 Identity Service started successfully');
             console.log(`📍 Server running on port ${PORT}`);
             console.log(`🌐 Health check: http://localhost:${PORT}/health`);
             console.log(`🔐 Auth API: http://localhost:${PORT}/api/auth`);
             console.log(`📝 Environment: ${process.env.NODE_ENV || 'development'}`);
+>>>>>>> main
         });
         // Handle server errors
         server.on('error', (error) => {
@@ -88,5 +110,9 @@ async function startServer() {
 }
 // Start the application
 startServer();
+<<<<<<< HEAD
 //# sourceMappingURL=server.js.map
+=======
+//# sourceMappingURL=server.js.map
+>>>>>>> main
 >>>>>>> main

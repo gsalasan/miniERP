@@ -1,10 +1,13 @@
+
+import dotenv from 'dotenv';
+import path from 'path';
+// Load environment variables from hr-service directory specifically
+dotenv.config({ path: path.join(__dirname, '..', '.env') });
+
 import express from 'express';
 import cors from 'cors';
-import dotenv from 'dotenv';
+import employeeRoutes from './routes/employee.routes';
 import { PrismaClient } from '@prisma/client';
-
-// Load environment variables
-dotenv.config();
 
 // Initialize Prisma client
 const prisma = new PrismaClient();
@@ -42,9 +45,13 @@ app.get('/api/v1/test-hr-models', async (req, res) => {
     const attendanceCount = await prisma.hr_attendances.count();
     const leaveCount = await prisma.hr_leave_requests.count();
 <<<<<<< HEAD
+
+=======
+<<<<<<< HEAD
     
 =======
 
+>>>>>>> main
 >>>>>>> main
     res.json({
       success: true,
@@ -54,10 +61,15 @@ app.get('/api/v1/test-hr-models', async (req, res) => {
         hr_attendances: attendanceCount,
 <<<<<<< HEAD
         hr_leave_requests: leaveCount
+<<<<<<< HEAD
+      },
+      database_connected: true
+=======
       }
 =======
         hr_leave_requests: leaveCount,
       },
+>>>>>>> main
 >>>>>>> main
     });
   } catch (error) {
@@ -65,16 +77,24 @@ app.get('/api/v1/test-hr-models', async (req, res) => {
       success: false,
       message: 'Error testing HR models',
 <<<<<<< HEAD
+      error: error instanceof Error ? error.message : 'Unknown error',
+      database_connected: false
+=======
+<<<<<<< HEAD
       error: error instanceof Error ? error.message : 'Unknown error'
 =======
       error: error instanceof Error ? error.message : 'Unknown error',
+>>>>>>> main
 >>>>>>> main
     });
   }
 });
 
+// API routes
+app.use('/api/v1', employeeRoutes);
 // API routes will be added here
 // app.use('/api/v1/employees', employeeRoutes);
+
 // app.use('/api/v1/attendance', attendanceRoutes);
 // app.use('/api/v1/leaves', leaveRoutes);
 // app.use('/api/v1/performance', performanceRoutes);

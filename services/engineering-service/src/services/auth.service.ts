@@ -1,4 +1,8 @@
 <<<<<<< HEAD
+// This file is not currently used
+// Materials functionality is handled in materialsService.ts
+=======
+<<<<<<< HEAD
 import prisma from "../prisma/client";
 
 export const getMaterials = async () => {
@@ -7,4 +11,5 @@ export const getMaterials = async () => {
 =======
 // This file is not currently used
 // Materials functionality is handled in materialsService.ts
+>>>>>>> main
 >>>>>>> main

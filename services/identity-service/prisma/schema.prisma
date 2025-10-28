@@ -31,6 +31,9 @@ model employees {
 
 <<<<<<< HEAD
 =======
+<<<<<<< HEAD
+=======
+>>>>>>> main
 model Material {
   id            String            @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   sbu           String?
@@ -240,6 +243,9 @@ model hr_employee_documents {
   @@map("hr_employee_documents")
 }
 
+<<<<<<< HEAD
+=======
+>>>>>>> main
 >>>>>>> main
 enum UserRole {
   CEO
@@ -255,6 +261,9 @@ enum UserRole {
   SYSTEM_ADMIN
 <<<<<<< HEAD
 =======
+<<<<<<< HEAD
+=======
+>>>>>>> main
 }
 
 enum MaterialStatus {
@@ -390,5 +399,8 @@ enum AccountType {
   Equity
   Revenue
   Expense
+<<<<<<< HEAD
+=======
+>>>>>>> main
 >>>>>>> main
 }

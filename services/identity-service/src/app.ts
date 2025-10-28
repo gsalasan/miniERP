@@ -7,6 +7,7 @@ import authRoutes from './routes/auth.routes';
 import employeeRoutes from './routes/employee.routes';
 >>>>>>> main
 
+
 // Load environment variables
 dotenv.config();
 
@@ -34,6 +35,7 @@ app.get('/health', (req, res) => {
 app.use('/api/v1/auth', authRoutes);
 <<<<<<< HEAD
 
+
 // 404 handler
 app.use('*', (req, res) => {
   res.status(404).json({
@@ -55,6 +57,9 @@ app.use((err: any, req: express.Request, res: express.Response, next: express.Ne
 });
 
 export default app;
+<<<<<<< HEAD
+
+=======
 =======
 app.use('/api/v1', employeeRoutes);
 
@@ -89,4 +94,5 @@ app.use((err: any, req: express.Request, res: express.Response, next: express.Ne
 
 export default app;
 
+>>>>>>> main
 >>>>>>> main

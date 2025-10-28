@@ -13,10 +13,14 @@
 <<<<<<< HEAD
     "dev:frontend": "npm --prefix frontend run dev",
 =======
+<<<<<<< HEAD
+    "dev:frontend": "npm --prefix frontend run dev",
+=======
     "dev:crm": "npm --prefix services/crm-service run dev",
     "dev:frontend/crm": "npm --prefix frontend/apps/crm-frontend run dev",
     "dev:frontend": "npm --prefix frontend run dev",
     "dev:all": "concurrently \"npm run dev:identity\" \"npm run dev:crm\" \"npm run dev:frontend/crm\"",
+>>>>>>> main
 >>>>>>> main
     "build:frontend": "npm --prefix frontend run build",
     "build:services": "npm run build --workspaces --if-present",
@@ -39,8 +43,12 @@
 <<<<<<< HEAD
     "typescript": "^5.6.3"
 =======
+<<<<<<< HEAD
+    "typescript": "^5.6.3"
+=======
     "typescript": "^5.6.3",
     "concurrently": "^8.2.2"
+>>>>>>> main
 >>>>>>> main
   },
   "dependencies": {

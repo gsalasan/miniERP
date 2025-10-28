@@ -1,1 +1,1 @@
-// HR layout components
+// placeholder index for layouts

@@ -1,4 +1,8 @@
+<<<<<<< HEAD
+import { CustomerStatus } from '@prisma/client';
+=======
 import { CustomerStatus } from "@prisma/client";
+>>>>>>> main
 
 export interface ValidationResult {
   isValid: boolean;
@@ -13,6 +17,49 @@ export function validateCustomerData(
 
   // Required fields untuk create
   if (!isUpdate) {
+<<<<<<< HEAD
+    if (!data.customer_name || typeof data.customer_name !== 'string') {
+      errors.push('Nama customer harus diisi dan berupa string');
+    }
+
+    if (!data.channel || typeof data.channel !== 'string') {
+      errors.push('Channel harus diisi dan berupa string');
+    }
+
+    if (!data.city || typeof data.city !== 'string') {
+      errors.push('Kota harus diisi dan berupa string');
+    }
+
+    if (
+      !data.status ||
+      !Object.values(CustomerStatus).includes(data.status as CustomerStatus)
+    ) {
+      errors.push(
+        `Status harus diisi dan berupa salah satu dari: ${Object.values(
+          CustomerStatus
+        ).join(', ')}`
+      );
+    }
+
+    if (data.top_days === undefined || typeof data.top_days !== 'number') {
+      errors.push('TOP days harus diisi dan berupa angka');
+    }
+  } else {
+    // Validasi untuk update (optional fields)
+    if (
+      data.customer_name !== undefined &&
+      typeof data.customer_name !== 'string'
+    ) {
+      errors.push('Nama customer harus berupa string');
+    }
+
+    if (data.channel !== undefined && typeof data.channel !== 'string') {
+      errors.push('Channel harus berupa string');
+    }
+
+    if (data.city !== undefined && typeof data.city !== 'string') {
+      errors.push('Kota harus berupa string');
+=======
     if (!data.customer_name || typeof data.customer_name !== "string") {
       errors.push("Nama customer harus diisi dan berupa string");
     }
@@ -62,6 +109,7 @@ export function validateCustomerData(
 
     if (data.city !== undefined && typeof data.city !== "string") {
       errors.push("Kota harus berupa string");
+>>>>>>> main
     }
 
     if (
@@ -69,6 +117,16 @@ export function validateCustomerData(
       !Object.values(CustomerStatus).includes(data.status as CustomerStatus)
     ) {
       errors.push(
+<<<<<<< HEAD
+        `Status harus berupa salah satu dari: ${Object.values(
+          CustomerStatus
+        ).join(', ')}`
+      );
+    }
+
+    if (data.top_days !== undefined && typeof data.top_days !== 'number') {
+      errors.push('TOP days harus berupa angka');
+=======
         `Status harus berupa salah satu dari: ${Object.values(CustomerStatus).join(", ")}`
       );
     }
@@ -94,10 +152,33 @@ export function validateCustomerData(
           errors.push("NPWP wajib diisi jika customer adalah PKP (memiliki SPPKP)");
         }
       }
+>>>>>>> main
     }
   }
 
   // Optional fields validation
+<<<<<<< HEAD
+  if (
+    data.assigned_sales_id !== undefined &&
+    typeof data.assigned_sales_id !== 'string'
+  ) {
+    errors.push('Assigned sales ID harus berupa string');
+  }
+
+  if (
+    data.credit_limit !== undefined &&
+    typeof data.credit_limit !== 'number'
+  ) {
+    errors.push('Credit limit harus berupa angka');
+  }
+
+  if (data.no_npwp !== undefined && typeof data.no_npwp !== 'string') {
+    errors.push('No NPWP harus berupa string');
+  }
+
+  if (data.sppkp !== undefined && typeof data.sppkp !== 'string') {
+    errors.push('SPPKP harus berupa string');
+=======
   if (data.assigned_sales_id !== undefined && typeof data.assigned_sales_id !== "string") {
     errors.push("Assigned sales ID harus berupa string");
   }
@@ -112,16 +193,47 @@ export function validateCustomerData(
 
   if (data.sppkp !== undefined && typeof data.sppkp !== "string") {
     errors.push("SPPKP harus berupa string");
+>>>>>>> main
   }
 
   // Validate contacts if provided
   if (data.contacts !== undefined) {
     if (!Array.isArray(data.contacts)) {
+<<<<<<< HEAD
+      errors.push('Contacts harus berupa array');
+=======
       errors.push("Contacts harus berupa array");
+>>>>>>> main
     } else {
       data.contacts.forEach((contact: unknown, index: number) => {
         const contactData = contact as Record<string, unknown>;
 
+<<<<<<< HEAD
+        if (!contactData.name || typeof contactData.name !== 'string') {
+          errors.push(
+            `Contact ${index + 1}: Nama harus diisi dan berupa string`
+          );
+        }
+
+        if (
+          contactData.position !== undefined &&
+          typeof contactData.position !== 'string'
+        ) {
+          errors.push(`Contact ${index + 1}: Position harus berupa string`);
+        }
+
+        if (
+          contactData.email !== undefined &&
+          typeof contactData.email !== 'string'
+        ) {
+          errors.push(`Contact ${index + 1}: Email harus berupa string`);
+        }
+
+        if (
+          contactData.phone !== undefined &&
+          typeof contactData.phone !== 'string'
+        ) {
+=======
         if (!contactData.name || typeof contactData.name !== "string") {
           errors.push(`Contact ${index + 1}: Nama harus diisi dan berupa string`);
         }
@@ -135,21 +247,35 @@ export function validateCustomerData(
         }
 
         if (contactData.phone !== undefined && typeof contactData.phone !== "string") {
+>>>>>>> main
           errors.push(`Contact ${index + 1}: Phone harus berupa string`);
         }
 
         if (
           contactData.contact_person !== undefined &&
+<<<<<<< HEAD
+          typeof contactData.contact_person !== 'string'
+        ) {
+          errors.push(
+            `Contact ${index + 1}: Contact person harus berupa string`
+          );
+=======
           typeof contactData.contact_person !== "string"
         ) {
           errors.push(`Contact ${index + 1}: Contact person harus berupa string`);
+>>>>>>> main
         }
 
         // Validate email format if provided
         if (
           contactData.email &&
+<<<<<<< HEAD
+          typeof contactData.email === 'string' &&
+          contactData.email.trim() !== ''
+=======
           typeof contactData.email === "string" &&
           contactData.email.trim() !== ""
+>>>>>>> main
         ) {
           const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
           if (!emailRegex.test(contactData.email)) {
@@ -174,6 +300,26 @@ export function validateCustomerContactData(
 
   // Required fields untuk create
   if (!isUpdate) {
+<<<<<<< HEAD
+    if (!data.customer_id || typeof data.customer_id !== 'string') {
+      errors.push('Customer ID harus diisi dan berupa string');
+    }
+
+    if (!data.name || typeof data.name !== 'string') {
+      errors.push('Nama contact harus diisi dan berupa string');
+    }
+  } else {
+    // Validasi untuk update (optional fields)
+    if (
+      data.customer_id !== undefined &&
+      typeof data.customer_id !== 'string'
+    ) {
+      errors.push('Customer ID harus berupa string');
+    }
+
+    if (data.name !== undefined && typeof data.name !== 'string') {
+      errors.push('Nama contact harus berupa string');
+=======
     if (!data.customer_id || typeof data.customer_id !== "string") {
       errors.push("Customer ID harus diisi dan berupa string");
     }
@@ -189,10 +335,41 @@ export function validateCustomerContactData(
 
     if (data.name !== undefined && typeof data.name !== "string") {
       errors.push("Nama contact harus berupa string");
+>>>>>>> main
     }
   }
 
   // Optional fields validation
+<<<<<<< HEAD
+  if (data.position !== undefined && typeof data.position !== 'string') {
+    errors.push('Position harus berupa string');
+  }
+
+  if (data.email !== undefined && typeof data.email !== 'string') {
+    errors.push('Email harus berupa string');
+  }
+
+  if (data.phone !== undefined && typeof data.phone !== 'string') {
+    errors.push('Phone harus berupa string');
+  }
+
+  if (
+    data.contact_person !== undefined &&
+    typeof data.contact_person !== 'string'
+  ) {
+    errors.push('Contact person harus berupa string');
+  }
+
+  // Validate email format if provided
+  if (
+    data.email &&
+    typeof data.email === 'string' &&
+    data.email.trim() !== ''
+  ) {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(data.email)) {
+      errors.push('Format email tidak valid');
+=======
   if (data.position !== undefined && typeof data.position !== "string") {
     errors.push("Position harus berupa string");
   }
@@ -214,6 +391,7 @@ export function validateCustomerContactData(
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(data.email)) {
       errors.push("Format email tidak valid");
+>>>>>>> main
     }
   }
 

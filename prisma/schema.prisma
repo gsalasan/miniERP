@@ -1,5 +1,10 @@
 generator client {
+<<<<<<< HEAD
+  provider      = "prisma-client-js"
+  binaryTargets = ["native", "darwin-arm64"]
+=======
   provider = "prisma-client-js"
+>>>>>>> main
 }
 
 
@@ -12,6 +17,12 @@ model users {
   id            String     @id @default(uuid())
   email         String     @unique
   password_hash String
+<<<<<<< HEAD
+  roles         UserRole[] @default([EMPLOYEE])
+  employee_id   String?    @unique
+
+  is_active     Boolean    @default(true)
+=======
   role          UserRole
   employee_id   String? @unique
   is_active     Boolean    @default(true)
@@ -19,6 +30,7 @@ model users {
   updated_at    DateTime   @updatedAt
   roles         UserRole[] @default([EMPLOYEE])
   employee      employees? @relation(fields: [employee_id], references: [id])
+>>>>>>> main
 }
 
 model employees {
@@ -273,6 +285,9 @@ enum ServiceUnit {
 >>>>>>> main
 }
 
+<<<<<<< HEAD
+enum EmployeeStatus {
+=======
 
 model hr_employees {
   id                         String                   @id @default(uuid())
@@ -547,11 +562,48 @@ enum LeaveStatus {
 }
 
 enum CustomerStatus {
+>>>>>>> main
   ACTIVE
   INACTIVE
-  PROSPECT
+  TERMINATED
+  ON_LEAVE
+  SUSPENDED
 }
 
+<<<<<<< HEAD
+enum EmploymentType {
+  FULL_TIME
+  PART_TIME
+  CONTRACT
+  INTERN
+  FREELANCE
+}
+
+enum Gender {
+  MALE
+  FEMALE
+  OTHER
+  PREFER_NOT_TO_SAY
+}
+
+enum MaritalStatus {
+  SINGLE
+  MARRIED
+  DIVORCED
+  WIDOWED
+  SEPARATED
+}
+
+enum BloodType {
+  A_POSITIVE
+  A_NEGATIVE
+  B_POSITIVE
+  B_NEGATIVE
+  AB_POSITIVE
+  AB_NEGATIVE
+  O_POSITIVE
+  O_NEGATIVE
+=======
 enum Gender {
   MALE
   FEMALE
@@ -642,14 +694,44 @@ model exchange_rates {
   updated_at    DateTime @default(now()) @db.Timestamptz(6)
 
   @@map("exchange_rates")
+>>>>>>> main
 }
 
-enum AccountType {
-  Asset
-  Liability
-  Equity
-  Revenue
-  Expense
+enum EducationLevel {
+  HIGH_SCHOOL
+  DIPLOMA
+  BACHELOR
+  MASTER
+  DOCTORATE
+  CERTIFICATION
+  OTHER
+}
+
+enum LeaveType {
+  ANNUAL_LEAVE
+  SICK_LEAVE
+  MATERNITY_LEAVE
+  PATERNITY_LEAVE
+  EMERGENCY_LEAVE
+  UNPAID_LEAVE
+  STUDY_LEAVE
+  COMPENSATORY_LEAVE
+}
+
+enum LeaveStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  CANCELLED
+}
+
+enum AttendanceStatus {
+  PRESENT
+  ABSENT
+  LATE
+  HALF_DAY
+  WORK_FROM_HOME
+  ON_LEAVE
 }
 
 enum InvoiceStatus {

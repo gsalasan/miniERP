@@ -1,17 +1,88 @@
 import { Request, Response } from 'express';
 <<<<<<< HEAD
+import { PrismaClient } from '@prisma/client';
+import materialsService from '../services/materialsService';
+=======
+<<<<<<< HEAD
 import prisma from '../prisma/client';
+>>>>>>> main
 
+// Enum definitions to match database schema
+enum MaterialStatus {
+  Active = 'Active',
+  EndOfLife = 'EndOfLife',
+  Discontinue = 'Discontinue',
+}
+
+enum MaterialLocation {
+  Local = 'Local',
+  Import = 'Import',
+}
+
+const prisma = new PrismaClient({
+  datasources: {
+    db: {
+      url: process.env.DATABASE_URL,
+    },
+  },
+});
+
+// Get all materials with filtering, pagination, and search
 const getMaterials = async (req: Request, res: Response) => {
   try {
-    const materials = await prisma.material.findMany();
-    return res.json(materials);
+    console.log('Attempting to fetch materials from database...');
+
+    // Extract query parameters
+    const page = parseInt(req.query.page as string) || 1;
+    const limit = parseInt(req.query.limit as string) || 10;
+    const searchTerm = req.query.search as string;
+
+    // Extract filters
+    const filters = {
+      sbu: req.query.sbu as string,
+      system: req.query.system as string,
+      subsystem: req.query.subsystem as string,
+      status: req.query.status as MaterialStatus,
+      location: req.query.location as MaterialLocation,
+      vendor: req.query.vendor as string,
+      brand: req.query.brand as string,
+    };
+
+    // Remove undefined filters
+    Object.keys(filters).forEach(key => {
+      if (filters[key as keyof typeof filters] === undefined) {
+        delete filters[key as keyof typeof filters];
+      }
+    });
+
+    const result = await materialsService.getAllMaterials(
+      page,
+      limit,
+      filters,
+      searchTerm
+    );
+
+    console.log(
+      'Materials fetched successfully:',
+      result.data.length,
+      'records'
+    );
+    return res.json({
+      success: true,
+      ...result,
+    });
   } catch (error) {
-    console.error('Failed to fetch materials', error);
-    return res.status(500).json({ message: 'Failed to fetch materials' });
+    console.error('Failed to fetch materials - Detailed error:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Failed to fetch materials',
+      error: error instanceof Error ? error.message : 'Unknown error',
+    });
   }
 };
 
+<<<<<<< HEAD
+=======
 export default { getMaterials };
 =======
 import { PrismaClient } from '@prisma/client';
@@ -91,6 +162,7 @@ const getMaterials = async (req: Request, res: Response) => {
   }
 };
 
+>>>>>>> main
 // Get material by ID
 const getMaterialById = async (req: Request, res: Response) => {
   try {
@@ -407,4 +479,7 @@ export default {
   getFilterOptions,
   healthCheck,
 };
+<<<<<<< HEAD
+=======
+>>>>>>> main
 >>>>>>> main

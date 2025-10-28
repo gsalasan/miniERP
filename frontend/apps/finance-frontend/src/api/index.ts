@@ -1,5 +1,7 @@
 // API utilities and endpoints for Finance module
 <<<<<<< HEAD
+=======
+<<<<<<< HEAD
 import { API_ENDPOINTS } from '../config';
 
 // Types
@@ -532,4 +534,5 @@ class JournalEntriesAPI {
 
 export const journalEntriesAPI = new JournalEntriesAPI();
 =======
+>>>>>>> main
 >>>>>>> main
