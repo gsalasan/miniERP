@@ -1,11 +1,4 @@
 import { Request, Response } from 'express';
-<<<<<<< HEAD
-import { PrismaClient } from '@prisma/client';
-import materialsService from '../services/materialsService';
-=======
-<<<<<<< HEAD
-import prisma from '../prisma/client';
->>>>>>> main
 
 // Enum definitions to match database schema
 enum MaterialStatus {
@@ -81,10 +74,7 @@ const getMaterials = async (req: Request, res: Response) => {
   }
 };
 
-<<<<<<< HEAD
-=======
 export default { getMaterials };
-=======
 import { PrismaClient } from '@prisma/client';
 import materialsService from '../services/materialsService';
 
@@ -162,7 +152,6 @@ const getMaterials = async (req: Request, res: Response) => {
   }
 };
 
->>>>>>> main
 // Get material by ID
 const getMaterialById = async (req: Request, res: Response) => {
   try {
@@ -479,7 +468,3 @@ export default {
   getFilterOptions,
   healthCheck,
 };
-<<<<<<< HEAD
-=======
->>>>>>> main
->>>>>>> main

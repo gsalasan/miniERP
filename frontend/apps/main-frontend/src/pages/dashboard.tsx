@@ -7,22 +7,6 @@ interface User {
   employee_id?: string;
 }
 
-<<<<<<< HEAD
-interface Module {
-  id: string;
-  name: string;
-  description: string;
-  icon: JSX.Element;
-  url: string;
-  color: string;
-}
-
-=======
-<<<<<<< HEAD
->>>>>>> main
-const Dashboard: React.FC = () => {
-  const [user, setUser] = useState<User | null>(null);
-=======
 interface Module {
   id: string;
   name: string;
@@ -245,16 +229,6 @@ const Dashboard: React.FC = () => {
           if (typeof window !== 'undefined') window.location.href = "/";
         }
       })
-<<<<<<< HEAD
-      .catch(() => {
-        if (typeof window !== 'undefined') window.location.href = "/";
-=======
-<<<<<<< HEAD
-      .catch((error) => {
-        console.error("Error fetching user data:", error);
-=======
-      .catch(() => {
->>>>>>> main
         window.location.href = "/";
 >>>>>>> main
       });
@@ -271,11 +245,6 @@ const Dashboard: React.FC = () => {
       localStorage.setItem("cross_app_timestamp", Date.now().toString());
 
       // Navigate to the module
-<<<<<<< HEAD
-      if (typeof window !== 'undefined') window.open(module.url, "_blank");
-=======
-      window.open(module.url, "_blank");
->>>>>>> main
 
       // Clean up cross-app data after a short delay
       setTimeout(() => {
@@ -284,42 +253,10 @@ const Dashboard: React.FC = () => {
         localStorage.removeItem("cross_app_timestamp");
       }, 5000); // 5 seconds cleanup
     } else {
-<<<<<<< HEAD
-      if (typeof alert !== 'undefined') alert("Token atau data user tidak ditemukan. Silakan login ulang.");
-=======
-      alert("Token atau data user tidak ditemukan. Silakan login ulang.");
->>>>>>> main
     }
   };
 
   const logout = () => {
-<<<<<<< HEAD
-  localStorage.removeItem("token");
-  sessionStorage.clear();
-  if (typeof window !== 'undefined') window.location.href = "/";
-  };
-
-  return (
-=======
-    localStorage.removeItem("token");
-    sessionStorage.clear();
-    window.location.href = "/";
-  };
-
-  return (
-<<<<<<< HEAD
-    <div style={{ padding: 32 }}>
-      <h2>Berhasil Login!</h2>
-      {user ? (
-        <div>
-          <p>
-            Selamat datang, <b>{user.email}</b>
-          </p>
-          <p>
-            Role: <b>{user.roles && user.roles.length > 0 ? user.roles.join(', ') : 'Tidak ada role'}</b>
-          </p>
-=======
->>>>>>> main
     <div
       style={{
         minHeight: "100vh",
@@ -448,31 +385,11 @@ const Dashboard: React.FC = () => {
                 transition: "all 0.2s ease",
               }}
               onMouseEnter={(e) => {
-<<<<<<< HEAD
-                const btn = e.currentTarget as HTMLButtonElement;
-                btn.style.backgroundColor = "#DC2626";
-                btn.style.transform = "translateY(-1px)";
-              }}
-              onMouseLeave={(e) => {
-                const btn = e.currentTarget as HTMLButtonElement;
-                btn.style.backgroundColor = "#EF4444";
-                btn.style.transform = "translateY(0)";
-=======
-                e.currentTarget.style.backgroundColor = "#DC2626";
-                e.currentTarget.style.transform = "translateY(-1px)";
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.backgroundColor = "#EF4444";
-                e.currentTarget.style.transform = "translateY(0)";
->>>>>>> main
               }}
             >
               Logout
             </button>
           </div>
-<<<<<<< HEAD
-=======
->>>>>>> main
 >>>>>>> main
         </div>
 
@@ -531,31 +448,6 @@ const Dashboard: React.FC = () => {
                     overflow: "hidden",
                   }}
                   onMouseEnter={(e) => {
-<<<<<<< HEAD
-                    const div = e.currentTarget as HTMLDivElement;
-                    div.style.transform = "translateY(-8px) scale(1.02)";
-                    div.style.boxShadow =
-                      "0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)";
-                    div.style.borderColor = module.color;
-                  }}
-                  onMouseLeave={(e) => {
-                    const div = e.currentTarget as HTMLDivElement;
-                    div.style.transform = "translateY(0) scale(1)";
-                    div.style.boxShadow =
-                      "0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)";
-                    div.style.borderColor = "#E5E7EB";
-=======
-                    e.currentTarget.style.transform = "translateY(-8px) scale(1.02)";
-                    e.currentTarget.style.boxShadow =
-                      "0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)";
-                    e.currentTarget.style.borderColor = module.color;
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.transform = "translateY(0) scale(1)";
-                    e.currentTarget.style.boxShadow =
-                      "0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)";
-                    e.currentTarget.style.borderColor = "#E5E7EB";
->>>>>>> main
                   }}
                 >
                   {/* Gradient overlay */}

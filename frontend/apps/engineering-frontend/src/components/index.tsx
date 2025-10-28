@@ -1,6 +1,4 @@
 // Engineering shared components
-<<<<<<< HEAD
-=======
 export { default as MaterialsList } from "./MaterialsList";
 export { default as MaterialsStatsWidget } from "./MaterialsStatsWidget";
 export { default as MaterialFormModal } from "./MaterialFormModal";
@@ -14,4 +12,3 @@ export { default as ServiceDetailModal } from "./ServiceDetailModal";
 export { default as ServicesTableSkeleton } from "./ServicesTableSkeleton";
 
 export { default as DeleteConfirmationModal } from "./DeleteConfirmationModal";
->>>>>>> main

@@ -1,23 +1,4 @@
 import express from "express";
-<<<<<<< HEAD
-import { 
-  getExchangeRates, 
-  getExchangeRateById,
-  getLatestExchangeRate,
-  createExchangeRate, 
-  updateExchangeRate, 
-  deleteExchangeRate 
-} from "../controllers/exchangerates.controllers";
-
-const router = express.Router();
-
-router.get("/exchange-rates", getExchangeRates);
-router.get("/exchange-rates/latest", getLatestExchangeRate);
-router.get("/exchange-rates/:id", getExchangeRateById);
-router.post("/exchange-rates", createExchangeRate);
-router.put("/exchange-rates/:id", updateExchangeRate);
-router.delete("/exchange-rates/:id", deleteExchangeRate);
-=======
 import {
   getExchangeRates,
   getExchangeRateByCode,
@@ -37,6 +18,5 @@ router.post("/exchange-rates", verifyToken, createExchangeRate);
 router.put("/exchange-rates/:currency_code", verifyToken, updateExchangeRate);
 router.delete("/exchange-rates/:currency_code", verifyToken, deleteExchangeRate);
 router.post("/exchange-rates/bulk-update", verifyToken, bulkUpdateExchangeRates);
->>>>>>> main
 
 export default router;
