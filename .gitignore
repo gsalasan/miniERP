@@ -1,4 +1,5 @@
 .env
 node_modules
 services/identity-service/node_modules/send/node_modules
+services/identity-service/node_modules
 frontend/node_modules
