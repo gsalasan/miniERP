@@ -1,6 +1,8 @@
 // src/utils/app.ts
 import express from "express";
 import chartOfAccountsRoutes from "../routes/chartofaccounts.route";
+import taxRatesRoutes from "../routes/taxrates.route";
+import exchangeRatesRoutes from "../routes/exchangerates.route";
 
 const app = express();
 
@@ -10,6 +12,8 @@ app.use(express.urlencoded({ extended: true }));
 
 // Routes utama (finance)
 app.use("/api", chartOfAccountsRoutes);
+app.use("/api", taxRatesRoutes);
+app.use("/api", exchangeRatesRoutes);
 
 // Default route untuk test server
 app.get("/", (req, res) => {

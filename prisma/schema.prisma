@@ -12,7 +12,8 @@ model users {
   id            String     @id @default(uuid())
   email         String     @unique
   password_hash String
-  employee_id   String?    @unique
+  role          UserRole
+  employee_id   String? @unique
   is_active     Boolean    @default(true)
   created_at    DateTime   @default(now())
   updated_at    DateTime   @updatedAt
@@ -30,42 +31,6 @@ model employees {
   users        users?
 }
 
-model Material {
-  id            String            @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  sbu           String?
-  system        String?
-  subsystem     String?
-  components    String?
-  item_name     String
-  brand         String?
-  owner_pn      String?           @map("owner_pn")
-  vendor        String?
-  status        MaterialStatus?
-  location      MaterialLocation?
-  cost_ori      Decimal?          @db.Decimal(14, 2)
-  curr          String?           @db.VarChar(3)
-  satuan        String?           @db.VarChar(50)
-  cost_rp       Decimal?          @db.Decimal(14, 2)
-  cost_date     DateTime          @default(now()) @db.Timestamptz(6)
-  cost_validity DateTime?         @db.Timestamptz(6)
-  created_at    DateTime          @default(now()) @db.Timestamptz(6)
-  updated_at    DateTime          @default(now()) @db.Timestamptz(6)
-}
-
-model Service {
-  id                      String      @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  service_name            String
-  service_code            String      @unique
-  item_type               String      @default("Service")
-  category                String?
-  unit                    ServiceUnit
-  internal_cost_per_hour  Decimal?    @db.Decimal(14, 2)
-  freelance_cost_per_hour Decimal?    @db.Decimal(14, 2)
-  default_duration        Decimal?    @db.Decimal(10, 2)
-  is_active               Boolean     @default(true)
-  created_at              DateTime    @default(now()) @db.Timestamptz(6)
-  updated_at              DateTime    @default(now()) @db.Timestamptz(6)
-}
 
 model hr_employees {
   id                         String                   @id @default(uuid())
@@ -266,92 +231,83 @@ model customers {
   customer_contacts customer_contacts[]
 }
 
-model ChartOfAccounts {
-  id           Int         @id @default(autoincrement())
-  account_code String      @unique
-  account_name String
-  account_type AccountType
-  description  String?
-  created_at   DateTime    @default(now())
-  updated_at   DateTime    @updatedAt
+enum Gender {
+  MALE
+  FEMALE
+  OTHER
 }
 
-model exchange_rates {
-  id             Int      @id @default(autoincrement())
-  currency_from  String   @db.VarChar(3)
-  currency_to    String   @db.VarChar(3)
-  rate           Decimal  @db.Decimal(18, 6)
-  effective_date DateTime @db.Date
-  is_active      Boolean  @default(true)
-  created_at     DateTime @default(now())
-  updated_at     DateTime @default(now())
-
-  @@unique([currency_from, currency_to, effective_date])
+enum MaritalStatus {
+  SINGLE
+  MARRIED
+  DIVORCED
+  WIDOWED
 }
 
-model invoices {
-  id               String        @id
-  invoice_number   String        @unique
-  invoice_date     DateTime      @db.Date
-  due_date         DateTime      @db.Date
-  customer_id      String?
-  customer_name    String
-  customer_address String?
-  customer_phone   String?
-  customer_email   String?
-  subtotal         Decimal       @db.Decimal(15, 2)
-  tax_amount       Decimal       @default(0) @db.Decimal(15, 2)
-  discount_amount  Decimal       @default(0) @db.Decimal(15, 2)
-  total_amount     Decimal       @db.Decimal(15, 2)
-  currency         String        @default("IDR") @db.VarChar(3)
-  status           InvoiceStatus @default(DRAFT)
-  notes            String?
-  payment_terms    String?
-  created_by       String?
-  updated_by       String?
-  created_at       DateTime      @default(now())
-  updated_at       DateTime
+enum BloodType {
+  A_POSITIVE
+  A_NEGATIVE
+  B_POSITIVE
+  B_NEGATIVE
+  AB_POSITIVE
+  AB_NEGATIVE
+  O_POSITIVE
+  O_NEGATIVE
 }
 
-model tax_rates {
-  id          Int      @id @default(autoincrement())
-  tax_name    String   @unique
-  tax_code    String   @unique
-  rate        Decimal  @db.Decimal(5, 2)
-  description String?
-  is_active   Boolean  @default(true)
-  created_at  DateTime @default(now())
-  updated_at  DateTime @default(now())
+enum EmploymentType {
+  FULL_TIME
+  PART_TIME
+  CONTRACT
+  INTERN
+  FREELANCE
 }
 
-enum UserRole {
-  CEO
-  FINANCE_ADMIN
-  SALES
-  SALES_MANAGER
-  PROJECT_MANAGER
-  PROJECT_ENGINEER
-  HR_ADMIN
-  EMPLOYEE
-  PROCUREMENT_ADMIN
-  ASSET_ADMIN
-  SYSTEM_ADMIN
+enum EmployeeStatus {
+  ACTIVE
+  INACTIVE
+  TERMINATED
+  ON_LEAVE
 }
 
-enum MaterialStatus {
-  Active
-  EndOfLife
-  Discontinue
+enum EducationLevel {
+  HIGH_SCHOOL
+  DIPLOMA
+  BACHELOR
+  MASTER
+  DOCTORATE
 }
 
-enum MaterialLocation {
-  Local
-  Import
+enum AttendanceStatus {
+  PRESENT
+  ABSENT
+  LATE
+  HALF_DAY
+  SICK_LEAVE
+  PERSONAL_LEAVE
 }
 
-enum ServiceUnit {
-  Jam
-  Hari
+enum LeaveType {
+  ANNUAL_LEAVE
+  SICK_LEAVE
+  PERSONAL_LEAVE
+  MATERNITY_LEAVE
+  PATERNITY_LEAVE
+  EMERGENCY_LEAVE
+  UNPAID_LEAVE
+}
+
+enum LeaveStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  CANCELLED
+}
+
+enum CustomerStatus {
+  ACTIVE
+  INACTIVE
+  PROSPECT
 }
 
 enum Gender {
@@ -426,6 +382,24 @@ enum CustomerStatus {
   ACTIVE
   INACTIVE
   PROSPECT
+}
+
+model tax_rates {
+  id               Int      @id @default(autoincrement())
+  tax_name         String   @unique
+  rate_percentage  Decimal  @db.Decimal(5, 2)
+  created_at       DateTime @default(now())
+  updated_at       DateTime @updatedAt
+
+  @@map("tax_rates")
+}
+
+model exchange_rates {
+  currency_code String   @id @db.VarChar(3)
+  rate_to_idr   Decimal  @db.Decimal(15, 4)
+  updated_at    DateTime @default(now()) @db.Timestamptz(6)
+
+  @@map("exchange_rates")
 }
 
 enum AccountType {
