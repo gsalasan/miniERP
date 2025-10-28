@@ -22,22 +22,12 @@
   },
   "devDependencies": {
     "@eslint/js": "^9.37.0",
-<<<<<<< HEAD
-=======
-    "@types/jsonwebtoken": "^9.0.10",
->>>>>>> e548ed33b343102f25db3f49a5ff818b42c36d09
     "@typescript-eslint/eslint-plugin": "^8.46.0",
     "@typescript-eslint/parser": "^8.46.0",
     "eslint": "^9.37.0",
     "eslint-config-prettier": "^10.1.8",
     "eslint-plugin-prettier": "^5.5.4",
-<<<<<<< HEAD
     "prettier": "^3.6.2",
-=======
-    "jsonwebtoken": "^9.0.2",
-    "prettier": "^3.6.2",
-    "ts-node-dev": "^2.0.0",
->>>>>>> e548ed33b343102f25db3f49a5ff818b42c36d09
     "typescript": "^5.6.3"
   }
 }
