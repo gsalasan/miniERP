@@ -1,7 +1,38 @@
 {
-  "extends": ["react-app", "react-app/jest"],
+  "extends": [
+    "react-app",
+    "react-app/jest",
+    "prettier"
+  ],
+  "plugins": ["prettier"],
   "rules": {
-    "semi": [2, "always"],
-    "quotes": [2, "double"]
+    "prettier/prettier": [
+      "error",
+      {
+        "endOfLine": "auto",
+        "singleQuote": false,
+        "semi": true,
+        "trailingComma": "es5",
+        "printWidth": 100,
+        "tabWidth": 2,
+        "useTabs": false,
+        "bracketSpacing": true,
+        "arrowParens": "always"
+      }
+    ],
+    "semi": ["error", "always"],
+    "quotes": ["error", "double"],
+    "@typescript-eslint/no-unused-vars": [
+      "warn",
+      {
+        "argsIgnorePattern": "^_",
+        "varsIgnorePattern": "^_",
+        "ignoreRestSiblings": true
+      }
+    ],
+    "no-console": "warn",
+    "no-debugger": "warn",
+    "no-unused-vars": "off",
+    "prefer-const": "warn"
   }
 }
