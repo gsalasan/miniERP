@@ -44,32 +44,16 @@ export default [
     rules: {
       ...tseslint.configs.recommended.rules,
       ...prettierConfig.rules,
-      'prettier/prettier': ['error', {
-        'endOfLine': 'auto',
-        'singleQuote': false,
-        'semi': true,
-        'trailingComma': 'es5',
-        'printWidth': 100,
-        'tabWidth': 2,
-        'useTabs': false,
-        'bracketSpacing': true,
-        'arrowParens': 'always'
-      }],
-      '@typescript-eslint/no-unused-vars': ['warn', { 
-        argsIgnorePattern: '^_',
-        varsIgnorePattern: '^_',
-        ignoreRestSiblings: true 
-      }],
+      'prettier/prettier': 'error',
+      '@typescript-eslint/no-unused-vars': ['error', { argsIgnorePattern: '^_' }],
       '@typescript-eslint/explicit-function-return-type': 'off',
       '@typescript-eslint/explicit-module-boundary-types': 'off',
       '@typescript-eslint/no-explicit-any': 'warn',
       '@typescript-eslint/no-non-null-assertion': 'warn',
       '@typescript-eslint/no-require-imports': 'off',
-      '@typescript-eslint/ban-ts-comment': 'warn',
       'no-console': 'warn',
-      'no-debugger': 'warn',
-      'no-undef': 'off',
-      'no-unused-vars': 'off', // Use TypeScript version instead
+      'no-debugger': 'error',
+      'no-undef': 'off', // TypeScript handles this
     },
   },
   {
