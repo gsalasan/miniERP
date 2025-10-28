@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "tsc && vite build",
+    "build": "vite build",
     "preview": "vite preview",
     "lint": "eslint src --ext .ts,.tsx --fix",
     "lint:check": "eslint src --ext .ts,.tsx",
@@ -27,7 +27,9 @@
   "devDependencies": {
     "@types/react": "^18.2.21",
     "@types/react-dom": "^18.2.7",
+    "vite": "^4.4.9",
     "@vitejs/plugin-react": "^4.0.4",
+<<<<<<< HEAD
     "autoprefixer": "^10.4.16",
     "eslint": "^9.37.0",
     "postcss": "^8.4.31",
@@ -35,5 +37,9 @@
     "tailwindcss": "^3.3.0",
     "typescript": "^5.2.2",
     "vite": "^4.4.9"
+=======
+    "eslint": "^9.37.0",
+    "prettier": "^3.6.2"
+>>>>>>> main
   }
 }

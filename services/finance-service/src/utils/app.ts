@@ -4,8 +4,11 @@ import cors from "cors";
 import chartOfAccountsRoutes from "../routes/chartofaccounts.route";
 import taxRatesRoutes from "../routes/taxrates.route";
 import exchangeRatesRoutes from "../routes/exchangerates.route";
+<<<<<<< HEAD
 import invoicesRoutes from "../routes/invoices.route";
 import journalEntriesRoutes from "../routes/journalentries.route";
+=======
+>>>>>>> main
 
 const app = express();
 
@@ -40,11 +43,18 @@ app.use(cors({
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
+<<<<<<< HEAD
 // Request logging middleware
 app.use((req, res, next) => {
   console.log(`📨 ${req.method} ${req.path}`);
   next();
 });
+=======
+// Routes utama (finance)
+app.use("/api", chartOfAccountsRoutes);
+app.use("/api", taxRatesRoutes);
+app.use("/api", exchangeRatesRoutes);
+>>>>>>> main
 
 // Default route untuk test server
 app.get("/", (req, res) => {
