@@ -1,5 +1,12 @@
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
+<<<<<<< HEAD
+import { PrismaClient } from '@prisma/client';
+
+// UserRole type definition matching the database enum
+type UserRole = 'CEO' | 'FINANCE_ADMIN' | 'SALES' | 'SALES_MANAGER' | 'PROJECT_MANAGER' | 'PROJECT_ENGINEER' | 'HR_ADMIN' | 'EMPLOYEE' | 'PROCUREMENT_ADMIN' | 'ASSET_ADMIN' | 'SYSTEM_ADMIN';
+=======
+>>>>>>> main
 
 // UserRole type definition matching the database enum
 type UserRole = 'CEO' | 'FINANCE_ADMIN' | 'SALES' | 'SALES_MANAGER' | 'PROJECT_MANAGER' | 'PROJECT_ENGINEER' | 'HR_ADMIN' | 'EMPLOYEE' | 'PROCUREMENT_ADMIN' | 'ASSET_ADMIN' | 'SYSTEM_ADMIN';
@@ -67,6 +74,17 @@ export const createUser = async (
 ): Promise<any> => {
   const prisma = initializePrisma();
   const password_hash = await bcrypt.hash(password, 10);
+<<<<<<< HEAD
+  return prisma.users.create({
+    data: {
+      email,
+      password_hash,
+      roles: roles.length > 0 ? roles : ['EMPLOYEE'],
+      employee_id: employee_id || null,
+      is_active: true,
+    },
+  });
+=======
   
   if (prisma) {
     try {
@@ -103,6 +121,7 @@ export const createUser = async (
   mockUsers.push(newUser);
   console.log(`User created in mock data:`, newUser.email);
   return newUser;
+>>>>>>> main
 };
 
 // ✅ Generate JWT Token

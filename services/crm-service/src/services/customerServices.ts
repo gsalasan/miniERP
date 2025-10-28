@@ -1,4 +1,9 @@
 import prisma from "../utils/prisma";
+<<<<<<< HEAD
+
+export const getAllCustomersService = async () => {
+  return await prisma.customer.findMany();
+=======
 import { CustomerStatus } from "@prisma/client";
 
 export interface CreateCustomerData {
@@ -170,4 +175,5 @@ export const deleteCustomerService = async (id: string) => {
     console.error("Error in deleteCustomerService:", error);
     throw error;
   }
+>>>>>>> main
 };
