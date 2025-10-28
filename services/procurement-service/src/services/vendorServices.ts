@@ -1,5 +1,5 @@
-import prisma from "../utils/prisma";
-import { VendorClassification } from "../utils/validation";
+import { VendorClassification } from '@prisma/client';
+import prisma from '../utils/prisma';
 
 export interface CreateVendorData {
   vendor_name: string;
@@ -15,86 +15,113 @@ export interface UpdateVendorData {
   is_preferred?: boolean;
 }
 
-export const getAllVendorsService = async () => {
-  return await prisma.vendors.findMany({
-    orderBy: {
-      created_at: "desc",
-    },
-  });
-};
+export interface VendorQueryOptions {
+  page?: number;
+  limit?: number;
+  search?: string;
+  classification?: VendorClassification;
+  is_preferred?: boolean;
+}
 
-export const getVendorByIdService = async (id: string) => {
-  return await prisma.vendors.findUnique({
-    where: { id },
-  });
-};
-
-export const createVendorService = async (data: CreateVendorData) => {
-  return await prisma.vendors.create({
-    data: {
-      id: crypto.randomUUID(),
-      vendor_name: data.vendor_name,
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      category: data.category as any,
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      classification: data.classification as any,
-      is_preferred: data.is_preferred || false,
-    },
-  });
-};
-
-export const updateVendorService = async (id: string, data: UpdateVendorData) => {
-  try {
-    // Cek apakah vendor exists
-    const existingVendor = await prisma.vendors.findUnique({
-      where: { id },
-    });
-
-    if (!existingVendor) {
-      return null;
-    }
-
-    // Update vendor data
-    const updatedVendor = await prisma.vendors.update({
-      where: { id },
+export class VendorService {
+  async createVendor(data: CreateVendorData) {
+    return await prisma.vendors.create({
       data: {
         vendor_name: data.vendor_name,
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        category: data.category as any,
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        classification: data.classification as any,
-        is_preferred: data.is_preferred,
+        category: data.category,
+        classification: data.classification,
+        is_preferred: data.is_preferred || false,
       },
     });
-
-    return updatedVendor;
-  } catch (error) {
-    // eslint-disable-next-line no-console
-    console.error("Error in updateVendorService:", error);
-    throw error;
   }
-};
 
-export const deleteVendorService = async (id: string) => {
-  try {
-    // Cek apakah vendor exists
-    const existingVendor = await prisma.vendors.findUnique({
-      where: { id },
-    });
+  async getAllVendors(options: VendorQueryOptions = {}) {
+    const {
+      page = 1,
+      limit = 10,
+      search,
+      classification,
+      is_preferred,
+    } = options;
 
-    if (!existingVendor) {
-      return null;
+    const skip = (page - 1) * limit;
+
+    const where: any = {};
+
+    if (search) {
+      where.OR = [
+        { vendor_name: { contains: search, mode: 'insensitive' } },
+        { category: { contains: search, mode: 'insensitive' } },
+      ];
     }
 
-    // Delete vendor
-    await prisma.vendors.delete({
+    if (classification) {
+      where.classification = classification;
+    }
+
+    if (is_preferred !== undefined) {
+      where.is_preferred = is_preferred;
+    }
+
+    const [vendors, total] = await Promise.all([
+      prisma.vendors.findMany({
+        where,
+        skip,
+        take: limit,
+        orderBy: { created_at: 'desc' },
+      }),
+      prisma.vendors.count({ where }),
+    ]);
+
+    return {
+      data: vendors,
+      pagination: {
+        total,
+        page,
+        limit,
+        totalPages: Math.ceil(total / limit),
+      },
+    };
+  }
+
+  async getVendorById(id: string) {
+    return await prisma.vendors.findUnique({
       where: { id },
     });
-
-    return true;
-  } catch (error) {
-    // eslint-disable-next-line no-console
-    console.error("Error in deleteVendorService:", error);
-    throw error;
   }
-};
+
+  async updateVendor(id: string, data: UpdateVendorData) {
+    return await prisma.vendors.update({
+      where: { id },
+      data,
+    });
+  }
+
+  async deleteVendor(id: string) {
+    return await prisma.vendors.delete({
+      where: { id },
+    });
+  }
+
+  async getVendorStats() {
+    const [total, byClassification, preferredCount] = await Promise.all([
+      prisma.vendors.count(),
+      prisma.vendors.groupBy({
+        by: ['classification'],
+        _count: true,
+      }),
+      prisma.vendors.count({
+        where: { is_preferred: true },
+      }),
+    ]);
+
+    return {
+      total,
+      preferred: preferredCount,
+      byClassification: byClassification.reduce((acc, item) => {
+        acc[item.classification] = item._count;
+        return acc;
+      }, {} as Record<string, number>),
+    };
+  }
+}

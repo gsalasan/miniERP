@@ -1,195 +1,170 @@
-import { Request, Response } from "express";
-import {
-  getAllVendorsService,
-  getVendorByIdService,
-  createVendorService,
-  updateVendorService,
-  deleteVendorService,
-} from "../services/vendorServices";
-import { validateVendorData } from "../utils/validation";
+import { Request, Response } from 'express';
+import { VendorService } from '../services/vendorServices';
+import { createVendorSchema, updateVendorSchema, queryVendorSchema } from '../utils/validation';
 
-export async function getAllVendors(req: Request, res: Response): Promise<void> {
-  try {
-    const vendors = await getAllVendorsService();
+const vendorService = new VendorService();
 
-    res.status(200).json({
-      success: true,
-      data: vendors,
-      message: "Data vendors berhasil diambil",
-    });
-  } catch (error: unknown) {
-    // eslint-disable-next-line no-console
-    console.error("Error fetching vendors:", error);
-
-    let message = "Terjadi kesalahan saat mengambil data.";
-
-    // Jika error berasal dari Prisma dan tabel tidak ditemukan
-    if (error instanceof Error && error.message.includes("does not exist")) {
-      message = "Data belum tersedia di database.";
+export class VendorController {
+  async createVendor(req: Request, res: Response) {
+    try {
+      const validatedData = createVendorSchema.parse(req.body);
+      
+      const vendor = await vendorService.createVendor(validatedData);
+      
+      res.status(201).json({
+        success: true,
+        message: 'Vendor created successfully',
+        data: vendor,
+      });
+    } catch (error: any) {
+      if (error.name === 'ZodError') {
+        return res.status(400).json({
+          success: false,
+          message: 'Validation error',
+          errors: error.errors,
+        });
+      }
+      
+      res.status(500).json({
+        success: false,
+        message: 'Internal server error',
+        error: error.message,
+      });
     }
-
-    // Kirim respons error dengan status 500 ke client
-    res.status(500).json({
-      success: false,
-      message,
-    });
   }
-}
 
-export async function getVendorById(req: Request, res: Response): Promise<void> {
-  try {
-    const { id } = req.params;
+  async getAllVendors(req: Request, res: Response) {
+    try {
+      const validatedQuery = queryVendorSchema.parse(req.query);
+      
+      const options = {
+        page: parseInt(validatedQuery.page),
+        limit: parseInt(validatedQuery.limit),
+        search: validatedQuery.search,
+        classification: validatedQuery.classification,
+        is_preferred: validatedQuery.is_preferred ? validatedQuery.is_preferred === 'true' : undefined,
+      };
 
-    if (!id) {
-      res.status(400).json({
-        success: false,
-        message: "ID vendor diperlukan",
+      const result = await vendorService.getAllVendors(options);
+      
+      res.status(200).json({
+        success: true,
+        message: 'Vendors retrieved successfully',
+        ...result,
       });
-      return;
-    }
-
-    const vendor = await getVendorByIdService(id);
-
-    if (!vendor) {
-      res.status(404).json({
+    } catch (error: any) {
+      res.status(500).json({
         success: false,
-        message: "Vendor tidak ditemukan",
+        message: 'Internal server error',
+        error: error.message,
       });
-      return;
     }
-
-    res.status(200).json({
-      success: true,
-      data: vendor,
-      message: "Data vendor berhasil diambil",
-    });
-  } catch (error: unknown) {
-    // eslint-disable-next-line no-console
-    console.error("Error fetching vendor by ID:", error);
-
-    res.status(500).json({
-      success: false,
-      message: "Terjadi kesalahan saat mengambil data vendor",
-    });
   }
-}
 
-export async function createVendor(req: Request, res: Response): Promise<void> {
-  try {
-    const vendorData = req.body;
-
-    // Validasi data
-    const validation = validateVendorData(vendorData);
-    if (!validation.isValid) {
-      res.status(400).json({
-        success: false,
-        message: "Data tidak valid",
-        errors: validation.errors,
+  async getVendorById(req: Request, res: Response) {
+    try {
+      const { id } = req.params;
+      
+      const vendor = await vendorService.getVendorById(id);
+      
+      if (!vendor) {
+        return res.status(404).json({
+          success: false,
+          message: 'Vendor not found',
+        });
+      }
+      
+      res.status(200).json({
+        success: true,
+        message: 'Vendor retrieved successfully',
+        data: vendor,
       });
-      return;
+    } catch (error: any) {
+      res.status(500).json({
+        success: false,
+        message: 'Internal server error',
+        error: error.message,
+      });
     }
-
-    const newVendor = await createVendorService(vendorData);
-
-    res.status(201).json({
-      success: true,
-      data: newVendor,
-      message: "Vendor berhasil dibuat",
-    });
-  } catch (error: unknown) {
-    // eslint-disable-next-line no-console
-    console.error("Error creating vendor:", error);
-
-    res.status(500).json({
-      success: false,
-      message: "Terjadi kesalahan saat membuat vendor",
-    });
   }
-}
 
-export async function updateVendor(req: Request, res: Response): Promise<void> {
-  try {
-    const { id } = req.params;
-    const vendorData = req.body;
-
-    if (!id) {
-      res.status(400).json({
-        success: false,
-        message: "ID vendor diperlukan",
+  async updateVendor(req: Request, res: Response) {
+    try {
+      const { id } = req.params;
+      const validatedData = updateVendorSchema.parse(req.body);
+      
+      const vendor = await vendorService.updateVendor(id, validatedData);
+      
+      res.status(200).json({
+        success: true,
+        message: 'Vendor updated successfully',
+        data: vendor,
       });
-      return;
-    }
-
-    // Validasi data (untuk update, semua field bersifat opsional)
-    const validation = validateVendorData(vendorData, true);
-    if (!validation.isValid) {
-      res.status(400).json({
+    } catch (error: any) {
+      if (error.name === 'ZodError') {
+        return res.status(400).json({
+          success: false,
+          message: 'Validation error',
+          errors: error.errors,
+        });
+      }
+      
+      if (error.code === 'P2025') {
+        return res.status(404).json({
+          success: false,
+          message: 'Vendor not found',
+        });
+      }
+      
+      res.status(500).json({
         success: false,
-        message: "Data tidak valid",
-        errors: validation.errors,
+        message: 'Internal server error',
+        error: error.message,
       });
-      return;
     }
-
-    const updatedVendor = await updateVendorService(id, vendorData);
-
-    if (!updatedVendor) {
-      res.status(404).json({
-        success: false,
-        message: "Vendor tidak ditemukan",
-      });
-      return;
-    }
-
-    res.status(200).json({
-      success: true,
-      data: updatedVendor,
-      message: "Vendor berhasil diperbarui",
-    });
-  } catch (error: unknown) {
-    // eslint-disable-next-line no-console
-    console.error("Error updating vendor:", error);
-
-    res.status(500).json({
-      success: false,
-      message: "Terjadi kesalahan saat memperbarui vendor",
-    });
   }
-}
 
-export async function deleteVendor(req: Request, res: Response): Promise<void> {
-  try {
-    const { id } = req.params;
-
-    if (!id) {
-      res.status(400).json({
-        success: false,
-        message: "ID vendor diperlukan",
+  async deleteVendor(req: Request, res: Response) {
+    try {
+      const { id } = req.params;
+      
+      await vendorService.deleteVendor(id);
+      
+      res.status(200).json({
+        success: true,
+        message: 'Vendor deleted successfully',
       });
-      return;
-    }
-
-    const deleted = await deleteVendorService(id);
-
-    if (!deleted) {
-      res.status(404).json({
+    } catch (error: any) {
+      if (error.code === 'P2025') {
+        return res.status(404).json({
+          success: false,
+          message: 'Vendor not found',
+        });
+      }
+      
+      res.status(500).json({
         success: false,
-        message: "Vendor tidak ditemukan",
+        message: 'Internal server error',
+        error: error.message,
       });
-      return;
     }
+  }
 
-    res.status(200).json({
-      success: true,
-      message: "Vendor berhasil dihapus",
-    });
-  } catch (error: unknown) {
-    // eslint-disable-next-line no-console
-    console.error("Error deleting vendor:", error);
-
-    res.status(500).json({
-      success: false,
-      message: "Terjadi kesalahan saat menghapus vendor",
-    });
+  async getVendorStats(req: Request, res: Response) {
+    try {
+      const stats = await vendorService.getVendorStats();
+      
+      res.status(200).json({
+        success: true,
+        message: 'Vendor statistics retrieved successfully',
+        data: stats,
+      });
+    } catch (error: any) {
+      res.status(500).json({
+        success: false,
+        message: 'Internal server error',
+        error: error.message,
+      });
+    }
   }
 }

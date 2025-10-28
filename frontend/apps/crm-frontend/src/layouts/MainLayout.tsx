@@ -19,6 +19,8 @@ import {
   Menu as MenuIcon,
   People as PeopleIcon,
   Dashboard as DashboardIcon,
+  TrendingUp as TrendingUpIcon,
+  Assignment as AssignmentIcon,
 } from "@mui/icons-material";
 import { useNavigate, useLocation } from "react-router-dom";
 
@@ -50,6 +52,16 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
       icon: <PeopleIcon />,
       path: "/customers",
     },
+    {
+      text: "Pipeline",
+      icon: <TrendingUpIcon />,
+      path: "/pipeline",
+    },
+    {
+      text: "Sales Orders",
+      icon: <AssignmentIcon />,
+      path: "/sales-orders",
+    },
   ];
 
   const drawer = (
@@ -57,38 +69,37 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
       {/* Logo Section */}
       <Box
         sx={{
-          p: 2,
+          p: 0,
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
-          height: "120px",
+          height: "140px",
           width: "100%",
-          borderBottom: "1px solid #E0E0E0",
-          mb: 1,
         }}
       >
         <img
-          src="/unais.png"
+          src="/logo-unais.png"
           alt="UNAIS Logo"
           style={{
-            height: "60px",
-            maxWidth: "180px",
+            height: "100%",
+            width: "100%",
             objectFit: "contain",
+            padding: "4px",
           }}
         />
       </Box>
-      <List sx={{ px: 2, py: 1 }}>
+      <List sx={{ px: 1, py: 2 }}>
         {menuItems.map((item) => {
           const isActive = location.pathname === item.path;
           return (
-            <ListItem key={item.text} disablePadding sx={{ mb: 1 }}>
+            <ListItem key={item.text} disablePadding sx={{ mb: 0.5 }}>
               <ListItemButton
                 onClick={() => navigate(item.path)}
                 sx={{
                   borderRadius: 2,
+                  mx: 1,
                   backgroundColor: isActive ? "#06103A" : "transparent",
                   color: isActive ? "white" : "#333333",
-                  py: 1.5,
                   "&:hover": {
                     backgroundColor: isActive ? "#4E88BE" : "rgba(6, 16, 58, 0.08)",
                   },

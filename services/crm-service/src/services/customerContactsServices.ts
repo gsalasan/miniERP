@@ -80,7 +80,7 @@ export const createCustomerContactService = async (data: CreateCustomerContactDa
   });
 
   if (!customer) {
-    throw new Error("Foreign key constraint failed: Customer not found");
+    throw new Error('Foreign key constraint failed: Customer not found');
   }
 
   return await prisma.customer_contacts.create({

@@ -10,9 +10,9 @@ app.use(cors());
 app.use(express.json());
 
 // Prefix routes
-app.use("/api/v1/vendors", vendorRoutes);
+app.use('/api/v1/vendors', vendorRoutes);
 
 // Health check
-app.get("/health", (_, res) => res.json({ ok: true }));
+app.get("/health", (_, res) => res.json({ ok: true, service: "procurement-service" }));
 
 export default app;

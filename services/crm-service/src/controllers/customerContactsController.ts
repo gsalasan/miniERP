@@ -1,4 +1,4 @@
-import { Request, Response } from "express";
+import { Request, Response } from 'express';
 import {
   getAllCustomerContactsService,
   getCustomerContactByIdService,
@@ -6,21 +6,24 @@ import {
   createCustomerContactService,
   updateCustomerContactService,
   deleteCustomerContactService,
-} from "../services/customerContactsServices";
-import { validateCustomerContactData } from "../utils/validation";
+} from '../services/customerContactsServices';
+import { validateCustomerContactData } from '../utils/validation';
 
-export async function getAllCustomerContacts(req: Request, res: Response): Promise<void> {
+export async function getAllCustomerContacts(
+  req: Request,
+  res: Response
+): Promise<void> {
   try {
     const contacts = await getAllCustomerContactsService();
 
     res.status(200).json({
       success: true,
       data: contacts,
-      message: "Data customer contacts berhasil diambil",
+      message: 'Data customer contacts berhasil diambil',
     });
   } catch (error: unknown) {
     // eslint-disable-next-line no-console
-    console.error("Error fetching customer contacts:", error);
+    console.error('Error fetching customer contacts:', error);
 
     let message = "Terjadi kesalahan saat mengambil data.";
 
@@ -140,12 +143,15 @@ export async function createCustomerContact(req: Request, res: Response): Promis
 
     res.status(500).json({
       success: false,
-      message: "Terjadi kesalahan saat membuat customer contact",
+      message: 'Terjadi kesalahan saat membuat customer contact',
     });
   }
 }
 
-export async function createCustomerContactForCustomer(req: Request, res: Response): Promise<void> {
+export async function createCustomerContactForCustomer(
+  req: Request,
+  res: Response
+): Promise<void> {
   try {
     const { customerId } = req.params;
     const contactData = req.body;
@@ -153,7 +159,7 @@ export async function createCustomerContactForCustomer(req: Request, res: Respon
     if (!customerId) {
       res.status(400).json({
         success: false,
-        message: "ID customer diperlukan",
+        message: 'ID customer diperlukan',
       });
       return;
     }
@@ -184,7 +190,7 @@ export async function createCustomerContactForCustomer(req: Request, res: Respon
     });
   } catch (error: unknown) {
     // eslint-disable-next-line no-console
-    console.error("Error creating customer contact for customer:", error);
+    console.error('Error creating customer contact for customer:', error);
 
     // Handle foreign key constraint error
     if (error instanceof Error && error.message.includes("Foreign key constraint")) {

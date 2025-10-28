@@ -1,11 +1,11 @@
-import dotenv from "dotenv";
-import app from "./app";
+import dotenv from 'dotenv';
+import app from './app';
 
+// Load environment variables
 dotenv.config();
 
-const PORT = process.env.PROCUREMENT_PORT || 3003;
+const PORT = 3003;
 
 app.listen(PORT, () => {
-  // eslint-disable-next-line no-console
-  console.log(`Procurement Service running on port ${PORT}`);
+  console.log(`Procurement service running on port ${PORT}`);
 });
