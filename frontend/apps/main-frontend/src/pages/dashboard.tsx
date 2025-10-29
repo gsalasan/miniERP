@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 
 interface User {
   id: number;
@@ -17,6 +18,7 @@ interface Module {
 }
 
 const Dashboard: React.FC = () => {
+  const navigate = useNavigate();
   const [user, setUser] = useState<User | null>(null);
 
   // Available modules
@@ -48,7 +50,7 @@ const Dashboard: React.FC = () => {
           />
         </svg>
       ),
-      url: "http://localhost:3010", // CRM frontend URL (placeholder)
+      url: "http://localhost:3010", // CRM frontend URL
       color: "#3B82F6",
     },
     {
@@ -63,7 +65,7 @@ const Dashboard: React.FC = () => {
           />
         </svg>
       ),
-      url: "http://localhost:5175", // HR frontend URL (placeholder)
+      url: "http://localhost:3013", // HR frontend URL
       color: "#F59E0B",
     },
     {
@@ -78,7 +80,7 @@ const Dashboard: React.FC = () => {
           />
         </svg>
       ),
-      url: "http://localhost:5172", // Finance frontend URL (placeholder)
+      url: "http://localhost:3012", // Finance frontend URL
       color: "#8B5CF6",
     },
     {
@@ -93,7 +95,7 @@ const Dashboard: React.FC = () => {
           />
         </svg>
       ),
-      url: "http://localhost:5176", // Procurement frontend URL (placeholder)
+      url: "http://localhost:3015", // Procurement frontend URL (placeholder)
       color: "#EF4444",
     },
     {
@@ -108,7 +110,7 @@ const Dashboard: React.FC = () => {
           />
         </svg>
       ),
-      url: "http://localhost:5177", // Project frontend URL (placeholder)
+      url: "http://localhost:3016", // Project frontend URL (placeholder)
       color: "#6B7280",
     },
   ];
@@ -118,13 +120,13 @@ const Dashboard: React.FC = () => {
     // Ambil token dari localStorage
     const token = localStorage.getItem("token");
     if (!token) {
-      if (typeof window !== 'undefined') window.location.href = "/"; // redirect ke login jika tidak ada token
+      navigate("/"); // redirect ke login jika tidak ada token
       return;
     }
 
     // Decode token (jika JWT, bisa pakai jwt-decode)
     // Atau fetch profile dari backend
-    fetch("http://localhost:3001/api/v1/auth/me", {
+    fetch("http://localhost:4000/api/v1/auth/me", {
       headers: { Authorization: `Bearer ${token}` },
     })
       .then((res) => res.json())
@@ -132,11 +134,11 @@ const Dashboard: React.FC = () => {
         if (data.success) {
           setUser(data.data);
         } else {
-          if (typeof window !== 'undefined') window.location.href = "/";
+          navigate("/");
         }
       })
       .catch(() => {
-        window.location.href = "/";
+        navigate("/");
       });
   }, []);
 
@@ -151,6 +153,7 @@ const Dashboard: React.FC = () => {
       localStorage.setItem("cross_app_timestamp", Date.now().toString());
 
       // Navigate to the module
+      window.open(module.url, '_blank');
 
       // Clean up cross-app data after a short delay
       setTimeout(() => {
@@ -159,12 +162,13 @@ const Dashboard: React.FC = () => {
         localStorage.removeItem("cross_app_timestamp");
       }, 5000); // 5 seconds cleanup
     } else {
+      console.error("No token or user data available");
     }
   };
 
   const logout = () => {
     localStorage.removeItem("token");
-    window.location.href = "/";
+    navigate("/");
   };
 
   return (

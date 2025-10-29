@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import {
   Box,
   Container,
@@ -14,6 +15,7 @@ import { Email, Lock } from "@mui/icons-material";
 import { login as loginApi } from "../api";
 
 const Login: React.FC = () => {
+  const navigate = useNavigate();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
@@ -36,7 +38,7 @@ const Login: React.FC = () => {
         setSuccess(true);
         localStorage.setItem("token", result.token);
         setTimeout(() => {
-          window.location.href = "/dashboard";
+          navigate("/dashboard");
         }, 1000);
       } else {
         setError(result?.message || "Login gagal. Periksa email dan password Anda.");
