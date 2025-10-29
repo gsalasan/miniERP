@@ -1,138 +1,57 @@
-name: Deploy All Services to Railway
+name: Deploy All Services to Railway (Parallel)
 
 on:
   push:
     branches:
       - main
-  workflow_dispatch: # Allow manual triggering
+  workflow_dispatch:
 
 env:
   RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
 
 jobs:
-  deploy-identity-service:
+  deploy-services:
     runs-on: ubuntu-latest
     container: ghcr.io/railwayapp/cli:latest
+    strategy:
+      matrix:
+        service: [
+          { name: 'identity-service', path: './services/identity-service' },
+          { name: 'engineering-service', path: './services/engineering-service' },
+          { name: 'crm-service', path: './services/crm-service' },
+          { name: 'finance-service', path: './services/finance-service' },
+          { name: 'hr-service', path: './services/hr-service' },
+          { name: 'inventory-service', path: './services/inventory-service' },
+          { name: 'procurement-service', path: './services/procurement-service' },
+          { name: 'project-service', path: './services/project-service' }
+        ]
     steps:
       - name: Checkout repository
         uses: actions/checkout@v3
       
-      - name: Deploy Identity Service
-        run: railway up --service identity-service
-        working-directory: ./services/identity-service
+      - name: Deploy ${{ matrix.service.name }}
+        run: railway up --service ${{ matrix.service.name }}
+        working-directory: ${{ matrix.service.path }}
 
-  deploy-engineering-service:
+  deploy-frontends:
     runs-on: ubuntu-latest
     container: ghcr.io/railwayapp/cli:latest
+    strategy:
+      matrix:
+        frontend: [
+          { name: 'main-frontend', path: './frontend/apps/main-frontend' },
+          { name: 'crm-frontend', path: './frontend/apps/crm-frontend' },
+          { name: 'finance-frontend', path: './frontend/apps/finance-frontend' },
+          { name: 'hr-frontend', path: './frontend/apps/hr-frontend' },
+          { name: 'identity-frontend', path: './frontend/apps/identity-frontend' },
+          { name: 'engineering-frontend', path: './frontend/apps/engineering-frontend' },
+          { name: 'procurement-frontend', path: './frontend/apps/procurement-frontend' },
+          { name: 'project-frontend', path: './frontend/apps/project-frontend' }
+        ]
     steps:
       - name: Checkout repository
         uses: actions/checkout@v3
       
-      - name: Deploy Engineering Service
-        run: railway up --service engineering-service
-        working-directory: ./services/engineering-service
-
-  deploy-crm-service:
-    runs-on: ubuntu-latest
-    container: ghcr.io/railwayapp/cli:latest
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v3
-      
-      - name: Deploy CRM Service
-        run: railway up --service crm-service
-        working-directory: ./services/crm-service
-
-  deploy-finance-service:
-    runs-on: ubuntu-latest
-    container: ghcr.io/railwayapp/cli:latest
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v3
-      
-      - name: Deploy Finance Service
-        run: railway up --service finance-service
-        working-directory: ./services/finance-service
-
-  deploy-hr-service:
-    runs-on: ubuntu-latest
-    container: ghcr.io/railwayapp/cli:latest
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v3
-      
-      - name: Deploy HR Service
-        run: railway up --service hr-service
-        working-directory: ./services/hr-service
-
-  deploy-inventory-service:
-    runs-on: ubuntu-latest
-    container: ghcr.io/railwayapp/cli:latest
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v3
-      
-      - name: Deploy Inventory Service
-        run: railway up --service inventory-service
-        working-directory: ./services/inventory-service
-
-  deploy-procurement-service:
-    runs-on: ubuntu-latest
-    container: ghcr.io/railwayapp/cli:latest
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v3
-      
-      - name: Deploy Procurement Service
-        run: railway up --service procurement-service
-        working-directory: ./services/procurement-service
-
-  deploy-project-service:
-    runs-on: ubuntu-latest
-    container: ghcr.io/railwayapp/cli:latest
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v3
-      
-      - name: Deploy Project Service
-        run: railway up --service project-service
-        working-directory: ./services/project-service
-
-  deploy-frontend-apps:
-    runs-on: ubuntu-latest
-    container: ghcr.io/railwayapp/cli:latest
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v3
-      
-      - name: Deploy Main Frontend
-        run: railway up --service main-frontend
-        working-directory: ./frontend/apps/main-frontend
-
-      - name: Deploy CRM Frontend
-        run: railway up --service crm-frontend
-        working-directory: ./frontend/apps/crm-frontend
-
-      - name: Deploy Finance Frontend
-        run: railway up --service finance-frontend
-        working-directory: ./frontend/apps/finance-frontend
-
-      - name: Deploy HR Frontend
-        run: railway up --service hr-frontend
-        working-directory: ./frontend/apps/hr-frontend
-
-      - name: Deploy Identity Frontend
-        run: railway up --service identity-frontend
-        working-directory: ./frontend/apps/identity-frontend
-
-      - name: Deploy Engineering Frontend
-        run: railway up --service engineering-frontend
-        working-directory: ./frontend/apps/engineering-frontend
-
-      - name: Deploy Procurement Frontend
-        run: railway up --service procurement-frontend
-        working-directory: ./frontend/apps/procurement-frontend
-
-      - name: Deploy Project Frontend
-        run: railway up --service project-frontend
-        working-directory: ./frontend/apps/project-frontend
+      - name: Deploy ${{ matrix.frontend.name }}
+        run: railway up --service ${{ matrix.frontend.name }}
+        working-directory: ${{ matrix.frontend.path }}
