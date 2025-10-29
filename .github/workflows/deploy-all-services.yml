@@ -7,7 +7,7 @@ on:
   workflow_dispatch:
 
 env:
-  RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+  RAILWAY_TOKEN: ${{ RAILWAY_TOKEN }}
 
 jobs:
   deploy-services:
