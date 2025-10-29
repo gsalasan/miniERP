@@ -1,0 +1,57 @@
+name: Deploy All Services to Railway (Parallel)
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+env:
+  RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+
+jobs:
+  deploy-services:
+    runs-on: ubuntu-latest
+    container: ghcr.io/railwayapp/cli:latest
+    strategy:
+      matrix:
+        service: [
+          { name: 'identity-service', path: './services/identity-service' },
+          { name: 'engineering-service', path: './services/engineering-service' },
+          { name: 'crm-service', path: './services/crm-service' },
+          { name: 'finance-service', path: './services/finance-service' },
+          { name: 'hr-service', path: './services/hr-service' },
+          { name: 'inventory-service', path: './services/inventory-service' },
+          { name: 'procurement-service', path: './services/procurement-service' },
+          { name: 'project-service', path: './services/project-service' }
+        ]
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+      
+      - name: Deploy ${{ matrix.service.name }}
+        run: railway up --service ${{ matrix.service.name }}
+        working-directory: ${{ matrix.service.path }}
+
+  deploy-frontends:
+    runs-on: ubuntu-latest
+    container: ghcr.io/railwayapp/cli:latest
+    strategy:
+      matrix:
+        frontend: [
+          { name: 'main-frontend', path: './frontend/apps/main-frontend' },
+          { name: 'crm-frontend', path: './frontend/apps/crm-frontend' },
+          { name: 'finance-frontend', path: './frontend/apps/finance-frontend' },
+          { name: 'hr-frontend', path: './frontend/apps/hr-frontend' },
+          { name: 'identity-frontend', path: './frontend/apps/identity-frontend' },
+          { name: 'engineering-frontend', path: './frontend/apps/engineering-frontend' },
+          { name: 'procurement-frontend', path: './frontend/apps/procurement-frontend' },
+          { name: 'project-frontend', path: './frontend/apps/project-frontend' }
+        ]
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+      
+      - name: Deploy ${{ matrix.frontend.name }}
+        run: railway up --service ${{ matrix.frontend.name }}
+        working-directory: ${{ matrix.frontend.path }}
