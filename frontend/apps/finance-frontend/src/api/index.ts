@@ -18,6 +18,16 @@ export type JournalEntry = {
 
 const API_BASE = import.meta.env.VITE_FINANCE_API || '/api';
 
+export type TaxRate = {
+  id: number;
+  name: string;
+  rate: number;
+  description?: string;
+};
+
+export type CreateTaxRateDto = Omit<TaxRate, 'id'>;
+export type UpdateTaxRateDto = Partial<CreateTaxRateDto>;
+
 export const chartOfAccountsAPI = {
   async getAll() {
     const res = await fetch(`${API_BASE}/chart-of-accounts`);
@@ -68,6 +78,33 @@ export const journalEntriesAPI = {
   },
   async delete(id: string) {
     const res = await fetch(`${API_BASE}/journal-entries/${id}`, { method: 'DELETE' });
+    return res.json();
+  },
+};
+
+export const taxRatesAPI = {
+  async getAll() {
+    const res = await fetch(`${API_BASE}/tax-rates`);
+    return res.json();
+  },
+  async create(payload: CreateTaxRateDto) {
+    const res = await fetch(`${API_BASE}/tax-rates`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+    return res.json();
+  },
+  async update(id: number, payload: UpdateTaxRateDto) {
+    const res = await fetch(`${API_BASE}/tax-rates/${id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+    return res.json();
+  },
+  async delete(id: number) {
+    const res = await fetch(`${API_BASE}/tax-rates/${id}`, { method: 'DELETE' });
     return res.json();
   },
 };
