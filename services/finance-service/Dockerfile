@@ -25,6 +25,9 @@ FROM node:22-alpine AS runner
 # Set working directory
 WORKDIR /app
 
+# Install system deps required by Prisma engines (OpenSSL)
+RUN apk add --no-cache openssl
+
 # Create non-root user for security
 RUN addgroup -g 1001 -S nodejs
 RUN adduser -S nextjs -u 1001

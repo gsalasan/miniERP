@@ -38,7 +38,8 @@ RUN if [ -f package-lock.json ]; then npm ci --only=production; else npm install
 
 # Copy built application from builder stage
 COPY --from=builder --chown=nextjs:nodejs /app/dist ./dist
-## No Prisma client artifacts to copy
+# Copy Prisma engine artifacts if present
+COPY --from=builder --chown=nextjs:nodejs /app/node_modules/.prisma ./node_modules/.prisma
 
 # Switch to non-root user
 USER nextjs
@@ -51,4 +52,4 @@ HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
   CMD wget --no-verbose --tries=1 --spider http://localhost:8080/health || exit 1
 
 # Start the application in production mode
-CMD ["npm", "start"]
+CMD ["node", "dist/server.js"]
