@@ -9,7 +9,7 @@ console.log('HR Service DEBUG - Environment variables:');
 console.log('process.env.PORT:', process.env.PORT);
 console.log('dotenv path:', path.join(__dirname, '..', '.env'));
 
-const PORT = process.env.PORT || 3002;
+const PORT = process.env.PORT || 8080;
 
 app.listen(PORT, () => {
   console.log(`HR Service running on port ${PORT}`);
