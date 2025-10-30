@@ -16,6 +16,7 @@ jobs:
   deploy-backend-services:
     runs-on: ubuntu-latest
     strategy:
+      fail-fast: false
       max-parallel: 2
       matrix:
         service: [
@@ -81,6 +82,7 @@ jobs:
   deploy-frontend-apps:
     runs-on: ubuntu-latest
     strategy:
+      fail-fast: false
       max-parallel: 2
       matrix:
         frontend: [

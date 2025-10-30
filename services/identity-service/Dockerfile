@@ -6,6 +6,8 @@ WORKDIR /app
 
 # Copy package files
 COPY package*.json ./
+# Remove monorepo-only local dependency to avoid npm resolving outside build context
+RUN sed -i '/"minierp"\s*:\s*"file:\.\.\/\.\."/d' package.json
 COPY prisma ./prisma/
 
 # Install all dependencies (including dev dependencies for build)
@@ -33,6 +35,8 @@ RUN adduser -S nextjs -u 1001
 
 # Copy package files
 COPY package*.json ./
+# Ensure "minierp" local file dependency is removed in runner image as well
+RUN sed -i '/"minierp"\s*:\s*"file:\.\.\/\.\."/d' package.json
 COPY prisma ./prisma/
 
 # Install only production dependencies (fallback if ci not possible)
