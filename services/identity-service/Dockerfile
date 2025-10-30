@@ -9,7 +9,8 @@ COPY package*.json ./
 COPY prisma ./prisma/
 
 # Install all dependencies (including dev dependencies for build)
-RUN if [ -f package-lock.json ]; then npm ci; else npm install; fi
+# Use npm install to avoid strict lockfile requirements inside CI containers
+RUN npm install --no-fund --no-audit
 
 # Copy source code
 COPY . .
@@ -34,8 +35,9 @@ RUN adduser -S nextjs -u 1001
 COPY package*.json ./
 COPY prisma ./prisma/
 
-# Install only production dependencies
-RUN if [ -f package-lock.json ]; then npm ci --only=production; else npm install --only=production; fi && npm cache clean --force
+# Install only production dependencies (fallback if ci not possible)
+RUN npm ci --only=production || npm install --omit=dev --no-fund --no-audit \
+  && npm cache clean --force
 
 # Copy built application from builder stage
 COPY --from=builder --chown=nextjs:nodejs /app/dist ./dist
