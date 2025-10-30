@@ -25,6 +25,9 @@ FROM node:22-alpine AS runner
 # Set working directory
 WORKDIR /app
 
+# Install system deps required by Prisma engines (OpenSSL)
+RUN apk add --no-cache openssl
+
 # Create non-root user for security
 RUN addgroup -g 1001 -S nodejs
 RUN adduser -S nextjs -u 1001
@@ -52,4 +55,4 @@ HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
   CMD wget --no-verbose --tries=1 --spider http://localhost:8080/health || exit 1
 
 # Start the application in production mode
-CMD ["npm", "start"]
+CMD ["node", "dist/server.js"]

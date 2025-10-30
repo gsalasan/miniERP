@@ -52,6 +52,9 @@ jobs:
           gcloud projects add-iam-policy-binding ${{ env.PROJECT_ID }} \
             --member="serviceAccount:${PROJECT_NUMBER}-compute@developer.gserviceaccount.com" \
             --role="roles/secretmanager.secretAccessor"
+          gcloud projects add-iam-policy-binding ${{ env.PROJECT_ID }} \
+            --member="serviceAccount:${PROJECT_NUMBER}-compute@developer.gserviceaccount.com" \
+            --role="roles/cloudsql.client"
 
       - name: Build and Push Container (Docker)
         run: |
@@ -72,9 +75,10 @@ jobs:
             --max-instances 10 \
             --min-instances 0 \
             --concurrency 100 \
-            --timeout 300 \
+            --timeout 600 \
             --set-env-vars NODE_ENV=production \
-            --set-secrets DATABASE_URL=database-secret:latest,JWT_SECRET=jwt-secret:latest
+            --set-secrets DATABASE_URL=database-secret:latest,JWT_SECRET=jwt-secret:latest \
+            --add-cloudsql-instances ${{ env.PROJECT_ID }}:${{ env.REGION }}:minierp-db
 
       - name: Get Service URL
         id: get-url
@@ -216,6 +220,7 @@ jobs:
           gcloud services enable sqladmin.googleapis.com
           gcloud services enable secretmanager.googleapis.com
           gcloud services enable cloudresourcemanager.googleapis.com
+          gcloud services enable compute.googleapis.com
 
       - name: Grant Secret Manager access to Cloud Run runtime SA
         run: |
@@ -224,6 +229,9 @@ jobs:
           gcloud projects add-iam-policy-binding ${{ env.PROJECT_ID }} \
             --member="serviceAccount:${PROJECT_NUMBER}-compute@developer.gserviceaccount.com" \
             --role="roles/secretmanager.secretAccessor"
+          gcloud projects add-iam-policy-binding ${{ env.PROJECT_ID }} \
+            --member="serviceAccount:${PROJECT_NUMBER}-compute@developer.gserviceaccount.com" \
+            --role="roles/cloudsql.client"
 
       - name: Create Cloud SQL Instance (if not exists)
         run: |
