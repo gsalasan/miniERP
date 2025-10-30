@@ -207,6 +207,14 @@ jobs:
           gcloud services enable sqladmin.googleapis.com
           gcloud services enable secretmanager.googleapis.com
 
+      - name: Grant Secret Manager access to Cloud Run runtime SA
+        run: |
+          PROJECT_NUMBER=$(gcloud projects describe ${{ env.PROJECT_ID }} --format='value(projectNumber)')
+          echo "PROJECT_NUMBER=$PROJECT_NUMBER" >> $GITHUB_ENV
+          gcloud projects add-iam-policy-binding ${{ env.PROJECT_ID }} \
+            --member="serviceAccount:${PROJECT_NUMBER}-compute@developer.gserviceaccount.com" \
+            --role="roles/secretmanager.secretAccessor"
+
       - name: Create Cloud SQL Instance (if not exists)
         run: |
           if ! gcloud sql instances describe minierp-db --quiet 2>/dev/null; then
