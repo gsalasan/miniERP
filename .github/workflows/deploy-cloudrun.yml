@@ -16,6 +16,7 @@ jobs:
   deploy-backend-services:
     runs-on: ubuntu-latest
     strategy:
+      max-parallel: 2
       matrix:
         service: [
           { name: 'identity-service', path: './services/identity-service', port: 4000 },
@@ -43,10 +44,11 @@ jobs:
       - name: Configure Docker
         run: gcloud auth configure-docker
 
-      - name: Build and Push Container
+      - name: Build and Push Container (Docker)
         run: |
           cd ${{ matrix.service.path }}
-          gcloud builds submit --tag ${{ env.REGISTRY }}/${{ env.PROJECT_ID }}/${{ matrix.service.name }}:latest .
+          docker build -t ${{ env.REGISTRY }}/${{ env.PROJECT_ID }}/${{ matrix.service.name }}:latest .
+          docker push ${{ env.REGISTRY }}/${{ env.PROJECT_ID }}/${{ matrix.service.name }}:latest
 
       - name: Deploy to Cloud Run
         run: |
@@ -79,6 +81,7 @@ jobs:
   deploy-frontend-apps:
     runs-on: ubuntu-latest
     strategy:
+      max-parallel: 2
       matrix:
         frontend: [
           { name: 'main-frontend', path: './frontend/apps/main-frontend' },
@@ -159,10 +162,11 @@ jobs:
           }
           EOF
 
-      - name: Build and Push Frontend Container
+      - name: Build and Push Frontend Container (Docker)
         run: |
           cd ${{ matrix.frontend.path }}
-          gcloud builds submit --tag ${{ env.REGISTRY }}/${{ env.PROJECT_ID }}/${{ matrix.frontend.name }}:latest .
+          docker build -t ${{ env.REGISTRY }}/${{ env.PROJECT_ID }}/${{ matrix.frontend.name }}:latest .
+          docker push ${{ env.REGISTRY }}/${{ env.PROJECT_ID }}/${{ matrix.frontend.name }}:latest
 
       - name: Deploy Frontend to Cloud Run
         run: |
