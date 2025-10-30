@@ -6,7 +6,7 @@ WORKDIR /app
 
 # Copy package files
 COPY package*.json ./
-COPY prisma ./prisma/
+## No prisma directory present at repo root for this service; skip copying
 
 # Install all dependencies (including dev dependencies for build)
 RUN npm ci
@@ -14,8 +14,7 @@ RUN npm ci
 # Copy source code
 COPY . .
 
-# Generate Prisma Client
-RUN npx prisma generate
+## Skip Prisma client generation (no prisma schema present)
 
 # Build the application
 RUN npm run build
@@ -32,14 +31,14 @@ RUN adduser -S nextjs -u 1001
 
 # Copy package files
 COPY package*.json ./
-COPY prisma ./prisma/
+## No prisma directory; nothing to copy
 
 # Install only production dependencies
 RUN npm ci --only=production && npm cache clean --force
 
 # Copy built application from builder stage
 COPY --from=builder --chown=nextjs:nodejs /app/dist ./dist
-COPY --from=builder --chown=nextjs:nodejs /app/node_modules/.prisma ./node_modules/.prisma
+## No Prisma client artifacts to copy
 
 # Switch to non-root user
 USER nextjs
