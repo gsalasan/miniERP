@@ -51,16 +51,20 @@ async function startServer() {
       process.exit(1);
     }
 
-    // Connect to database
-    await connectDatabase();
-
-    // Start the server
-    const server = app.listen(PORT, () => {
+    // Start the server immediately; connect to DB in background to avoid startup timeouts
+    const server = app.listen(PORT, async () => {
       console.log(' Identity Service started successfully');
       console.log(` Server running on port ${PORT}`);
       console.log(` Health check: http://localhost:${PORT}/health`);
       console.log(` Auth API: http://localhost:${PORT}/api/v1/auth`);
       console.log(` Environment: ${process.env.NODE_ENV || 'development'}`);
+
+      // Attempt DB connection non-blocking
+      try {
+        await connectDatabase();
+      } catch (e) {
+        console.error('⚠️ Non-blocking DB connection failed at startup. Service is running, will retry on demand.');
+      }
     });
 
     // Handle server errors
