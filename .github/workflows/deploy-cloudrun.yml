@@ -14,6 +14,7 @@ env:
 jobs:
   # Deploy Backend Services
   deploy-backend-services:
+    needs: [setup-infrastructure]
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
@@ -44,6 +45,13 @@ jobs:
 
       - name: Configure Docker
         run: gcloud auth configure-docker
+
+      - name: Ensure Secret Manager access for runtime SA
+        run: |
+          PROJECT_NUMBER=$(gcloud projects describe ${{ env.PROJECT_ID }} --format='value(projectNumber)')
+          gcloud projects add-iam-policy-binding ${{ env.PROJECT_ID }} \
+            --member="serviceAccount:${PROJECT_NUMBER}-compute@developer.gserviceaccount.com" \
+            --role="roles/secretmanager.secretAccessor"
 
       - name: Build and Push Container (Docker)
         run: |
@@ -80,6 +88,7 @@ jobs:
 
   # Deploy Frontend Applications
   deploy-frontend-apps:
+    needs: [setup-infrastructure]
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
