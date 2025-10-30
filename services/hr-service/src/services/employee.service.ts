@@ -1,23 +1,7 @@
 import bcrypt from 'bcryptjs';
+import { getPrisma } from '../utils/prisma';
 
-// Use relative path from root since Prisma is generated at root level
-const prismaClientPath = process.env.NODE_ENV === 'production' 
-  ? '@prisma/client' 
-  : '../../../../node_modules/@prisma/client';
-
-let PrismaClient: any;
-let Prisma: any;
-
-try {
-  const prismaModule = require(prismaClientPath);
-  PrismaClient = prismaModule.PrismaClient;
-  Prisma = prismaModule.Prisma;
-} catch (error) {
-  console.error('Failed to load Prisma client:', error);
-  throw new Error('Prisma client not available');
-}
-
-const prisma = new PrismaClient();
+const prisma = getPrisma();
 
 // Type definitions
 type UserRole = 'CEO' | 'FINANCE_ADMIN' | 'SALES' | 'SALES_MANAGER' | 'PROJECT_MANAGER' | 'PROJECT_ENGINEER' | 'HR_ADMIN' | 'EMPLOYEE' | 'PROCUREMENT_ADMIN' | 'ASSET_ADMIN' | 'SYSTEM_ADMIN';

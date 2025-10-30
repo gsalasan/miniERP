@@ -91,7 +91,7 @@ jobs:
             --memory 512Mi \
             --cpu 1 \
             --max-instances 10 \
-            --min-instances 0 \
+            --min-instances 1 \
             --concurrency 100 \
             --timeout 600 \
             --set-env-vars NODE_ENV=production \
@@ -212,7 +212,7 @@ jobs:
             --memory 256Mi \
             --cpu 1 \
             --max-instances 5 \
-            --min-instances 0
+            --min-instances 1
 
   # Setup Infrastructure (runs only on main branch)
   setup-infrastructure:

@@ -108,3 +108,52 @@ export const taxRatesAPI = {
     return res.json();
   },
 };
+
+export type ExchangeRate = {
+  id: number;
+  currency_from: string;
+  currency_to: string;
+  rate: number | string;
+  effective_date: string;
+  is_active: boolean;
+};
+
+export type CreateExchangeRateDto = {
+  currency_from: string;
+  currency_to: string;
+  rate: number;
+  effective_date: string;
+  is_active: boolean;
+};
+
+export type UpdateExchangeRateDto = Partial<CreateExchangeRateDto>;
+
+export const exchangeRatesAPI = {
+  async getAll(params?: { is_active?: boolean }) {
+    const qs = params && typeof params.is_active === 'boolean'
+      ? `?is_active=${params.is_active}`
+      : '';
+    const res = await fetch(`${API_BASE}/exchange-rates${qs}`);
+    return res.json();
+  },
+  async create(payload: CreateExchangeRateDto) {
+    const res = await fetch(`${API_BASE}/exchange-rates`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+    return res.json();
+  },
+  async update(id: number, payload: UpdateExchangeRateDto) {
+    const res = await fetch(`${API_BASE}/exchange-rates/${id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+    return res.json();
+  },
+  async delete(id: number) {
+    const res = await fetch(`${API_BASE}/exchange-rates/${id}`, { method: 'DELETE' });
+    return res.json();
+  },
+};

@@ -33,9 +33,10 @@ console.log('JWT_SECRET:', envConfig.JWT_SECRET ? 'Found' : 'Not found');
 
 // Use PORT environment variable for Cloud Run compatibility
 const PORT = process.env.PORT || 8080;
+const HOST = '0.0.0.0';
 
 console.log(`🎯 Selected PORT: ${PORT}`);
 
-app.listen(PORT, () => {
-  console.log(`🚀 Engineering service listening on port ${PORT}`);
+app.listen(PORT, HOST, () => {
+  console.log(`🚀 Engineering service listening on http://${HOST}:${PORT}`);
 });

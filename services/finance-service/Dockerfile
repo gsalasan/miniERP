@@ -9,7 +9,12 @@ COPY package*.json ./
 ## No prisma directory present for this service; skip copying
 
 # Install all dependencies (including dev dependencies for build)
-RUN npm ci || npm install --no-fund --no-audit
+# Prefer reproducible lockfile; fallback to npm install if lockfile is out of sync
+RUN if [ -f package-lock.json ]; then \
+    npm ci || npm install --no-fund --no-audit; \
+  else \
+    npm install --no-fund --no-audit; \
+  fi
 
 # Copy source code
 COPY . .
@@ -25,8 +30,8 @@ FROM node:22-alpine AS runner
 # Set working directory
 WORKDIR /app
 
-# Install system deps required by Prisma engines (OpenSSL)
-RUN apk add --no-cache openssl
+# Install system deps required by Prisma engines (OpenSSL) and curl for healthcheck
+RUN apk add --no-cache openssl curl
 
 # Create non-root user for security
 RUN addgroup -g 1001 -S nodejs
@@ -37,7 +42,11 @@ COPY package*.json ./
 ## No prisma directory; nothing to copy
 
 # Install only production dependencies
-RUN npm ci --only=production || npm install --omit=dev --no-fund --no-audit && npm cache clean --force
+RUN if [ -f package-lock.json ]; then \
+    npm ci --only=production || npm install --omit=dev --no-fund --no-audit; \
+  else \
+    npm install --omit=dev --no-fund --no-audit; \
+  fi && npm cache clean --force
 
 # Copy built application from builder stage
 COPY --from=builder --chown=nextjs:nodejs /app/dist ./dist
@@ -50,9 +59,9 @@ USER nextjs
 # Expose port (Cloud Run will override this)
 EXPOSE 8080
 
-# Health check
-HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
-  CMD wget --no-verbose --tries=1 --spider http://localhost:8080/health || exit 1
+# Health check (use curl for Alpine compatibility)
+HEALTHCHECK --interval=30s --timeout=5s --start-period=5s --retries=3 \
+  CMD curl -fsS http://localhost:8080/health || exit 1
 
 # Start the application in production mode
 CMD ["npm", "start"]

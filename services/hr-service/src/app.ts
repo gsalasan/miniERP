@@ -7,10 +7,9 @@ dotenv.config({ path: path.join(__dirname, '..', '.env') });
 import express from 'express';
 import cors from 'cors';
 import employeeRoutes from './routes/employee.routes';
-import { PrismaClient } from '@prisma/client';
+import { getPrisma } from './utils/prisma';
 
-// Initialize Prisma client
-const prisma = new PrismaClient();
+// Initialize express app only; defer Prisma until used
 
 const app = express();
 
@@ -32,6 +31,7 @@ app.get('/health', (req, res) => {
 // Test HR models endpoint
 app.get('/api/v1/test-hr-models', async (req, res) => {
   try {
+    const prisma = getPrisma();
     // Test HR models are accessible
     const employeeCount = await prisma.hr_employees.count();
     const attendanceCount = await prisma.hr_attendances.count();
