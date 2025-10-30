@@ -10,7 +10,7 @@ const __dirname = path.dirname(__filename);
 async function runMigration() {
   // Database connection
   const client = new Client({
-    connectionString: "postgresql://postgres:anisa252502@192.168.1.72:5432/minierp_unais?schema=public"
+    connectionString: "postgresql://postgres:postgres@localhost:5432/minierp?schema=public"
   });
 
   try {
