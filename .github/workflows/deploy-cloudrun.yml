@@ -215,6 +215,7 @@ jobs:
           gcloud services enable run.googleapis.com
           gcloud services enable sqladmin.googleapis.com
           gcloud services enable secretmanager.googleapis.com
+          gcloud services enable cloudresourcemanager.googleapis.com
 
       - name: Grant Secret Manager access to Cloud Run runtime SA
         run: |
