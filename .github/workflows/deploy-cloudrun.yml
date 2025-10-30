@@ -49,9 +49,27 @@ jobs:
       - name: Ensure Secret Manager access for runtime SA
         run: |
           PROJECT_NUMBER=$(gcloud projects describe ${{ env.PROJECT_ID }} --format='value(projectNumber)')
-          gcloud projects add-iam-policy-binding ${{ env.PROJECT_ID }} \
-            --member="serviceAccount:${PROJECT_NUMBER}-compute@developer.gserviceaccount.com" \
-            --role="roles/secretmanager.secretAccessor"
+          RUNTIME_SA="${PROJECT_NUMBER}-compute@developer.gserviceaccount.com"
+          add_binding() {
+            local ROLE=$1
+            local ATTEMPT=0
+            local MAX=5
+            local SLEEP=2
+            until gcloud projects add-iam-policy-binding ${{ env.PROJECT_ID }} \
+              --member="serviceAccount:${RUNTIME_SA}" \
+              --role="${ROLE}" >/dev/null 2>&1; do
+              ATTEMPT=$((ATTEMPT+1))
+              if [ $ATTEMPT -ge $MAX ]; then
+                echo "Failed to add IAM binding ${ROLE} after ${MAX} attempts" >&2
+                exit 1
+              fi
+              echo "IAM policy conflict for ${ROLE}, retrying in ${SLEEP}s (attempt ${ATTEMPT}/${MAX})..."
+              sleep $SLEEP
+              SLEEP=$((SLEEP*2))
+            done
+          }
+          add_binding roles/secretmanager.secretAccessor
+          add_binding roles/cloudsql.client
           gcloud projects add-iam-policy-binding ${{ env.PROJECT_ID }} \
             --member="serviceAccount:${PROJECT_NUMBER}-compute@developer.gserviceaccount.com" \
             --role="roles/cloudsql.client"
@@ -226,12 +244,27 @@ jobs:
         run: |
           PROJECT_NUMBER=$(gcloud projects describe ${{ env.PROJECT_ID }} --format='value(projectNumber)')
           echo "PROJECT_NUMBER=$PROJECT_NUMBER" >> $GITHUB_ENV
-          gcloud projects add-iam-policy-binding ${{ env.PROJECT_ID }} \
-            --member="serviceAccount:${PROJECT_NUMBER}-compute@developer.gserviceaccount.com" \
-            --role="roles/secretmanager.secretAccessor"
-          gcloud projects add-iam-policy-binding ${{ env.PROJECT_ID }} \
-            --member="serviceAccount:${PROJECT_NUMBER}-compute@developer.gserviceaccount.com" \
-            --role="roles/cloudsql.client"
+          RUNTIME_SA="${PROJECT_NUMBER}-compute@developer.gserviceaccount.com"
+          add_binding() {
+            local ROLE=$1
+            local ATTEMPT=0
+            local MAX=5
+            local SLEEP=2
+            until gcloud projects add-iam-policy-binding ${{ env.PROJECT_ID }} \
+              --member="serviceAccount:${RUNTIME_SA}" \
+              --role="${ROLE}" >/dev/null 2>&1; do
+              ATTEMPT=$((ATTEMPT+1))
+              if [ $ATTEMPT -ge $MAX ]; then
+                echo "Failed to add IAM binding ${ROLE} after ${MAX} attempts" >&2
+                exit 1
+              fi
+              echo "IAM policy conflict for ${ROLE}, retrying in ${SLEEP}s (attempt ${ATTEMPT}/${MAX})..."
+              sleep $SLEEP
+              SLEEP=$((SLEEP*2))
+            done
+          }
+          add_binding roles/secretmanager.secretAccessor
+          add_binding roles/cloudsql.client
 
       - name: Create Cloud SQL Instance (if not exists)
         run: |
