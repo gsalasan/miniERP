@@ -203,8 +203,8 @@ jobs:
 
       - name: Create Cloud SQL Instance (if not exists)
         run: |
-          if ! gcloud sql instances describe miniERP-db --quiet 2>/dev/null; then
-            gcloud sql instances create miniERP-db \
+          if ! gcloud sql instances describe minierp-db --quiet 2>/dev/null; then
+            gcloud sql instances create minierp-db \
               --database-version=POSTGRES_15 \
               --tier=db-f1-micro \
               --region=${{ env.REGION }} \
@@ -213,15 +213,15 @@ jobs:
 
       - name: Create Database (if not exists)
         run: |
-          if ! gcloud sql databases describe miniERP --instance=miniERP-db --quiet 2>/dev/null; then
-            gcloud sql databases create miniERP --instance=miniERP-db
+          if ! gcloud sql databases describe minierp --instance=minierp-db --quiet 2>/dev/null; then
+            gcloud sql databases create minierp --instance=minierp-db
           fi
 
       - name: Create Secrets (if not exist)
         run: |
           # Create database secret
           if ! gcloud secrets describe database-secret --quiet 2>/dev/null; then
-            echo "postgresql://postgres:${{ secrets.DB_ROOT_PASSWORD }}@/miniERP?host=/cloudsql/${{ env.PROJECT_ID }}:${{ env.REGION }}:miniERP-db" | \
+            echo "postgresql://postgres:${{ secrets.DB_ROOT_PASSWORD }}@/minierp?host=/cloudsql/${{ env.PROJECT_ID }}:${{ env.REGION }}:minierp-db" | \
             gcloud secrets create database-secret --data-file=-
           fi
           
