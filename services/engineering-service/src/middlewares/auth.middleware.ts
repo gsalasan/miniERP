@@ -31,7 +31,7 @@ export const verifyToken = (
         .json({ success: false, message: 'Konfigurasi server salah' });
     }
 
-    const decoded = jwt.verify(token, secret);
+    const decoded = jwt.verify(token, secret as jwt.Secret);
     (req as Request & { user: jwt.JwtPayload | string }).user = decoded;
     next();
   } catch {

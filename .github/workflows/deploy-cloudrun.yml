@@ -65,7 +65,7 @@ jobs:
             --min-instances 0 \
             --concurrency 100 \
             --timeout 300 \
-            --set-env-vars NODE_ENV=production,PORT=8080 \
+            --set-env-vars NODE_ENV=production \
             --set-secrets DATABASE_URL=database-secret:latest,JWT_SECRET=jwt-secret:latest
 
       - name: Get Service URL
