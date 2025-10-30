@@ -9,7 +9,7 @@ COPY package*.json ./
 ## No prisma directory present at repo root for this service; skip copying
 
 # Install all dependencies (including dev dependencies for build)
-RUN npm ci
+RUN if [ -f package-lock.json ]; then npm ci; else npm install; fi
 
 # Copy source code
 COPY . .
@@ -34,7 +34,7 @@ COPY package*.json ./
 ## No prisma directory; nothing to copy
 
 # Install only production dependencies
-RUN npm ci --only=production && npm cache clean --force
+RUN if [ -f package-lock.json ]; then npm ci --only=production; else npm install --only=production; fi && npm cache clean --force
 
 # Copy built application from builder stage
 COPY --from=builder --chown=nextjs:nodejs /app/dist ./dist
