@@ -9,9 +9,10 @@ console.log('HR Service DEBUG - Environment variables:');
 console.log('process.env.PORT:', process.env.PORT);
 console.log('dotenv path:', path.join(__dirname, '..', '.env'));
 
-const PORT = process.env.PORT || 8080;
+const PORT = Number(process.env.PORT) || 8080;
+const HOST = '0.0.0.0';
 
-app.listen(PORT, () => {
-  console.log(`HR Service running on port ${PORT}`);
-  console.log(`Health check: http://localhost:${PORT}/health`);
+app.listen(PORT, HOST, () => {
+  console.log(`HR Service running on http://${HOST}:${PORT}`);
+  console.log(`Health check: http://${HOST}:${PORT}/health`);
 });

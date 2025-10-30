@@ -59,8 +59,11 @@ USER nextjs
 # Expose port (Cloud Run will override this)
 EXPOSE 8080
 
-# Health check (use curl for Alpine compatibility)
-HEALTHCHECK --interval=30s --timeout=5s --start-period=5s --retries=3 \
+# Set default port explicitly
+ENV PORT=8080
+
+# Health check (use curl for Alpine compatibility); allow longer startup
+HEALTHCHECK --interval=30s --timeout=5s --start-period=120s --retries=3 \
   CMD curl -fsS http://localhost:8080/health || exit 1
 
 # Start the application in production mode
