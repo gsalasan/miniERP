@@ -7,12 +7,12 @@ WORKDIR /app
 # Copy package files
 COPY package*.json ./
 # Remove monorepo-only local dependency to avoid npm resolving outside build context
-RUN sed -i '/"minierp"\s*:\s*"file:\.\.\/\.\."/d' package.json
+RUN sed -i '/"minierp"\s*:\s*"file:\.\.\/\.\."/d' package.json && rm -f package-lock.json
 COPY prisma ./prisma/
 
 # Install all dependencies (including dev dependencies for build)
 # Use npm install to avoid strict lockfile requirements inside CI containers
-RUN npm install --no-fund --no-audit
+RUN npm install --no-fund --no-audit --no-package-lock
 
 # Copy source code
 COPY . .
@@ -36,11 +36,11 @@ RUN adduser -S nextjs -u 1001
 # Copy package files
 COPY package*.json ./
 # Ensure "minierp" local file dependency is removed in runner image as well
-RUN sed -i '/"minierp"\s*:\s*"file:\.\.\/\.\."/d' package.json
+RUN sed -i '/"minierp"\s*:\s*"file:\.\.\/\.\."/d' package.json && rm -f package-lock.json
 COPY prisma ./prisma/
 
 # Install only production dependencies (fallback if ci not possible)
-RUN npm ci --only=production || npm install --omit=dev --no-fund --no-audit \
+RUN npm ci --only=production || npm install --omit=dev --no-fund --no-audit --no-package-lock \
   && npm cache clean --force
 
 # Copy built application from builder stage
