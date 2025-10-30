@@ -1,0 +1,188 @@
+# Cloud Run deployment configuration for miniERP services
+# This file contains the configuration for deploying all services to Google Cloud Run
+
+apiVersion: serving.knative.dev/v1
+kind: Service
+metadata:
+  name: identity-service
+  annotations:
+    run.googleapis.com/ingress: all
+spec:
+  template:
+    metadata:
+      annotations:
+        run.googleapis.com/execution-environment: gen2
+        run.googleapis.com/cpu-throttling: "false"
+    spec:
+      containerConcurrency: 100
+      timeoutSeconds: 300
+      containers:
+      - image: gcr.io/your-minierp-project-id/identity-service:latest
+        ports:
+        - containerPort: 8080
+        env:
+        - name: NODE_ENV
+          value: "production"
+        - name: PORT
+          value: "8080"
+        - name: DATABASE_URL
+          valueFrom:
+            secretKeyRef:
+              name: database-secret
+              key: url
+        - name: JWT_SECRET
+          valueFrom:
+            secretKeyRef:
+              name: jwt-secret
+              key: secret
+        resources:
+          limits:
+            cpu: "1"
+            memory: "512Mi"
+          requests:
+            cpu: "0.5"
+            memory: "256Mi"
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 8080
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 8080
+          initialDelaySeconds: 5
+          periodSeconds: 5
+---
+apiVersion: serving.knative.dev/v1
+kind: Service
+metadata:
+  name: engineering-service
+  annotations:
+    run.googleapis.com/ingress: all
+spec:
+  template:
+    metadata:
+      annotations:
+        run.googleapis.com/execution-environment: gen2
+    spec:
+      containerConcurrency: 100
+      timeoutSeconds: 300
+      containers:
+      - image: gcr.io/your-minierp-project-id/engineering-service:latest
+        ports:
+        - containerPort: 8080
+        env:
+        - name: NODE_ENV
+          value: "production"
+        - name: PORT
+          value: "8080"
+        - name: DATABASE_URL
+          valueFrom:
+            secretKeyRef:
+              name: database-secret
+              key: url
+        resources:
+          limits:
+            cpu: "1"
+            memory: "512Mi"
+---
+apiVersion: serving.knative.dev/v1
+kind: Service
+metadata:
+  name: crm-service
+  annotations:
+    run.googleapis.com/ingress: all
+spec:
+  template:
+    metadata:
+      annotations:
+        run.googleapis.com/execution-environment: gen2
+    spec:
+      containerConcurrency: 100
+      timeoutSeconds: 300
+      containers:
+      - image: gcr.io/your-minierp-project-id/crm-service:latest
+        ports:
+        - containerPort: 8080
+        env:
+        - name: NODE_ENV
+          value: "production"
+        - name: PORT
+          value: "8080"
+        - name: DATABASE_URL
+          valueFrom:
+            secretKeyRef:
+              name: database-secret
+              key: url
+        resources:
+          limits:
+            cpu: "1"
+            memory: "512Mi"
+---
+apiVersion: serving.knative.dev/v1
+kind: Service
+metadata:
+  name: finance-service
+  annotations:
+    run.googleapis.com/ingress: all
+spec:
+  template:
+    metadata:
+      annotations:
+        run.googleapis.com/execution-environment: gen2
+    spec:
+      containerConcurrency: 100
+      timeoutSeconds: 300
+      containers:
+      - image: gcr.io/PROJECT_ID/finance-service:latest
+        ports:
+        - containerPort: 8080
+        env:
+        - name: NODE_ENV
+          value: "production"
+        - name: PORT
+          value: "8080"
+        - name: DATABASE_URL
+          valueFrom:
+            secretKeyRef:
+              name: database-secret
+              key: url
+        resources:
+          limits:
+            cpu: "1"
+            memory: "512Mi"
+---
+apiVersion: serving.knative.dev/v1
+kind: Service
+metadata:
+  name: hr-service
+  annotations:
+    run.googleapis.com/ingress: all
+spec:
+  template:
+    metadata:
+      annotations:
+        run.googleapis.com/execution-environment: gen2
+    spec:
+      containerConcurrency: 100
+      timeoutSeconds: 300
+      containers:
+      - image: gcr.io/PROJECT_ID/hr-service:latest
+        ports:
+        - containerPort: 8080
+        env:
+        - name: NODE_ENV
+          value: "production"
+        - name: PORT
+          value: "8080"
+        - name: DATABASE_URL
+          valueFrom:
+            secretKeyRef:
+              name: database-secret
+              key: url
+        resources:
+          limits:
+            cpu: "1"
+            memory: "512Mi"

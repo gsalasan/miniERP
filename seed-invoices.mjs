@@ -3,11 +3,11 @@ const { Client } = pkg;
 
 async function seedInvoices() {
   const client = new Client({
-    host: '192.168.1.72',
+    host: 'localhost',
     port: 5432,
-    database: 'minierp_unais',
+    database: 'minierp',
     user: 'postgres',
-    password: 'anisa252502'
+    password: 'postgres'
   });
 
   try {

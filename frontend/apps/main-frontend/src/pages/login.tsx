@@ -34,9 +34,13 @@ const Login: React.FC = () => {
       // Debug response
       console.log("Login response:", result);
 
-      if (result && result.success && result.token) {
+      if (result?.success === true && result.token) {
         setSuccess(true);
         localStorage.setItem("token", result.token);
+        // Also store user data if available
+        if (result.data) {
+          localStorage.setItem("user", JSON.stringify(result.data));
+        }
         setTimeout(() => {
           navigate("/dashboard");
         }, 1000);
@@ -44,6 +48,7 @@ const Login: React.FC = () => {
         setError(result?.message || "Login gagal. Periksa email dan password Anda.");
       }
     } catch (err: any) {
+      console.error("Login exception:", err);
       setError(
         err?.message ||
           "Terjadi kesalahan saat login. Pastikan backend berjalan dan endpoint benar.",

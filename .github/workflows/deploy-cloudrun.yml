@@ -1,0 +1,254 @@
+name: Deploy to Google Cloud Run
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+env:
+  PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
+  REGION: us-central1
+  REGISTRY: gcr.io
+
+jobs:
+  # Deploy Backend Services
+  deploy-backend-services:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        service: [
+          { name: 'identity-service', path: './services/identity-service', port: 4000 },
+          { name: 'engineering-service', path: './services/engineering-service', port: 4001 },
+          { name: 'crm-service', path: './services/crm-service', port: 4002 },
+          { name: 'finance-service', path: './services/finance-service', port: 4003 },
+          { name: 'hr-service', path: './services/hr-service', port: 4004 },
+          { name: 'inventory-service', path: './services/inventory-service', port: 4005 },
+          { name: 'procurement-service', path: './services/procurement-service', port: 4006 },
+          { name: 'project-service', path: './services/project-service', port: 4007 }
+        ]
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Google Auth
+        id: auth
+        uses: 'google-github-actions/auth@v2'
+        with:
+          credentials_json: '${{ secrets.GCP_SA_KEY }}'
+
+      - name: Set up Cloud SDK
+        uses: 'google-github-actions/setup-gcloud@v2'
+
+      - name: Configure Docker
+        run: gcloud auth configure-docker
+
+      - name: Build and Push Container
+        run: |
+          cd ${{ matrix.service.path }}
+          gcloud builds submit --tag ${{ env.REGISTRY }}/${{ env.PROJECT_ID }}/${{ matrix.service.name }}:latest .
+
+      - name: Deploy to Cloud Run
+        run: |
+          gcloud run deploy ${{ matrix.service.name }} \
+            --image ${{ env.REGISTRY }}/${{ env.PROJECT_ID }}/${{ matrix.service.name }}:latest \
+            --platform managed \
+            --region ${{ env.REGION }} \
+            --allow-unauthenticated \
+            --port 8080 \
+            --memory 512Mi \
+            --cpu 1 \
+            --max-instances 10 \
+            --min-instances 0 \
+            --concurrency 100 \
+            --timeout 300 \
+            --set-env-vars NODE_ENV=production,PORT=8080 \
+            --set-secrets DATABASE_URL=database-secret:latest,JWT_SECRET=jwt-secret:latest
+
+      - name: Get Service URL
+        id: get-url
+        run: |
+          SERVICE_URL=$(gcloud run services describe ${{ matrix.service.name }} --region=${{ env.REGION }} --format='value(status.url)')
+          echo "url=$SERVICE_URL" >> $GITHUB_OUTPUT
+
+      - name: Test Health Endpoint
+        run: |
+          curl -f ${{ steps.get-url.outputs.url }}/health || echo "Health check failed for ${{ matrix.service.name }}"
+
+  # Deploy Frontend Applications
+  deploy-frontend-apps:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        frontend: [
+          { name: 'main-frontend', path: './frontend/apps/main-frontend' },
+          { name: 'crm-frontend', path: './frontend/apps/crm-frontend' },
+          { name: 'finance-frontend', path: './frontend/apps/finance-frontend' },
+          { name: 'hr-frontend', path: './frontend/apps/hr-frontend' },
+          { name: 'identity-frontend', path: './frontend/apps/identity-frontend' },
+          { name: 'engineering-frontend', path: './frontend/apps/engineering-frontend' },
+          { name: 'procurement-frontend', path: './frontend/apps/procurement-frontend' },
+          { name: 'project-frontend', path: './frontend/apps/project-frontend' }
+        ]
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+          cache-dependency-path: ${{ matrix.frontend.path }}/package-lock.json
+
+      - name: Install dependencies
+        run: |
+          cd ${{ matrix.frontend.path }}
+          npm ci
+
+      - name: Build application
+        run: |
+          cd ${{ matrix.frontend.path }}
+          npm run build
+
+      - name: Google Auth
+        id: auth
+        uses: 'google-github-actions/auth@v2'
+        with:
+          credentials_json: '${{ secrets.GCP_SA_KEY }}'
+
+      - name: Set up Cloud SDK
+        uses: 'google-github-actions/setup-gcloud@v2'
+
+      - name: Configure Docker
+        run: gcloud auth configure-docker
+
+      - name: Create Dockerfile for Frontend
+        run: |
+          cat > ${{ matrix.frontend.path }}/Dockerfile << 'EOF'
+          FROM nginx:alpine
+          COPY dist/ /usr/share/nginx/html/
+          COPY nginx.conf /etc/nginx/nginx.conf
+          EXPOSE 80
+          CMD ["nginx", "-g", "daemon off;"]
+          EOF
+
+      - name: Create nginx.conf for Frontend
+        run: |
+          cat > ${{ matrix.frontend.path }}/nginx.conf << 'EOF'
+          events {
+              worker_connections 1024;
+          }
+          http {
+              include       /etc/nginx/mime.types;
+              default_type  application/octet-stream;
+              sendfile        on;
+              keepalive_timeout  65;
+              server {
+                  listen       80;
+                  server_name  localhost;
+                  location / {
+                      root   /usr/share/nginx/html;
+                      index  index.html index.htm;
+                      try_files $uri $uri/ /index.html;
+                  }
+                  error_page   500 502 503 504  /50x.html;
+                  location = /50x.html {
+                      root   /usr/share/nginx/html;
+                  }
+              }
+          }
+          EOF
+
+      - name: Build and Push Frontend Container
+        run: |
+          cd ${{ matrix.frontend.path }}
+          gcloud builds submit --tag ${{ env.REGISTRY }}/${{ env.PROJECT_ID }}/${{ matrix.frontend.name }}:latest .
+
+      - name: Deploy Frontend to Cloud Run
+        run: |
+          gcloud run deploy ${{ matrix.frontend.name }} \
+            --image ${{ env.REGISTRY }}/${{ env.PROJECT_ID }}/${{ matrix.frontend.name }}:latest \
+            --platform managed \
+            --region ${{ env.REGION }} \
+            --allow-unauthenticated \
+            --port 80 \
+            --memory 256Mi \
+            --cpu 1 \
+            --max-instances 5 \
+            --min-instances 0
+
+  # Setup Infrastructure (runs only on main branch)
+  setup-infrastructure:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Google Auth
+        id: auth
+        uses: 'google-github-actions/auth@v2'
+        with:
+          credentials_json: '${{ secrets.GCP_SA_KEY }}'
+
+      - name: Set up Cloud SDK
+        uses: 'google-github-actions/setup-gcloud@v2'
+
+      - name: Enable Required APIs
+        run: |
+          gcloud services enable cloudbuild.googleapis.com
+          gcloud services enable run.googleapis.com
+          gcloud services enable sqladmin.googleapis.com
+          gcloud services enable secretmanager.googleapis.com
+
+      - name: Create Cloud SQL Instance (if not exists)
+        run: |
+          if ! gcloud sql instances describe miniERP-db --quiet 2>/dev/null; then
+            gcloud sql instances create miniERP-db \
+              --database-version=POSTGRES_15 \
+              --tier=db-f1-micro \
+              --region=${{ env.REGION }} \
+              --root-password=${{ secrets.DB_ROOT_PASSWORD }}
+          fi
+
+      - name: Create Database (if not exists)
+        run: |
+          if ! gcloud sql databases describe miniERP --instance=miniERP-db --quiet 2>/dev/null; then
+            gcloud sql databases create miniERP --instance=miniERP-db
+          fi
+
+      - name: Create Secrets (if not exist)
+        run: |
+          # Create database secret
+          if ! gcloud secrets describe database-secret --quiet 2>/dev/null; then
+            echo "postgresql://postgres:${{ secrets.DB_ROOT_PASSWORD }}@/miniERP?host=/cloudsql/${{ env.PROJECT_ID }}:${{ env.REGION }}:miniERP-db" | \
+            gcloud secrets create database-secret --data-file=-
+          fi
+          
+          # Create JWT secret
+          if ! gcloud secrets describe jwt-secret --quiet 2>/dev/null; then
+            echo "${{ secrets.JWT_SECRET }}" | \
+            gcloud secrets create jwt-secret --data-file=-
+          fi
+
+  # Notify deployment status
+  notify:
+    needs: [deploy-backend-services, deploy-frontend-apps]
+    runs-on: ubuntu-latest
+    if: always()
+    steps:
+      - name: Notify Success
+        if: needs.deploy-backend-services.result == 'success' && needs.deploy-frontend-apps.result == 'success'
+        run: |
+          echo "🎉 All services deployed successfully to Google Cloud Run!"
+          echo "Backend services: ✅"
+          echo "Frontend applications: ✅"
+
+      - name: Notify Failure
+        if: needs.deploy-backend-services.result == 'failure' || needs.deploy-frontend-apps.result == 'failure'
+        run: |
+          echo "❌ Deployment failed!"
+          echo "Backend services: ${{ needs.deploy-backend-services.result }}"
+          echo "Frontend applications: ${{ needs.deploy-frontend-apps.result }}"
+          exit 1
