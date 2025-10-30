@@ -38,7 +38,8 @@ RUN if [ -f package-lock.json ]; then npm ci --only=production; else npm install
 
 # Copy built application from builder stage
 COPY --from=builder --chown=nextjs:nodejs /app/dist ./dist
-## No Prisma client artifacts to copy
+# Copy Prisma engine artifacts for @prisma/client runtime
+COPY --from=builder --chown=nextjs:nodejs /app/node_modules/.prisma ./node_modules/.prisma
 
 # Switch to non-root user
 USER nextjs

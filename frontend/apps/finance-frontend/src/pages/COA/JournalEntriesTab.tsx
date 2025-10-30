@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { journalEntriesAPI, JournalEntry, chartOfAccountsAPI, ChartOfAccount } from '../../api';
-import { Modal, ConfirmDialog } from '../../components';
+import Modal from '../../components/Modal';
+import ConfirmDialog from '../../components/ConfirmDialog';
 import {
   MagnifyingGlassIcon,
   PlusIcon,
