@@ -12,9 +12,9 @@ export const verifyToken = (
   next();
   return;
 
-  const authHeader = req.headers.authorization;
+  const authHeader = req.headers.authorization ?? '';
 
-  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+  if (!authHeader.startsWith('Bearer ')) {
     return res
       .status(401)
       .json({ success: false, message: 'Token tidak ditemukan' });
