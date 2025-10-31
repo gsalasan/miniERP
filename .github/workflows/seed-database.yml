@@ -56,49 +56,82 @@ jobs:
             npx prisma generate
           fi
 
-      - name: Create check-seed script
+      - name: Create check-database script
         run: |
-          cat > check-seed.mjs << 'EOF'
+          cat > check-database.mjs << 'EOF'
           import { PrismaClient } from '@prisma/client';
           const prisma = new PrismaClient();
           
           try {
+            // Check if database schema exists by checking for users table
+            const result = await prisma.$queryRaw`
+              SELECT table_name 
+              FROM information_schema.tables 
+              WHERE table_schema = 'public' AND table_name = 'users'
+            `;
+            
+            if (result.length === 0) {
+              console.log('SCHEMA_EXISTS=false');
+              console.log('SEEDED=false');
+              process.exit(0);
+            }
+            
+            // Schema exists, now check if data exists
             const taxCount = await prisma.taxRates.count();
             const exchangeCount = await prisma.exchangeRates.count();
+            const userCount = await prisma.users.count();
             
-            if (taxCount > 0 || exchangeCount > 0) {
+            if (taxCount > 0 || exchangeCount > 0 || userCount > 0) {
+              console.log('SCHEMA_EXISTS=true');
               console.log('SEEDED=true');
               process.exit(0);
             } else {
+              console.log('SCHEMA_EXISTS=true');
               console.log('SEEDED=false');
               process.exit(0);
             }
           } catch (error) {
-            console.error('Error checking seed:', error);
-            console.log('SEEDED=false');
+            // If error is about table not existing, schema doesn't exist
+            if (error.message && error.message.includes('does not exist')) {
+              console.log('SCHEMA_EXISTS=false');
+              console.log('SEEDED=false');
+            } else {
+              console.error('Error checking database:', error.message);
+              console.log('SCHEMA_EXISTS=false');
+              console.log('SEEDED=false');
+            }
             process.exit(0);
           } finally {
             await prisma.$disconnect();
           }
           EOF
 
-      - name: Check if database already seeded
-        id: check-seeded
+      - name: Check database status
+        id: check-database
         if: github.event.inputs.force_seed == 'false'
         run: |
           export DATABASE_URL="postgresql://root:${{ secrets.DB_ROOT_PASSWORD }}@127.0.0.1:5432/${{ env.DATABASE_NAME }}"
-          RESULT=$(node check-seed.mjs 2>&1 | grep "SEEDED=" || echo "SEEDED=false")
-          echo $RESULT
+          RESULT=$(node check-database.mjs 2>&1 || echo "SCHEMA_EXISTS=false SEEDED=false")
+          echo "$RESULT"
+          
+          if echo "$RESULT" | grep -q "SCHEMA_EXISTS=true"; then
+            echo "schema_exists=true" >> $GITHUB_OUTPUT
+            echo "✅ Database schema exists"
+          else
+            echo "schema_exists=false" >> $GITHUB_OUTPUT
+            echo "⚠️  Database schema does not exist - migrations will run"
+          fi
+          
           if echo "$RESULT" | grep -q "SEEDED=true"; then
             echo "already_seeded=true" >> $GITHUB_OUTPUT
             echo "⚠️  Database already contains seed data"
           else
             echo "already_seeded=false" >> $GITHUB_OUTPUT
-            echo "✅ Database is empty, will proceed with seeding"
+            echo "✅ Database is empty or schema missing - will proceed with migrations and seeding"
           fi
 
       - name: Check for failed migrations
-        if: steps.check-seeded.outputs.already_seeded != 'true' || github.event.inputs.force_seed == 'true'
+        if: (steps.check-database.outputs.schema_exists == 'true' || github.event.inputs.force_seed == 'true') && steps.check-database.outputs.already_seeded != 'true'
         id: check-failed-migrations
         run: |
           export DATABASE_URL="postgresql://root:${{ secrets.DB_ROOT_PASSWORD }}@127.0.0.1:5432/${{ env.DATABASE_NAME }}"
@@ -160,15 +193,24 @@ jobs:
           fi
 
       - name: Run Prisma migrations
-        if: steps.check-seeded.outputs.already_seeded != 'true' || github.event.inputs.force_seed == 'true'
+        if: |
+          github.event.inputs.force_seed == 'true' ||
+          steps.check-database.outputs.schema_exists != 'true' ||
+          steps.check-database.outputs.already_seeded != 'true'
         run: |
           export DATABASE_URL="postgresql://root:${{ secrets.DB_ROOT_PASSWORD }}@127.0.0.1:5432/${{ env.DATABASE_NAME }}"
-          echo "🔄 Running Prisma migrations..."
+          echo "🔄 Running Prisma migrations to create database schema..."
+          echo "This will create all tables defined in the Prisma schema."
+          echo ""
+          echo "📋 Migration files found:"
+          ls -la prisma/migrations/ || echo "No migrations directory found"
+          echo ""
           npx prisma migrate deploy
-          echo "✅ Migrations completed successfully"
+          echo ""
+          echo "✅ Migrations completed successfully - database schema created!"
 
       - name: Verify database schema exists
-        if: steps.check-seeded.outputs.already_seeded != 'true' || github.event.inputs.force_seed == 'true'
+        if: steps.check-database.outputs.schema_exists != 'true' || steps.check-database.outputs.already_seeded != 'true' || github.event.inputs.force_seed == 'true'
         run: |
           export DATABASE_URL="postgresql://root:${{ secrets.DB_ROOT_PASSWORD }}@127.0.0.1:5432/${{ env.DATABASE_NAME }}"
           echo "🔍 Verifying database schema..."
@@ -196,7 +238,7 @@ jobs:
           "
 
       - name: Seed database - Users
-        if: steps.check-seeded.outputs.already_seeded != 'true' || github.event.inputs.force_seed == 'true'
+        if: steps.check-database.outputs.already_seeded != 'true' || github.event.inputs.force_seed == 'true'
         run: |
           export DATABASE_URL="postgresql://root:${{ secrets.DB_ROOT_PASSWORD }}@127.0.0.1:5432/${{ env.DATABASE_NAME }}"
           echo "🌱 Running seed-users.mjs..."
@@ -207,7 +249,7 @@ jobs:
           fi
 
       - name: Seed database - Tax Rates and Exchange Rates
-        if: steps.check-seeded.outputs.already_seeded != 'true' || github.event.inputs.force_seed == 'true'
+        if: steps.check-database.outputs.already_seeded != 'true' || github.event.inputs.force_seed == 'true'
         run: |
           export DATABASE_URL="postgresql://root:${{ secrets.DB_ROOT_PASSWORD }}@127.0.0.1:5432/${{ env.DATABASE_NAME }}"
           echo "🌱 Running seed-data.mjs..."
@@ -218,7 +260,7 @@ jobs:
           fi
 
       - name: Seed database - Journal Entries
-        if: steps.check-seeded.outputs.already_seeded != 'true' || github.event.inputs.force_seed == 'true'
+        if: steps.check-database.outputs.already_seeded != 'true' || github.event.inputs.force_seed == 'true'
         run: |
           export DATABASE_URL="postgresql://root:${{ secrets.DB_ROOT_PASSWORD }}@127.0.0.1:5432/${{ env.DATABASE_NAME }}"
           echo "🌱 Running seed-journal-entries.mjs..."
@@ -229,7 +271,7 @@ jobs:
           fi
 
       - name: Seed database - Invoices
-        if: steps.check-seeded.outputs.already_seeded != 'true' || github.event.inputs.force_seed == 'true'
+        if: steps.check-database.outputs.already_seeded != 'true' || github.event.inputs.force_seed == 'true'
         run: |
           export DATABASE_URL="postgresql://root:${{ secrets.DB_ROOT_PASSWORD }}@127.0.0.1:5432/${{ env.DATABASE_NAME }}"
           echo "🌱 Running seed-invoices.mjs..."
@@ -240,7 +282,7 @@ jobs:
           fi
 
       - name: Skip seeding message
-        if: steps.check-seeded.outputs.already_seeded == 'true' && github.event.inputs.force_seed == 'false'
+        if: steps.check-database.outputs.already_seeded == 'true' && github.event.inputs.force_seed == 'false'
         run: |
           echo "⏭️  Skipping seeding - database already contains data"
           echo ""
@@ -248,7 +290,7 @@ jobs:
           echo "   when triggering this workflow manually"
 
       - name: Verify seeding results
-        if: steps.check-seeded.outputs.already_seeded != 'true' || github.event.inputs.force_seed == 'true'
+        if: steps.check-database.outputs.already_seeded != 'true' || github.event.inputs.force_seed == 'true'
         run: |
           export DATABASE_URL="postgresql://root:${{ secrets.DB_ROOT_PASSWORD }}@127.0.0.1:5432/${{ env.DATABASE_NAME }}"
           cat > verify-seed.mjs << 'EOF'
