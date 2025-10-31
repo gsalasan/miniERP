@@ -101,7 +101,37 @@ jobs:
         if: steps.check-seeded.outputs.already_seeded != 'true' || github.event.inputs.force_seed == 'true'
         run: |
           export DATABASE_URL="postgresql://root:${{ secrets.DB_ROOT_PASSWORD }}@127.0.0.1:5432/${{ env.DATABASE_NAME }}"
-          npx prisma migrate deploy || echo "⚠️  Note: Migrations may have already been applied"
+          echo "🔄 Running Prisma migrations..."
+          npx prisma migrate deploy
+          echo "✅ Migrations completed successfully"
+
+      - name: Verify database schema exists
+        if: steps.check-seeded.outputs.already_seeded != 'true' || github.event.inputs.force_seed == 'true'
+        run: |
+          export DATABASE_URL="postgresql://root:${{ secrets.DB_ROOT_PASSWORD }}@127.0.0.1:5432/${{ env.DATABASE_NAME }}"
+          echo "🔍 Verifying database schema..."
+          node -e "
+            import('@prisma/client').then(({ PrismaClient }) => {
+              const prisma = new PrismaClient();
+              prisma.\$queryRaw\`SELECT table_name FROM information_schema.tables WHERE table_schema = 'public' AND table_name = 'users'\`
+                .then((result) => {
+                  if (result.length > 0) {
+                    console.log('✅ Database schema verified - users table exists');
+                    return prisma.\$disconnect();
+                  } else {
+                    console.error('❌ Error: users table does not exist!');
+                    console.error('Please ensure migrations have run successfully.');
+                    prisma.\$disconnect();
+                    process.exit(1);
+                  }
+                })
+                .catch((err) => {
+                  console.error('❌ Error verifying schema:', err.message);
+                  prisma.\$disconnect();
+                  process.exit(1);
+                });
+            });
+          "
 
       - name: Seed database - Users
         if: steps.check-seeded.outputs.already_seeded != 'true' || github.event.inputs.force_seed == 'true'
