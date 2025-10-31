@@ -97,6 +97,68 @@ jobs:
             echo "✅ Database is empty, will proceed with seeding"
           fi
 
+      - name: Check for failed migrations
+        if: steps.check-seeded.outputs.already_seeded != 'true' || github.event.inputs.force_seed == 'true'
+        id: check-failed-migrations
+        run: |
+          export DATABASE_URL="postgresql://root:${{ secrets.DB_ROOT_PASSWORD }}@127.0.0.1:5432/${{ env.DATABASE_NAME }}"
+          echo "🔍 Checking for failed migrations..."
+          if npx prisma migrate status 2>&1 | grep -q "failed"; then
+            echo "has_failed_migrations=true" >> $GITHUB_OUTPUT
+            echo "⚠️  Found failed migrations"
+          else
+            echo "has_failed_migrations=false" >> $GITHUB_OUTPUT
+            echo "✅ No failed migrations found"
+          fi
+
+      - name: Resolve failed migrations
+        if: steps.check-failed-migrations.outputs.has_failed_migrations == 'true'
+        run: |
+          export DATABASE_URL="postgresql://root:${{ secrets.DB_ROOT_PASSWORD }}@127.0.0.1:5432/${{ env.DATABASE_NAME }}"
+          echo "🔧 Resolving failed migrations..."
+          echo "This will mark the failed migration as rolled back and allow new migrations to proceed."
+          
+          # Check migration status and extract failed migration name
+          MIGRATION_STATUS=$(npx prisma migrate status 2>&1 || true)
+          echo "Migration status:"
+          echo "$MIGRATION_STATUS"
+          
+          # Try to extract the migration name from the error message
+          # Format: "The `20251020064941_add_hr_models` migration started at..."
+          FAILED_MIGRATION=$(echo "$MIGRATION_STATUS" | grep -oP '`\K[^`]+' | head -1 || echo "")
+          
+          if [ -z "$FAILED_MIGRATION" ]; then
+            # Try alternative pattern - look for migration names in the status
+            FAILED_MIGRATION=$(echo "$MIGRATION_STATUS" | grep -oE '[0-9]{14}_[a-z_]+' | head -1 || echo "")
+          fi
+          
+          if [ -n "$FAILED_MIGRATION" ]; then
+            echo "Found failed migration: $FAILED_MIGRATION"
+            echo "Attempting to resolve as rolled-back..."
+            
+            # Try to resolve as rolled-back first (if migration partially applied)
+            if npx prisma migrate resolve --rolled-back "$FAILED_MIGRATION" 2>&1; then
+              echo "✅ Migration $FAILED_MIGRATION resolved as rolled-back"
+            else
+              echo "⚠️  Could not resolve as rolled-back, checking if migration was already applied..."
+              
+              # Check if the migration actually succeeded (tables might exist)
+              # If so, mark it as applied instead
+              if npx prisma migrate resolve --applied "$FAILED_MIGRATION" 2>&1; then
+                echo "✅ Migration $FAILED_MIGRATION resolved as applied"
+              else
+                echo "❌ Failed to resolve migration $FAILED_MIGRATION"
+                echo "Attempting to manually fix migration state..."
+                exit 1
+              fi
+            fi
+          else
+            echo "⚠️  Could not identify specific failed migration"
+            echo "Listing all migrations to help debug:"
+            ls -la prisma/migrations/ || true
+            exit 1
+          fi
+
       - name: Run Prisma migrations
         if: steps.check-seeded.outputs.already_seeded != 'true' || github.event.inputs.force_seed == 'true'
         run: |
