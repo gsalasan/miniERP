@@ -7,6 +7,11 @@ import projectRoutes from './routes/projectRoutes';
 import estimationRoutes from './routes/estimationRoutes';
 
 const app = express();
+// Health check endpoint for Cloud Run
+app.get('/health', (_req: express.Request, res: express.Response) => {
+  res.status(200).json({ success: true, service: 'engineering-service' });
+});
+
 
 // CORS configuration - allow requests from frontend
 app.use(

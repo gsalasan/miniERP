@@ -1,0 +1,186 @@
+name: Seed Database
+
+on:
+  workflow_dispatch:
+    inputs:
+      force_seed:
+        description: 'Force re-seed even if data exists'
+        required: false
+        default: false
+        type: boolean
+
+env:
+  PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
+  REGION: us-central1
+  DATABASE_NAME: minierp
+  INSTANCE_NAME: minierp-db
+
+jobs:
+  seed-database:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Google Auth
+        id: auth
+        uses: 'google-github-actions/auth@v2'
+        with:
+          credentials_json: '${{ secrets.GCP_SA_KEY }}'
+
+      - name: Set up Cloud SDK
+        uses: 'google-github-actions/setup-gcloud@v2'
+
+      - name: Install Cloud SQL Proxy
+        run: |
+          curl -o cloud-sql-proxy https://storage.googleapis.com/cloud-sql-connectors/cloud-sql-proxy/v2.8.0/cloud-sql-proxy.linux.amd64
+          chmod +x cloud-sql-proxy
+          sudo mv cloud-sql-proxy /usr/local/bin/
+
+      - name: Start Cloud SQL Proxy in background
+        run: |
+          cloud-sql-proxy ${{ env.PROJECT_ID }}:${{ env.REGION }}:${{ env.INSTANCE_NAME }} --port 5432 &
+          echo "Waiting for Cloud SQL Proxy to initialize..."
+          sleep 10
+          echo "Cloud SQL Proxy started"
+
+      - name: Install dependencies
+        run: |
+          npm install
+          if [ -f "prisma/schema.prisma" ]; then
+            npx prisma generate
+          fi
+
+      - name: Create check-seed script
+        run: |
+          cat > check-seed.mjs << 'EOF'
+          import { PrismaClient } from '@prisma/client';
+          const prisma = new PrismaClient();
+          
+          try {
+            const taxCount = await prisma.taxRates.count();
+            const exchangeCount = await prisma.exchangeRates.count();
+            
+            if (taxCount > 0 || exchangeCount > 0) {
+              console.log('SEEDED=true');
+              process.exit(0);
+            } else {
+              console.log('SEEDED=false');
+              process.exit(0);
+            }
+          } catch (error) {
+            console.error('Error checking seed:', error);
+            console.log('SEEDED=false');
+            process.exit(0);
+          } finally {
+            await prisma.$disconnect();
+          }
+          EOF
+
+      - name: Check if database already seeded
+        id: check-seeded
+        if: github.event.inputs.force_seed == 'false'
+        run: |
+          export DATABASE_URL="postgresql://postgres:${{ secrets.DB_ROOT_PASSWORD }}@127.0.0.1:5432/${{ env.DATABASE_NAME }}"
+          RESULT=$(node check-seed.mjs 2>&1 | grep "SEEDED=" || echo "SEEDED=false")
+          echo $RESULT
+          if echo "$RESULT" | grep -q "SEEDED=true"; then
+            echo "already_seeded=true" >> $GITHUB_OUTPUT
+            echo "⚠️  Database already contains seed data"
+          else
+            echo "already_seeded=false" >> $GITHUB_OUTPUT
+            echo "✅ Database is empty, will proceed with seeding"
+          fi
+
+      - name: Run Prisma migrations
+        if: steps.check-seeded.outputs.already_seeded != 'true' || github.event.inputs.force_seed == 'true'
+        run: |
+          export DATABASE_URL="postgresql://postgres:${{ secrets.DB_ROOT_PASSWORD }}@127.0.0.1:5432/${{ env.DATABASE_NAME }}"
+          npx prisma migrate deploy || echo "⚠️  Note: Migrations may have already been applied"
+
+      - name: Seed database - Users
+        if: steps.check-seeded.outputs.already_seeded != 'true' || github.event.inputs.force_seed == 'true'
+        run: |
+          export DATABASE_URL="postgresql://postgres:${{ secrets.DB_ROOT_PASSWORD }}@127.0.0.1:5432/${{ env.DATABASE_NAME }}"
+          echo "🌱 Running seed-users.mjs..."
+          if [ -f "seed-users.mjs" ]; then
+            node seed-users.mjs
+          else
+            echo "⚠️  seed-users.mjs not found"
+          fi
+
+      - name: Seed database - Tax Rates and Exchange Rates
+        if: steps.check-seeded.outputs.already_seeded != 'true' || github.event.inputs.force_seed == 'true'
+        run: |
+          export DATABASE_URL="postgresql://postgres:${{ secrets.DB_ROOT_PASSWORD }}@127.0.0.1:5432/${{ env.DATABASE_NAME }}"
+          echo "🌱 Running seed-data.mjs..."
+          if [ -f "seed-data.mjs" ]; then
+            node seed-data.mjs
+          else
+            echo "⚠️  seed-data.mjs not found"
+          fi
+
+      - name: Seed database - Journal Entries
+        if: steps.check-seeded.outputs.already_seeded != 'true' || github.event.inputs.force_seed == 'true'
+        run: |
+          export DATABASE_URL="postgresql://postgres:${{ secrets.DB_ROOT_PASSWORD }}@127.0.0.1:5432/${{ env.DATABASE_NAME }}"
+          echo "🌱 Running seed-journal-entries.mjs..."
+          if [ -f "seed-journal-entries.mjs" ]; then
+            node seed-journal-entries.mjs
+          else
+            echo "⚠️  seed-journal-entries.mjs not found"
+          fi
+
+      - name: Seed database - Invoices
+        if: steps.check-seeded.outputs.already_seeded != 'true' || github.event.inputs.force_seed == 'true'
+        run: |
+          export DATABASE_URL="postgresql://postgres:${{ secrets.DB_ROOT_PASSWORD }}@127.0.0.1:5432/${{ env.DATABASE_NAME }}"
+          echo "🌱 Running seed-invoices.mjs..."
+          if [ -f "seed-invoices.mjs" ]; then
+            node seed-invoices.mjs
+          else
+            echo "⚠️  seed-invoices.mjs not found"
+          fi
+
+      - name: Skip seeding message
+        if: steps.check-seeded.outputs.already_seeded == 'true' && github.event.inputs.force_seed == 'false'
+        run: |
+          echo "⏭️  Skipping seeding - database already contains data"
+          echo ""
+          echo "💡 To force re-seed, check the 'Force re-seed even if data exists' option"
+          echo "   when triggering this workflow manually"
+
+      - name: Verify seeding results
+        if: steps.check-seeded.outputs.already_seeded != 'true' || github.event.inputs.force_seed == 'true'
+        run: |
+          export DATABASE_URL="postgresql://postgres:${{ secrets.DB_ROOT_PASSWORD }}@127.0.0.1:5432/${{ env.DATABASE_NAME }}"
+          cat > verify-seed.mjs << 'EOF'
+          import { PrismaClient } from '@prisma/client';
+          const prisma = new PrismaClient();
+          
+          try {
+            const userCount = await prisma.users.count();
+            const taxCount = await prisma.taxRates.count();
+            const exchangeCount = await prisma.exchangeRates.count();
+            const invoiceCount = await prisma.invoices.count();
+            const coaCount = await prisma.chartOfAccounts.count();
+            
+            console.log('✅ Seeding verification:');
+            console.log(`   Users: ${userCount}`);
+            console.log(`   Tax Rates: ${taxCount}`);
+            console.log(`   Exchange Rates: ${exchangeCount}`);
+            console.log(`   Invoices: ${invoiceCount}`);
+            console.log(`   Chart of Accounts: ${coaCount}`);
+          } catch (error) {
+            console.error('Error verifying seed:', error);
+          } finally {
+            await prisma.$disconnect();
+          }
+          EOF
+          node verify-seed.mjs
+

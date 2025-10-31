@@ -1,0 +1,163 @@
+name: Deploy All Services to Railway (Parallel)
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+env:
+  RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+
+jobs:
+  deploy-services:
+    runs-on: ubuntu-latest
+    container: ghcr.io/railwayapp/cli:latest
+    strategy:
+      matrix:
+        service: [
+          { name: 'identity-service', path: './services/identity-service' },
+          { name: 'engineering-service', path: './services/engineering-service' },
+          { name: 'crm-service', path: './services/crm-service' },
+          { name: 'finance-service', path: './services/finance-service' },
+          { name: 'hr-service', path: './services/hr-service' },
+          { name: 'inventory-service', path: './services/inventory-service' },
+          { name: 'procurement-service', path: './services/procurement-service' },
+          { name: 'project-service', path: './services/project-service' }
+        ]
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Ensure Railway service exists (create if missing)
+        env:
+          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+          RAILWAY_PROJECT_ID: ${{ secrets.RAILWAY_PROJECT_ID }}
+        run: |
+          set -euo pipefail
+          SERVICE_NAME="${{ matrix.service.name }}"
+          WORKDIR="${{ matrix.service.path }}"
+          echo "Ensuring Railway service '${SERVICE_NAME}' exists in project ${RAILWAY_PROJECT_ID}..."
+          # install jq if missing
+          if ! command -v jq >/dev/null 2>&1; then
+            if command -v apt-get >/dev/null 2>&1; then
+              apt-get update -y && apt-get install -y jq >/dev/null
+            elif command -v apk >/dev/null 2>&1; then
+              apk add --no-cache jq
+            else
+              echo "jq not available in container; cannot continue" >&2
+              exit 1
+            fi
+          fi
+
+          # fetch current services
+          services_json=$(curl -s -H "Authorization: Bearer ${RAILWAY_TOKEN}" \
+            "https://backboard.railway.app/project/${RAILWAY_PROJECT_ID}/services" || true)
+
+          # If the API returned nothing, show debug and fail early
+          if [ -z "${services_json}" ] || [ "${services_json}" = "null" ]; then
+            echo "Warning: could not fetch services list. Response: ${services_json}"
+          fi
+
+          exists=$(echo "${services_json}" | jq -r '.services[]?.name' 2>/dev/null || true | grep -x "${SERVICE_NAME}" || true)
+
+          if [ -n "${exists}" ]; then
+            echo "Service '${SERVICE_NAME}' already exists."
+          else
+            echo "Service '${SERVICE_NAME}' not found — creating..."
+            # create service; adjust "type" if you need database/other types per your project
+            create_resp=$(curl -s -X POST \
+              "https://backboard.railway.app/project/${RAILWAY_PROJECT_ID}/service" \
+              -H "Authorization: Bearer ${RAILWAY_TOKEN}" \
+              -H "Content-Type: application/json" \
+              -d "{\"name\":\"${SERVICE_NAME}\",\"type\":\"web\"}" || true)
+
+            echo "Create response: ${create_resp}" | jq . || true
+
+            # simple poll to confirm creation (up to ~30s)
+            for i in 1 2 3 4 5; do
+              sleep 3
+              services_json=$(curl -s -H "Authorization: Bearer ${RAILWAY_TOKEN}" \
+                "https://backboard.railway.app/project/${RAILWAY_PROJECT_ID}/services" || true)
+              if echo "${services_json}" | jq -r '.services[]?.name' 2>/dev/null | grep -xq "${SERVICE_NAME}"; then
+                echo "Service '${SERVICE_NAME}' is now present."
+                break
+              fi
+              echo "Waiting for service creation..."
+            done
+          fi
+
+      - name: Deploy ${{ matrix.service.name }}
+        run: railway up --service ${{ matrix.service.name }}
+        working-directory: ${{ matrix.service.path }}
+
+  deploy-frontends:
+    runs-on: ubuntu-latest
+    container: ghcr.io/railwayapp/cli:latest
+    strategy:
+      matrix:
+        frontend: [
+          { name: 'main-frontend', path: './frontend/apps/main-frontend' },
+          { name: 'crm-frontend', path: './frontend/apps/crm-frontend' },
+          { name: 'finance-frontend', path: './frontend/apps/finance-frontend' },
+          { name: 'hr-frontend', path: './frontend/apps/hr-frontend' },
+          { name: 'identity-frontend', path: './frontend/apps/identity-frontend' },
+          { name: 'engineering-frontend', path: './frontend/apps/engineering-frontend' },
+          { name: 'procurement-frontend', path: './frontend/apps/procurement-frontend' },
+          { name: 'project-frontend', path: './frontend/apps/project-frontend' }
+        ]
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Ensure Railway service exists (create if missing) - frontend
+        env:
+          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+          RAILWAY_PROJECT_ID: ${{ secrets.RAILWAY_PROJECT_ID }}
+        run: |
+          set -euo pipefail
+          SERVICE_NAME="${{ matrix.frontend.name }}"
+          echo "Ensuring Railway service '${SERVICE_NAME}' exists in project ${RAILWAY_PROJECT_ID}..."
+          if ! command -v jq >/dev/null 2>&1; then
+            if command -v apt-get >/dev/null 2>&1; then
+              apt-get update -y && apt-get install -y jq >/dev/null
+            elif command -v apk >/dev/null 2>&1; then
+              apk add --no-cache jq
+            else
+              echo "jq not available in container; cannot continue" >&2
+              exit 1
+            fi
+          fi
+
+          services_json=$(curl -s -H "Authorization: Bearer ${RAILWAY_TOKEN}" \
+            "https://backboard.railway.app/project/${RAILWAY_PROJECT_ID}/services" || true)
+
+          exists=$(echo "${services_json}" | jq -r '.services[]?.name' 2>/dev/null || true | grep -x "${SERVICE_NAME}" || true)
+
+          if [ -n "${exists}" ]; then
+            echo "Service '${SERVICE_NAME}' already exists."
+          else
+            echo "Service '${SERVICE_NAME}' not found — creating..."
+            create_resp=$(curl -s -X POST \
+              "https://backboard.railway.app/project/${RAILWAY_PROJECT_ID}/service" \
+              -H "Authorization: Bearer ${RAILWAY_TOKEN}" \
+              -H "Content-Type: application/json" \
+              -d "{\"name\":\"${SERVICE_NAME}\",\"type\":\"web\"}" || true)
+
+            echo "Create response: ${create_resp}" | jq . || true
+
+            for i in 1 2 3 4 5; do
+              sleep 3
+              services_json=$(curl -s -H "Authorization: Bearer ${RAILWAY_TOKEN}" \
+                "https://backboard.railway.app/project/${RAILWAY_PROJECT_ID}/services" || true)
+              if echo "${services_json}" | jq -r '.services[]?.name' 2>/dev/null | grep -xq "${SERVICE_NAME}"; then
+                echo "Service '${SERVICE_NAME}' is now present."
+                break
+              fi
+              echo "Waiting for service creation..."
+            done
+          fi
+
+      - name: Deploy ${{ matrix.frontend.name }}
+        run: railway up --service ${{ matrix.frontend.name }}
+        working-directory: ${{ matrix.frontend.path }}

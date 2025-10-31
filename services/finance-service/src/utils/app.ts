@@ -9,7 +9,7 @@ const app = express();
 
 // CORS Configuration - Allow frontend to access API
 app.use(cors({
-  origin: function(origin, callback) {
+  origin: function(origin: string | undefined, callback: (err: Error | null, allow?: boolean) => void) {
     // Allow requests with no origin (like mobile apps, curl, Postman, or local HTML files)
     if (!origin) return callback(null, true);
     
@@ -43,23 +43,27 @@ app.use("/api", chartOfAccountsRoutes);
 app.use("/api", taxRatesRoutes);
 app.use("/api", exchangeRatesRoutes);
 
+// Health check endpoint for Cloud Run
+app.get("/health", (req: express.Request, res: express.Response) => {
+  res.status(200).json({
+    success: true,
+    message: "Finance Service is healthy",
+    service: "finance-service",
+    timestamp: new Date().toISOString(),
+    version: "1.0.0"
+  });
+});
+
 // Default route untuk test server
-app.get("/", (req, res) => {
+app.get("/", (req: express.Request, res: express.Response) => {
   res.status(200).json({
     success: true,
     message: "Finance Service API is running 🚀",
   });
 });
 
-// Routes utama (finance)
-app.use("/api", chartOfAccountsRoutes);
-app.use("/api", taxRatesRoutes);
-app.use("/api", exchangeRatesRoutes);
-app.use("/api", invoicesRoutes);
-app.use("/api/journal-entries", journalEntriesRoutes);
-
 // 404 handler - pastikan mengembalikan JSON (HARUS SETELAH SEMUA ROUTES)
-app.use((req, res, next) => {
+app.use((req: express.Request, res: express.Response, next: express.NextFunction) => {
   res.status(404).json({
     success: false,
     message: `Route ${req.method} ${req.path} not found`,
