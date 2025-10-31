@@ -3,6 +3,8 @@ import cors from 'cors';
 import materialsRoutes from './routes/materialsRoutes';
 import serviceRoutes from './routes/serviceRoutes';
 import searchRoutes from './routes/searchRoutes';
+import projectRoutes from './routes/projectRoutes';
+import estimationRoutes from './routes/estimationRoutes';
 
 const app = express();
 
@@ -30,5 +32,11 @@ app.use('/', materialsRoutes);
 
 // mount engineering-related routes (services)
 app.use('/', serviceRoutes);
+
+// mount engineering-related routes (projects)
+app.use('/', projectRoutes);
+
+// mount engineering-related routes (estimations)
+app.use('/', estimationRoutes);
 
 export default app;
