@@ -37,6 +37,6 @@ const HOST = '0.0.0.0';
 
 console.log(`🎯 Selected PORT: ${PORT}`);
 
-app.listen(PORT, HOST, () => {
-  console.log(`🚀 Engineering service listening on http://${HOST}:${PORT}`);
+app.listen(PORT, () => {
+  console.log(`🚀 Engineering service listening on port ${PORT}`);
 });
