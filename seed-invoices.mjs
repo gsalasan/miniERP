@@ -2,13 +2,31 @@ import pkg from 'pg';
 const { Client } = pkg;
 
 async function seedInvoices() {
-  const client = new Client({
-    host: '192.168.1.72',
-    port: 5432,
-    database: 'minierp_unais',
-    user: 'postgres',
-    password: 'anisa252502'
-  });
+  // Support both DATABASE_URL and individual environment variables
+  let dbConfig;
+  
+  if (process.env.DATABASE_URL) {
+    // Parse DATABASE_URL format: postgresql://user:password@host:port/database
+    const url = new URL(process.env.DATABASE_URL);
+    dbConfig = {
+      host: url.hostname,
+      port: parseInt(url.port) || 5432,
+      database: url.pathname.slice(1), // Remove leading '/'
+      user: url.username,
+      password: url.password
+    };
+  } else {
+    // Fallback to individual environment variables or defaults
+    dbConfig = {
+      host: process.env.DB_HOST || 'localhost',
+      port: parseInt(process.env.DB_PORT) || 5432,
+      database: process.env.DB_NAME || process.env.DATABASE_NAME || 'minierp',
+      user: process.env.DB_USER || 'postgres',
+      password: process.env.DB_PASSWORD || process.env.DB_ROOT_PASSWORD || 'postgres'
+    };
+  }
+  
+  const client = new Client(dbConfig);
 
   try {
     console.log('📦 Connecting to database...');

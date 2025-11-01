@@ -3,8 +3,15 @@ import cors from 'cors';
 import materialsRoutes from './routes/materialsRoutes';
 import serviceRoutes from './routes/serviceRoutes';
 import searchRoutes from './routes/searchRoutes';
+import projectRoutes from './routes/projectRoutes';
+import estimationRoutes from './routes/estimationRoutes';
 
 const app = express();
+// Health check endpoint for Cloud Run
+app.get('/health', (_req: express.Request, res: express.Response) => {
+  res.status(200).json({ success: true, service: 'engineering-service' });
+});
+
 
 // CORS configuration - allow requests from frontend
 app.use(
@@ -30,5 +37,11 @@ app.use('/', materialsRoutes);
 
 // mount engineering-related routes (services)
 app.use('/', serviceRoutes);
+
+// mount engineering-related routes (projects)
+app.use('/', projectRoutes);
+
+// mount engineering-related routes (estimations)
+app.use('/', estimationRoutes);
 
 export default app;

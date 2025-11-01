@@ -1,23 +1,61 @@
-# Gunakan image Node.js resmi (versi ringan)
-FROM node:22-alpine
+# Multi-stage build for production
+FROM node:22-alpine AS builder
 
-# Tentukan direktori kerja di dalam container
+# Set working directory
 WORKDIR /app
 
-# Salin package.json dan package-lock.json
+# Copy package files
 COPY package*.json ./
+## No prisma directory present for this service; skip copying
 
-# Install dependencies
-RUN npm install
+# Install all dependencies (including dev dependencies for build)
+RUN if [ -f package-lock.json ]; then npm ci; else npm install; fi
 
-# Salin semua file ke container
+# Copy source code
 COPY . .
 
-# Generate Prisma Client
-RUN npx prisma generate
+## Skip Prisma client generation (no prisma schema present)
 
-# Buka port 4004 (sesuai docker-compose.yml)
-EXPOSE 4004
+# Build the application
+RUN npm run build
 
-# Jalankan server
-CMD ["npm", "run", "dev"]
+# Production stage
+FROM node:22-alpine AS runner
+
+# Set working directory
+WORKDIR /app
+
+# Install system deps required by Prisma engines (OpenSSL) and curl for healthcheck
+RUN apk add --no-cache openssl curl
+
+# Create non-root user for security
+RUN addgroup -g 1001 -S nodejs
+RUN adduser -S nextjs -u 1001
+
+# Copy package files
+COPY package*.json ./
+## No prisma directory; nothing to copy
+
+# Install only production dependencies
+RUN if [ -f package-lock.json ]; then npm ci --only=production; else npm install --only=production; fi && npm cache clean --force
+
+# Copy built application from builder stage
+COPY --from=builder --chown=nextjs:nodejs /app/dist ./dist
+# Copy Prisma engine artifacts for @prisma/client runtime
+COPY --from=builder --chown=nextjs:nodejs /app/node_modules/.prisma ./node_modules/.prisma
+
+# Switch to non-root user
+USER nextjs
+
+# Expose port (Cloud Run will override this)
+EXPOSE 8080
+
+# Set default port explicitly
+ENV PORT=8080
+
+# Health check (use curl for Alpine compatibility); allow longer startup
+HEALTHCHECK --interval=30s --timeout=5s --start-period=120s --retries=3 \
+  CMD curl -fsS http://localhost:8080/health || exit 1
+
+# Start the application in production mode
+CMD ["node", "dist/server.js"]

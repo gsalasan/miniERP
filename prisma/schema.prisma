@@ -263,6 +263,7 @@ model customers {
   createdAt         DateTime            @default(now())
   updatedAt         DateTime
   customer_contacts customer_contacts[]
+  projects Project[]
 }
 
 model ChartOfAccounts {
@@ -466,4 +467,117 @@ enum VendorClassification {
   LARGE
   ENTERPRISE
   GOVERNMENT
+}
+
+model Project {
+  id              String    @id @default(uuid())
+  project_name    String
+  project_number  String    @unique
+  customer_id     String
+  customer       customers  @relation(fields: [customer_id], references: [id])
+  status          ProjectStatus
+  contract_value  Decimal   @db.Decimal(18, 2)
+  estimated_hpp   Decimal?  @db.Decimal(18, 2)
+  actual_cost     Decimal?  @db.Decimal(18, 2)
+
+  estimations     Estimation[]
+  project_boms    ProjectBOM[]
+  milestones      ProjectMilestone[]
+
+  @@map("projects")
+}
+
+model Estimation {
+  id                        String    @id @default(uuid())
+  project_id                String
+  version                   Int
+  status                    EstimationStatus
+  total_direct_hpp          Decimal   @db.Decimal(18, 2)
+  total_overhead_allocation Decimal   @db.Decimal(18, 2)
+  total_hpp                 Decimal   @db.Decimal(18, 2)
+  total_sell_price          Decimal   @db.Decimal(18, 2)
+
+  project     Project         @relation(fields: [project_id], references: [id])
+  items       EstimationItem[]
+
+  @@map("estimations")
+}
+
+model EstimationItem {
+  id                       String    @id @default(uuid())
+  estimation_id            String
+  item_id                  String
+  item_type                ItemType
+  quantity                 Decimal   @db.Decimal(18, 2)
+  source                   SourceType
+  hpp_at_estimation        Decimal   @db.Decimal(18, 2)
+  sell_price_at_estimation Decimal   @db.Decimal(18, 2)
+
+  estimation  Estimation  @relation(fields: [estimation_id], references: [id])
+
+  @@map("estimation_items")
+}
+
+model ProjectBOM {
+  id         String    @id @default(uuid())
+  project_id String
+  item_id    String
+  item_type  ItemType
+  quantity   Decimal   @db.Decimal(18, 2)
+
+  project    Project   @relation(fields: [project_id], references: [id])
+
+  @@map("project_boms")
+}
+
+model MilestoneTemplate {
+  id            Int       @id @default(autoincrement())
+  template_name String    @unique
+  project_type  String?
+  milestones    Json
+
+  @@map("milestone_templates")
+}
+
+model ProjectMilestone {
+  id          String    @id @default(uuid())
+  project_id  String
+  name        String
+  start_date  DateTime?
+  end_date    DateTime?
+  status      MilestoneStatus
+  project     Project   @relation(fields: [project_id], references: [id])
+
+  @@map("project_milestones")
+}
+
+
+enum ProjectStatus {
+  DRAFT
+  ONGOING
+  COMPLETED
+  CANCELLED
+}
+
+enum EstimationStatus {
+  DRAFT
+  APPROVED
+  REJECTED
+  ARCHIVED
+}
+
+enum ItemType {
+  MATERIAL
+  SERVICE
+}
+
+enum SourceType {
+  INTERNAL
+  EXTERNAL
+}
+
+enum MilestoneStatus {
+  PLANNED
+  IN_PROGRESS
+  DONE
 }
