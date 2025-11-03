@@ -74,6 +74,45 @@ jobs:
             --member="serviceAccount:${PROJECT_NUMBER}-compute@developer.gserviceaccount.com" \
             --role="roles/cloudsql.client"
 
+      - name: Setup Node.js for Prisma generation
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Generate Prisma Clients
+        run: |
+          echo "🔧 Generating Prisma clients..."
+          
+          # Generate root Prisma client (for finance, hr, engineering services)
+          if [ -f "prisma/schema.prisma" ]; then
+            echo "📦 Generating Prisma client for root schema..."
+            npm install --no-fund --no-audit --no-package-lock prisma @prisma/client
+            npx prisma generate --schema=prisma/schema.prisma
+            echo "✅ Root schema client generated"
+          fi
+          
+          # Generate identity-service Prisma client if it's being deployed
+          if [ "${{ matrix.service.name }}" = "identity-service" ] && [ -f "services/identity-service/prisma/schema.prisma" ]; then
+            echo "📦 Generating Prisma client for identity-service..."
+            cd services/identity-service
+            npm install --no-fund --no-audit --no-package-lock prisma @prisma/client
+            npx prisma generate --schema=prisma/schema.prisma
+            cd ../..
+            echo "✅ Identity-service schema client generated"
+          fi
+          
+          # Generate crm-service Prisma client if it's being deployed
+          if [ "${{ matrix.service.name }}" = "crm-service" ] && [ -f "services/crm-service/prisma/schema.prisma" ]; then
+            echo "📦 Generating Prisma client for crm-service..."
+            cd services/crm-service
+            npm install --no-fund --no-audit --no-package-lock prisma @prisma/client
+            npx prisma generate --schema=prisma/schema.prisma
+            cd ../..
+            echo "✅ CRM-service schema client generated"
+          fi
+          
+          echo "✅ All Prisma clients generated!"
+
       - name: Build and Push Container (Docker)
         run: |
           cd ${{ matrix.service.path }}
@@ -295,6 +334,47 @@ jobs:
             echo "${{ secrets.JWT_SECRET }}" | \
             gcloud secrets create jwt-secret --data-file=-
           fi
+
+      - name: Setup Node.js for Prisma generation
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Generate Root Prisma Client
+        run: |
+          echo "🔧 Generating Prisma clients in setup..."
+          
+          # Generate root Prisma client (for finance, hr, engineering services)
+          if [ -f "prisma/schema.prisma" ]; then
+            echo "📦 Generating Prisma client for root schema..."
+            npm install --no-fund --no-audit --no-package-lock prisma @prisma/client
+            npx prisma generate --schema=prisma/schema.prisma
+            echo "✅ Root schema client generated"
+          else
+            echo "⚠️  Root schema not found at prisma/schema.prisma"
+          fi
+          
+          # Generate identity-service Prisma client
+          if [ -f "services/identity-service/prisma/schema.prisma" ]; then
+            echo "📦 Generating Prisma client for identity-service..."
+            cd services/identity-service
+            npm install --no-fund --no-audit --no-package-lock prisma @prisma/client || true
+            npx prisma generate --schema=prisma/schema.prisma || npx prisma generate
+            cd ../..
+            echo "✅ Identity-service schema client generated"
+          fi
+          
+          # Generate crm-service Prisma client
+          if [ -f "services/crm-service/prisma/schema.prisma" ]; then
+            echo "📦 Generating Prisma client for crm-service..."
+            cd services/crm-service
+            npm install --no-fund --no-audit --no-package-lock prisma @prisma/client || true
+            npx prisma generate --schema=prisma/schema.prisma || npx prisma generate
+            cd ../..
+            echo "✅ CRM-service schema client generated"
+          fi
+          
+          echo "✅ All Prisma clients generated in setup!"
 
   # Notify deployment status
   notify:
