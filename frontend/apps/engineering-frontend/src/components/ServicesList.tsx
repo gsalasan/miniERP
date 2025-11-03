@@ -32,6 +32,9 @@ import {
 import { servicesService } from "../api/servicesApi";
 import { Service, ServicesQueryParams } from "../types/service";
 import ServicesTableSkeleton from "./ServicesTableSkeleton";
+import ServiceFormModal from "./ServiceFormModal";
+import ServiceDetailModal from "./ServiceDetailModal";
+import DeleteConfirmationModal from "./DeleteConfirmationModal";
 import { useNotification } from "../contexts/NotificationContext";
 
 interface ServicesListProps {
@@ -39,6 +42,30 @@ interface ServicesListProps {
 }
 
 const ServicesList: React.FC<ServicesListProps> = ({ globalSearch }) => {
+  // State untuk dialog konfirmasi hapus
+  const [openDeleteDialog, setOpenDeleteDialog] = useState(false);
+  const [serviceToDelete, setServiceToDelete] = useState<Service | null>(null);
+  const [deleteLoading, setDeleteLoading] = useState(false);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
+
+  // Handler hapus layanan
+  const handleDeleteService = async () => {
+    if (!serviceToDelete) return;
+    setDeleteLoading(true);
+    setDeleteError(null);
+    try {
+      await servicesService.deleteService(serviceToDelete.id);
+      showSuccess(`Layanan "${serviceToDelete.service_name}" berhasil dihapus.`);
+      setOpenDeleteDialog(false);
+      setServiceToDelete(null);
+      fetchServices();
+    } catch (error) {
+      setDeleteError("Gagal menghapus layanan");
+      showError("Gagal menghapus layanan");
+    } finally {
+      setDeleteLoading(false);
+    }
+  };
   const { showSuccess, showError } = useNotification();
 
   // State untuk data services
@@ -55,6 +82,12 @@ const ServicesList: React.FC<ServicesListProps> = ({ globalSearch }) => {
   const [searchTerm, setSearchTerm] = useState("");
   const [filters] = useState<Partial<ServicesQueryParams>>({});
   const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
+
+  // State untuk modal
+  const [openFormModal, setOpenFormModal] = useState(false);
+  const [openDetailModal, setOpenDetailModal] = useState(false);
+  const [selectedService, setSelectedService] = useState<Service | null>(null);
+  const [formMode, setFormMode] = useState<'create' | 'edit'>('create');
 
   // Fetch services data
   const fetchServices = async () => {
@@ -104,13 +137,15 @@ const ServicesList: React.FC<ServicesListProps> = ({ globalSearch }) => {
   };
 
   // Format currency
-  const formatCurrency = (amount?: number) => {
-    if (typeof amount !== "number") return "-";
+  const formatCurrency = (amount?: number | string | null) => {
+    if (amount === null || amount === undefined || amount === "") return "-";
+    const num = typeof amount === "string" ? parseFloat(amount) : amount;
+    if (isNaN(num)) return "-";
     return new Intl.NumberFormat("id-ID", {
       style: "currency",
       currency: "IDR",
       minimumFractionDigits: 0,
-    }).format(amount);
+    }).format(num);
   };
 
   // Get status chip
@@ -163,7 +198,11 @@ const ServicesList: React.FC<ServicesListProps> = ({ globalSearch }) => {
                 <Button
                   variant="contained"
                   startIcon={<AddIcon />}
-                  onClick={() => showSuccess("Fitur tambah layanan akan segera tersedia")}
+                  onClick={() => {
+                    setFormMode('create');
+                    setSelectedService(null);
+                    setOpenFormModal(true);
+                  }}
                 >
                   Tambah Layanan
                 </Button>
@@ -199,6 +238,14 @@ const ServicesList: React.FC<ServicesListProps> = ({ globalSearch }) => {
               <TableBody>
                 {loading ? (
                   <ServicesTableSkeleton rows={rowsPerPage} />
+                ) : error ? (
+                  <TableRow>
+                    <TableCell colSpan={8} align="center" sx={{ py: 4 }}>
+                      <Typography variant="body2" color="error">
+                        {error}
+                      </Typography>
+                    </TableCell>
+                  </TableRow>
                 ) : services.length > 0 ? (
                   services.map((service) => (
                     <TableRow
@@ -234,19 +281,29 @@ const ServicesList: React.FC<ServicesListProps> = ({ globalSearch }) => {
                       <TableCell align="center">
                         <Box sx={{ display: "flex", justifyContent: "center", gap: 0.5 }}>
                           <Tooltip title="Lihat Detail">
-                            <IconButton size="small">
+                            <IconButton size="small" onClick={() => {
+                              setSelectedService(service);
+                              setOpenDetailModal(true);
+                            }}>
                               <VisibilityIcon fontSize="small" />
                             </IconButton>
                           </Tooltip>
 
                           <Tooltip title="Edit">
-                            <IconButton size="small">
+                            <IconButton size="small" onClick={() => {
+                              setFormMode('edit');
+                              setSelectedService(service);
+                              setOpenFormModal(true);
+                            }}>
                               <EditIcon fontSize="small" />
                             </IconButton>
                           </Tooltip>
 
                           <Tooltip title="Hapus">
-                            <IconButton size="small" color="error">
+                            <IconButton size="small" color="error" onClick={() => {
+                              setServiceToDelete(service);
+                              setOpenDeleteDialog(true);
+                            }}>
                               <DeleteIcon fontSize="small" />
                             </IconButton>
                           </Tooltip>
@@ -287,6 +344,41 @@ const ServicesList: React.FC<ServicesListProps> = ({ globalSearch }) => {
           )}
         </CardContent>
       </Card>
+    {/* Modal Tambah/Edit */}
+    <ServiceFormModal
+      open={openFormModal}
+      onClose={(refresh) => {
+        setOpenFormModal(false);
+        setSelectedService(null);
+        if (refresh) fetchServices();
+      }}
+      service={selectedService}
+      mode={formMode}
+    />
+
+    {/* Modal Detail */}
+    <ServiceDetailModal
+      open={openDetailModal}
+      onClose={() => {
+        setOpenDetailModal(false);
+        setSelectedService(null);
+      }}
+      service={selectedService}
+    />
+    {/* Dialog Konfirmasi Hapus */}
+    <DeleteConfirmationModal
+      open={openDeleteDialog}
+      onClose={() => {
+        setOpenDeleteDialog(false);
+        setServiceToDelete(null);
+        setDeleteError(null);
+      }}
+      onConfirm={handleDeleteService}
+      title="Konfirmasi Hapus Layanan"
+      message={serviceToDelete ? `Apakah Anda yakin ingin menghapus layanan "${serviceToDelete.service_name}"? Tindakan ini tidak dapat dibatalkan.` : ""}
+      loading={deleteLoading}
+      error={deleteError}
+    />
     </Box>
   );
 };
