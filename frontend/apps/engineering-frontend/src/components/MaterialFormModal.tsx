@@ -17,10 +17,14 @@ import {
   Alert,
   IconButton,
 } from "@mui/material";
+import Autocomplete from "@mui/material/Autocomplete";
+import VendorCreateDialog from "./VendorCreateDialog";
 import { Close as CloseIcon, Save as SaveIcon, Add as AddIcon } from "@mui/icons-material";
 import { Material, MaterialStatus, MaterialLocation, FilterOptions } from "../types/material";
 import { materialsService } from "../api/materialsApi";
 import { useNotification } from "../contexts/NotificationContext";
+import { vendorsService } from "../api/vendorsApi";
+import { Vendor } from "../types/vendor";
 
 interface MaterialFormModalProps {
   open: boolean;
@@ -77,6 +81,10 @@ const MaterialFormModal: React.FC<MaterialFormModalProps> = ({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [formErrors, setFormErrors] = useState<Partial<FormData>>({});
+  const [vendors, setVendors] = useState<Vendor[]>([]);
+  const [vendorsLoading, setVendorsLoading] = useState(false);
+  const [vendorInput, setVendorInput] = useState("");
+  const [openVendorCreate, setOpenVendorCreate] = useState(false);
 
   const { showSuccess, showError } = useNotification();
 
@@ -85,6 +93,20 @@ const MaterialFormModal: React.FC<MaterialFormModalProps> = ({
   // Reset form when modal opens/closes or material changes
   useEffect(() => {
     if (open) {
+      // load vendors for selection
+      (async () => {
+        try {
+          setVendorsLoading(true);
+          const list = await vendorsService.getVendors();
+          setVendors(list);
+        } catch (e) {
+          // Best-effort: keep text input usable if vendors fetch fails
+          // eslint-disable-next-line no-console
+          console.error("Failed to fetch vendors", e);
+        } finally {
+          setVendorsLoading(false);
+        }
+      })();
       if (isEditMode && material) {
         setFormData({
           sbu: material.sbu || "",
@@ -120,21 +142,23 @@ const MaterialFormModal: React.FC<MaterialFormModalProps> = ({
         | React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
         | { target: { value: unknown } },
     ) => {
-      const value = event.target.value as string;
+          // eslint-disable-next-line prettier/prettier
+          const value = (event as unknown as { target: { value: string } }).target.value;
 
       // Special handling for location changes
       if (field === "location") {
-        if (value === MaterialLocation.Local) {
+        const locVal = value as MaterialLocation | "";
+        if (locVal === MaterialLocation.Local) {
           setFormData((prev) => ({
             ...prev,
-            [field]: value,
+            [field]: locVal,
             curr: "IDR", // Auto-set currency to IDR for local items
             cost_ori: "", // Clear original cost for local items
           }));
         } else {
           setFormData((prev) => ({
             ...prev,
-            [field]: value,
+            [field]: locVal,
           }));
         }
       } else {
@@ -257,22 +281,44 @@ const MaterialFormModal: React.FC<MaterialFormModalProps> = ({
         sx: { minHeight: "70vh" },
       }}
     >
-      <DialogTitle sx={{ pb: 1 }}>
+      <DialogTitle sx={{ pb: 1, px: 2, pt: 2, background: "transparent" }}>
         <Box display="flex" justifyContent="space-between" alignItems="center">
-          <Typography variant="h6" component="div" sx={{ display: "flex", alignItems: "center" }}>
-            {isEditMode ? (
-              <>
-                <SaveIcon sx={{ mr: 1 }} />
-                Edit Material
-              </>
-            ) : (
-              <>
-                <AddIcon sx={{ mr: 1 }} />
-                Add New Material
-              </>
-            )}
-          </Typography>
-          <IconButton onClick={handleClose} disabled={loading}>
+          <Box display="flex" alignItems="center" sx={{ gap: 1 }}>
+            <Box
+              sx={{
+                width: 44,
+                height: 44,
+                borderRadius: 2,
+                bgcolor: (theme) => `${theme.palette.primary.main}14`,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+              }}
+            >
+              {isEditMode ? (
+                <SaveIcon sx={{ fontSize: 20, color: (theme) => theme.palette.primary.main }} />
+              ) : (
+                <AddIcon sx={{ fontSize: 20, color: (theme) => theme.palette.primary.main }} />
+              )}
+            </Box>
+
+            <Box>
+              <Typography variant="h6" component="div" sx={{ fontWeight: 700 }}>
+                {isEditMode ? "Edit Material" : "Add New Material"}
+              </Typography>
+              {isEditMode && (
+                <Typography variant="body2" sx={{ opacity: 0.85 }}>
+                  {material?.item_name}
+                </Typography>
+              )}
+            </Box>
+          </Box>
+
+          <IconButton
+            onClick={handleClose}
+            disabled={loading}
+            sx={{ color: (theme) => theme.palette.text.primary }}
+          >
             <CloseIcon />
           </IconButton>
         </Box>
@@ -331,15 +377,40 @@ const MaterialFormModal: React.FC<MaterialFormModalProps> = ({
           </Grid>
 
           <Grid item xs={12} md={6}>
-            <TextField
-              fullWidth
-              label="Vendor"
-              value={formData.vendor}
-              onChange={handleInputChange("vendor")}
-              error={!!formErrors.vendor}
-              helperText={formErrors.vendor}
-              disabled={loading}
+            <Autocomplete
+              options={vendors}
+              getOptionLabel={(option) => option.vendor_name}
+              loading={vendorsLoading}
+              value={
+                formData.vendor
+                  ? vendors.find((v) => v.vendor_name === formData.vendor) || null
+                  : null
+              }
+              onChange={(_, value) => {
+                setFormData((prev) => ({ ...prev, vendor: value?.vendor_name || "" }));
+                if (formErrors.vendor) setFormErrors((prev) => ({ ...prev, vendor: undefined }));
+              }}
+              onInputChange={(_, value) => setVendorInput(value)}
+              renderInput={(params) => (
+                <TextField
+                  {...params}
+                  label="Vendor"
+                  placeholder="Select vendor"
+                  error={!!formErrors.vendor}
+                  helperText={formErrors.vendor}
+                  disabled={loading}
+                />
+              )}
             />
+            <Box sx={{ mt: 1, display: "flex", justifyContent: "flex-end" }}>
+              <Button
+                size="small"
+                onClick={() => setOpenVendorCreate(true)}
+                startIcon={<AddIcon />}
+              >
+                Tambah vendor baru{vendorInput ? ` "${vendorInput}"` : ""}
+              </Button>
+            </Box>
           </Grid>
 
           {/* System Information */}
@@ -558,6 +629,16 @@ const MaterialFormModal: React.FC<MaterialFormModalProps> = ({
           {loading ? "Saving..." : isEditMode ? "Update Material" : "Add Material"}
         </Button>
       </DialogActions>
+      <VendorCreateDialog
+        open={openVendorCreate}
+        initialName={vendorInput || formData.vendor}
+        onClose={() => setOpenVendorCreate(false)}
+        onCreated={(created) => {
+          setVendors((prev) => [created, ...prev]);
+          setFormData((prev) => ({ ...prev, vendor: created.vendor_name }));
+          setOpenVendorCreate(false);
+        }}
+      />
     </Dialog>
   );
 };

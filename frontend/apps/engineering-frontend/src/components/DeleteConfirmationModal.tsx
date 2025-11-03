@@ -38,16 +38,29 @@ const DeleteConfirmationModal: React.FC<DeleteConfirmationModalProps> = ({
 }) => {
   return (
     <Dialog open={open} onClose={!loading ? onClose : undefined} maxWidth="sm" fullWidth>
-      <DialogTitle sx={{ pb: 1 }}>
+      <DialogTitle sx={{ pb: 1, px: 2, pt: 2, background: "transparent" }}>
         <Box display="flex" justifyContent="space-between" alignItems="center">
-          <Typography
-            variant="h6"
-            component="div"
-            sx={{ display: "flex", alignItems: "center", color: "error.main" }}
-          >
-            <WarningIcon sx={{ mr: 1 }} />
-            {title}
-          </Typography>
+          <Box display="flex" alignItems="center" sx={{ gap: 1 }}>
+            <Box
+              sx={{
+                width: 44,
+                height: 44,
+                borderRadius: 2,
+                bgcolor: (theme) => `${theme.palette.error.main}14`,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+              }}
+            >
+              <WarningIcon sx={{ fontSize: 20, color: (theme) => theme.palette.error.main }} />
+            </Box>
+            <Box>
+              <Typography variant="h6" component="div" sx={{ fontWeight: 700, color: "error.main" }}>
+                {title}
+              </Typography>
+            </Box>
+          </Box>
+
           <IconButton onClick={onClose} disabled={loading}>
             <CloseIcon />
           </IconButton>

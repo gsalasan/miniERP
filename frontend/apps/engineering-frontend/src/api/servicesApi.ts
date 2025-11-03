@@ -5,13 +5,12 @@ import {
   ServicesQueryParams,
   ServicesResponse,
   ServiceResponse,
-  ServicesStats,
   ServicesStatsResponse,
   ServiceFilterOptions,
 } from "../types/service";
 
 // Base API configuration
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:3002";
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:4001";
 
 // Create axios instance with default config
 const apiClient = axios.create({
@@ -70,7 +69,9 @@ export class ServicesService {
   }
 
   // Create a new service
-  async createService(serviceData: Omit<Service, "id" | "created_at" | "updated_at">): Promise<ServiceResponse> {
+  async createService(
+    serviceData: Omit<Service, "id" | "created_at" | "updated_at">,
+  ): Promise<ServiceResponse> {
     try {
       const response = await apiClient.post(this.baseUrl, serviceData);
       return response.data;
