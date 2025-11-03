@@ -20,13 +20,28 @@ model users {
 }
 
 model employees {
-  id           String   @id @default(uuid())
-  full_name    String
-  position     String
-  hire_date    DateTime
-  basic_salary Decimal
-  allowances   Json
-  users        users?
+  id              String          @id @default(uuid())
+  full_name       String
+  position        String
+  department      String?
+  gender          Gender?
+  marital_status  MaritalStatus?
+  blood_type      BloodType?
+  employment_type EmploymentType  @default(FULL_TIME)
+  status          EmployeeStatus  @default(ACTIVE)
+  education_level EducationLevel?
+  hire_date       DateTime
+  basic_salary    Decimal
+  allowances      Json
+  users           users?
+  // Contact
+  phone               String?
+  // Account & Tax (optional)
+  bank_name           String?
+  bank_account_number String?
+  tax_id              String?
+  npwp                String?
+  ptkp                String?
 }
 
 model Material {
