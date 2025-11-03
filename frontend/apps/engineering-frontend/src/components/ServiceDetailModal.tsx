@@ -10,8 +10,9 @@ import {
   Chip,
   Box,
   Divider,
+  IconButton,
 } from "@mui/material";
-import { Close as CloseIcon } from "@mui/icons-material";
+import { Close as CloseIcon, Info as InfoIcon } from "@mui/icons-material";
 import { Service } from "../types/service";
 
 interface ServiceDetailModalProps {
@@ -75,12 +76,36 @@ const ServiceDetailModal: React.FC<ServiceDetailModalProps> = ({ open, onClose, 
 
   return (
     <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth>
-      <DialogTitle>
-        <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-          <Typography variant="h6">Service Details</Typography>
-          <Button onClick={onClose} sx={{ minWidth: "auto", p: 1 }} color="inherit">
+      <DialogTitle sx={{ pb: 1, px: 2, pt: 2, background: "transparent" }}>
+        <Box display="flex" justifyContent="space-between" alignItems="center">
+          <Box display="flex" alignItems="center" sx={{ gap: 1 }}>
+            <Box
+              sx={{
+                width: 44,
+                height: 44,
+                borderRadius: 2,
+                bgcolor: (theme) => `${theme.palette.primary.main}22`,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+              }}
+            >
+              <InfoIcon sx={{ fontSize: 24, color: (theme) => theme.palette.primary.main }} />
+            </Box>
+
+            <Box>
+              <Typography variant="h6" component="div" sx={{ fontWeight: 700 }}>
+                Service Details
+              </Typography>
+              <Typography variant="body2" sx={{ opacity: 0.85 }}>
+                {service?.service_name}
+              </Typography>
+            </Box>
+          </Box>
+
+          <IconButton onClick={onClose} sx={{ color: (theme) => theme.palette.text.primary }}>
             <CloseIcon />
-          </Button>
+          </IconButton>
         </Box>
       </DialogTitle>
 

@@ -7,7 +7,7 @@ enum MaterialStatus {
   Active = 'Active',
   EndOfLife = 'EndOfLife',
   Discontinue = 'Discontinue',
-}
+} 
 
 enum MaterialLocation {
   Local = 'Local',
