@@ -6,6 +6,16 @@ export default defineConfig({
   plugins: [react()],
   server: {
     port: 3010,
+    fs: {
+      allow: [
+        // Allow serving files from the project root
+        path.resolve(__dirname, "../../../"),
+        // Allow serving files from the frontend directory
+        path.resolve(__dirname, "../../"),
+        // Allow serving files from current directory
+        path.resolve(__dirname, "./"),
+      ],
+    },
   },
   resolve: {
     alias: {
