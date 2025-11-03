@@ -1,18 +1,6 @@
 version: '3.8'
 
 services:
-  postgres:
-    image: postgres:15
-    restart: unless-stopped
-    environment:
-      POSTGRES_USER: mini
-      POSTGRES_PASSWORD: mini
-      POSTGRES_DB: mini
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
-    networks:
-      - mini-net
-
   identity-service:
     build:
       context: ./services/identity-service
@@ -24,12 +12,11 @@ services:
       - "4000:4000"
     environment:
       NODE_ENV: development
-      DATABASE_URL: postgresql://mini:mini@postgres:5432/mini
+      DATABASE_URL: postgresql://postgres:postgres@host.docker.internal:5432/minierp
+      PORT: 4000
     volumes:
       - ./services/identity-service:/usr/src/app
       - /usr/src/app/node_modules
-    depends_on:
-      - postgres
     networks:
       - mini-net
 
@@ -44,12 +31,11 @@ services:
       - "4001:4001"
     environment:
       NODE_ENV: development
-      DATABASE_URL: postgresql://mini:mini@postgres:5432/mini
+      DATABASE_URL: postgresql://postgres:postgres@host.docker.internal:5432/minierp
+      PORT: 4001
     volumes:
       - ./services/engineering-service:/usr/src/app
       - /usr/src/app/node_modules
-    depends_on:
-      - postgres
     networks:
       - mini-net
 
@@ -64,12 +50,11 @@ services:
       - "4002:4002"
     environment:
       NODE_ENV: development
-      DATABASE_URL: postgresql://mini:mini@postgres:5432/mini
+      DATABASE_URL: postgresql://postgres:postgres@host.docker.internal:5432/minierp
+      PORT: 4002
     volumes:
       - ./services/crm-service:/usr/src/app
       - /usr/src/app/node_modules
-    depends_on:
-      - postgres
     networks:
       - mini-net
 
@@ -84,12 +69,11 @@ services:
       - "4003:4003"
     environment:
       NODE_ENV: development
-      DATABASE_URL: postgresql://mini:mini@postgres:5432/mini
+      DATABASE_URL: postgresql://postgres:postgres@host.docker.internal:5432/minierp
+      PORT: 4003
     volumes:
       - ./services/finance-service:/usr/src/app
       - /usr/src/app/node_modules
-    depends_on:
-      - postgres
     networks:
       - mini-net
 
@@ -104,12 +88,11 @@ services:
       - "4004:4004"
     environment:
       NODE_ENV: development
-      DATABASE_URL: postgresql://mini:mini@postgres:5432/mini
+      DATABASE_URL: postgresql://postgres:postgres@host.docker.internal:5432/minierp
+      PORT: 4004
     volumes:
       - ./services/hr-service:/usr/src/app
       - /usr/src/app/node_modules
-    depends_on:
-      - postgres
     networks:
       - mini-net
 
@@ -124,12 +107,11 @@ services:
       - "4005:4005"
     environment:
       NODE_ENV: development
-      DATABASE_URL: postgresql://mini:mini@postgres:5432/mini
+      DATABASE_URL: postgresql://postgres:postgres@host.docker.internal:5432/minierp
+      PORT: 4005
     volumes:
       - ./services/inventory-service:/usr/src/app
       - /usr/src/app/node_modules
-    depends_on:
-      - postgres
     networks:
       - mini-net
 
@@ -144,12 +126,11 @@ services:
       - "4006:4006"
     environment:
       NODE_ENV: development
-      DATABASE_URL: postgresql://mini:mini@postgres:5432/mini
+      DATABASE_URL: postgresql://postgres:postgres@host.docker.internal:5432/minierp
+      PORT: 4006
     volumes:
       - ./services/procurement-service:/usr/src/app
       - /usr/src/app/node_modules
-    depends_on:
-      - postgres
     networks:
       - mini-net
 
@@ -164,12 +145,11 @@ services:
       - "4007:4007"
     environment:
       NODE_ENV: development
-      DATABASE_URL: postgresql://mini:mini@postgres:5432/mini
+      DATABASE_URL: postgresql://postgres:postgres@host.docker.internal:5432/minierp
+      PORT: 4007
     volumes:
       - ./services/project-service:/usr/src/app
       - /usr/src/app/node_modules
-    depends_on:
-      - postgres
     networks:
       - mini-net
 
@@ -191,9 +171,6 @@ services:
       - project-service
     networks:
       - mini-net
-
-volumes:
-  postgres_data:
 
 networks:
   mini-net:
