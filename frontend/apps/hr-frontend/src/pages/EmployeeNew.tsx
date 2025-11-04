@@ -266,6 +266,52 @@ export default function EmployeeNew({ onClose }: Props) {
                 <option value="DOCTORATE">DOCTORATE</option>
               </select>
             </div>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div>
+                <label className="block mb-2 text-blue-900 font-semibold">Gender</label>
+                <select name="gender" value={form.gender} onChange={handleChange} className="w-full border border-blue-200 rounded-xl px-4 py-3 bg-blue-50">
+                  <option value="">(select)</option>
+                  <option value="MALE">MALE</option>
+                  <option value="FEMALE">FEMALE</option>
+                  <option value="OTHER">OTHER</option>
+                </select>
+              </div>
+              <div>
+                <label className="block mb-2 text-blue-900 font-semibold">Marital Status</label>
+                <select name="marital_status" value={form.marital_status} onChange={handleChange} className="w-full border border-blue-200 rounded-xl px-4 py-3 bg-blue-50">
+                  <option value="">(select)</option>
+                  <option value="SINGLE">SINGLE</option>
+                  <option value="MARRIED">MARRIED</option>
+                  <option value="DIVORCED">DIVORCED</option>
+                  <option value="WIDOWED">WIDOWED</option>
+                </select>
+              </div>
+              <div>
+                <label className="block mb-2 text-blue-900 font-semibold">Blood Type</label>
+                <select name="blood_type" value={form.blood_type} onChange={handleChange} className="w-full border border-blue-200 rounded-xl px-4 py-3 bg-blue-50">
+                  <option value="">Select Blood Type</option>
+                  <option value="A_POSITIVE">A+</option>
+                  <option value="A_NEGATIVE">A-</option>
+                  <option value="B_POSITIVE">B+</option>
+                  <option value="B_NEGATIVE">B-</option>
+                  <option value="AB_POSITIVE">AB+</option>
+                  <option value="AB_NEGATIVE">AB-</option>
+                  <option value="O_POSITIVE">O+</option>
+                  <option value="O_NEGATIVE">O-</option>
+                </select>
+              </div>
+            </div>
+            <div>
+              <label className="block mb-2 text-blue-900 font-semibold">Education Level</label>
+              <select name="education_level" value={form.education_level} onChange={handleChange} className="w-full border border-blue-200 rounded-xl px-4 py-3 bg-blue-50">
+                <option value="">(select)</option>
+                <option value="HIGH_SCHOOL">HIGH_SCHOOL</option>
+                <option value="DIPLOMA">DIPLOMA</option>
+                <option value="BACHELOR">BACHELOR</option>
+                <option value="MASTER">MASTER</option>
+                <option value="DOCTORATE">DOCTORATE</option>
+              </select>
+            </div>
           </div>
         );
       case 2:

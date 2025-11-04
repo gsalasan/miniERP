@@ -1,5 +1,7 @@
 import bcrypt from 'bcryptjs';
 import { getPrisma } from '../utils/prisma';
+// Use local enum types temporarily until Prisma client generation is fixed
+import { Gender, MaritalStatus, BloodType, EmploymentType, EmployeeStatus, EducationLevel } from '../types/prisma.enums';
 
 const prisma = getPrisma();
 
@@ -9,6 +11,7 @@ type UserRole = 'CEO' | 'FINANCE_ADMIN' | 'SALES' | 'SALES_MANAGER' | 'PROJECT_M
 interface CreateEmployeeData {
   full_name: string;
   position: string; // harus valid positions seperti: HR Admin, Finance Admin, Project Manager, etc
+  department?: string;
   hire_date: Date | string;
   basic_salary: number | string;
   allowances?: any;
@@ -135,11 +138,65 @@ export const createEmployeeWithUser = async (data: CreateEmployeeWithUserRequest
 export const validateEmployeeUserData = (data: CreateEmployeeWithUserRequest): string[] => {
   const errors: string[] = [];
   
+  // Small helpers
+  const isValidEmail = (e: string) => /.+@.+\..+/.test(e);
+  const isValidDateStr = (d: any) => {
+    if (typeof d !== 'string') return false;
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(d)) return false;
+    const t = Date.parse(d);
+    return !Number.isNaN(t);
+  };
+  const isValidMoney = (v: any) => {
+    if (v === null || v === undefined) return false;
+    let s = v;
+    if (typeof s === 'string') s = s.replace(/\./g, '').replace(/,/g, '.');
+    return !Number.isNaN(Number(s));
+  };
+  
   // Validate employee data
   if (!data.employee?.full_name) errors.push('employee.full_name is required');
   if (!data.employee?.position) errors.push('employee.position is required');
   if (!data.employee?.hire_date) errors.push('employee.hire_date is required');
   if (!data.employee?.basic_salary) errors.push('employee.basic_salary is required');
+
+  // Validate formats for some employee fields
+  if (data.employee?.hire_date && !isValidDateStr(data.employee.hire_date as any)) {
+    errors.push('employee.hire_date must be a valid date string in format YYYY-MM-DD');
+  }
+  if (data.employee?.basic_salary !== undefined && !isValidMoney(data.employee.basic_salary)) {
+    errors.push('employee.basic_salary must be a valid number');
+  }
+
+  // Validate enum values if provided
+  const validGenders = ['MALE', 'FEMALE', 'OTHER'];
+  if (data.employee?.gender && !validGenders.includes(data.employee.gender)) {
+    errors.push(`employee.gender must be one of: ${validGenders.join(', ')}`);
+  }
+
+  const validMaritalStatuses = ['SINGLE', 'MARRIED', 'DIVORCED', 'WIDOWED'];
+  if (data.employee?.marital_status && !validMaritalStatuses.includes(data.employee.marital_status)) {
+    errors.push(`employee.marital_status must be one of: ${validMaritalStatuses.join(', ')}`);
+  }
+
+  const validBloodTypes = ['A_POSITIVE', 'A_NEGATIVE', 'B_POSITIVE', 'B_NEGATIVE', 'AB_POSITIVE', 'AB_NEGATIVE', 'O_POSITIVE', 'O_NEGATIVE'];
+  if (data.employee?.blood_type && !validBloodTypes.includes(data.employee.blood_type)) {
+    errors.push(`employee.blood_type must be one of: ${validBloodTypes.join(', ')}`);
+  }
+
+  const validEmploymentTypes = ['FULL_TIME', 'PART_TIME', 'CONTRACT', 'INTERN', 'FREELANCE'];
+  if (data.employee?.employment_type && !validEmploymentTypes.includes(data.employee.employment_type)) {
+    errors.push(`employee.employment_type must be one of: ${validEmploymentTypes.join(', ')}`);
+  }
+
+  const validEmployeeStatuses = ['ACTIVE', 'INACTIVE', 'TERMINATED', 'ON_LEAVE', 'PROBATION'];
+  if (data.employee?.status && !validEmployeeStatuses.includes(data.employee.status)) {
+    errors.push(`employee.status must be one of: ${validEmployeeStatuses.join(', ')}`);
+  }
+
+  const validEducationLevels = ['HIGH_SCHOOL', 'DIPLOMA', 'BACHELOR', 'MASTER', 'DOCTORATE'];
+  if (data.employee?.education_level && !validEducationLevels.includes(data.employee.education_level)) {
+    errors.push(`employee.education_level must be one of: ${validEducationLevels.join(', ')}`);
+  }
 
   // Validate user data
   if (!data.user?.email) errors.push('user.email is required');
@@ -148,8 +205,16 @@ export const validateEmployeeUserData = (data: CreateEmployeeWithUserRequest): s
     errors.push('user.roles is required and must be a non-empty array');
   }
 
+  // Validate email formats
+  if (data.user?.email && !isValidEmail(data.user.email)) {
+    errors.push('user.email must be a valid email');
+  }
+
   // Validate shared email
   if (!data.email) errors.push('email is required');
+  if (data.email && !isValidEmail(data.email)) {
+    errors.push('email must be a valid email');
+  }
   
   // Validate email consistency
   if (data.email && data.user?.email && data.email !== data.user.email) {
@@ -186,22 +251,90 @@ export const disconnectEmployeeService = async () => {
 // Get all employees with user info
 export const getAllEmployees = async () => {
   try {
-    const employees = await prisma.employees.findMany({
-      include: {
-        users: {
-          select: {
-            id: true,
-            email: true,
-            roles: true,
-            is_active: true,
-            created_at: true,
-            updated_at: true,
+    // Try legacy `employees` table first (this is where your 6 rows usually live)
+    let legacy: any[] = [];
+    try {
+      legacy = await prisma.employees.findMany({
+        select: {
+          id: true,
+          full_name: true,
+          position: true,
+          department: true,
+          gender: true,
+          marital_status: true,
+          blood_type: true,
+          employment_type: true,
+          status: true,
+          education_level: true,
+          hire_date: true,
+          basic_salary: true,
+          allowances: true,
+          phone: true,
+          tax_id: true,
+          bank_name: true,
+          bank_account_number: true,
+          npwp: true,
+          ptkp: true,
+          users: {
+            select: {
+              id: true,
+              email: true,
+              roles: true,
+              is_active: true,
+              created_at: true,
+              updated_at: true,
+            }
           }
         }
+      });
+    } catch (selErr: any) {
+      // Fallback for older Prisma client that doesn't know the new fields
+      const msg = String(selErr?.message || '');
+      if (msg.includes('Unknown arg') || msg.includes('Unknown field')) {
+        legacy = await prisma.employees.findMany({
+          select: {
+            id: true,
+            full_name: true,
+            position: true,
+            department: true,
+            gender: true,
+            marital_status: true,
+            blood_type: true,
+            employment_type: true,
+            status: true,
+            education_level: true,
+            hire_date: true,
+            basic_salary: true,
+            allowances: true,
+            phone: true,
+            tax_id: true,
+            users: {
+              select: {
+                id: true,
+                email: true,
+                roles: true,
+                is_active: true,
+                created_at: true,
+                updated_at: true,
+              }
+            }
+          }
+        });
+      } else {
+        throw selErr;
       }
-    });
+    }
 
-    return employees;
+    if (legacy && legacy.length > 0) {
+      console.log(`getAllEmployees: returning ${legacy.length} rows from legacy employees table`);
+      // Normalize basic_salary to string for Decimal safety
+      return legacy.map((emp: any) => ({ ...emp, basic_salary: emp.basic_salary ? String(emp.basic_salary) : null }));
+    }
+
+    // Fallback: try hr_employees (newer schema). This covers cases where data lives in hr_employees.
+    const hr = await prisma.hr_employees.findMany();
+    console.log(`getAllEmployees: legacy empty, returning ${hr.length} rows from hr_employees`);
+    return hr.map((emp: any) => ({ ...emp, basic_salary: emp.basic_salary ? String(emp.basic_salary) : null }));
   } catch (error: any) {
     console.error('Error fetching employees:', error);
     throw new Error('Gagal mengambil data employee: ' + error.message);
@@ -211,23 +344,94 @@ export const getAllEmployees = async () => {
 // Get employee by ID with user info
 export const getEmployeeById = async (employeeId: string) => {
   try {
-    const employee = await prisma.employees.findUnique({
-      where: { id: employeeId },
-      include: {
-        users: {
-          select: {
-            id: true,
-            email: true,
-            roles: true,
-            is_active: true,
-            created_at: true,
-            updated_at: true,
+    // Try legacy employees table first
+    let employee: any = null;
+    try {
+      employee = await prisma.employees.findUnique({
+        where: { id: employeeId },
+        select: {
+          id: true,
+          full_name: true,
+          position: true,
+          department: true,
+          gender: true,
+          marital_status: true,
+          blood_type: true,
+          employment_type: true,
+          status: true,
+          education_level: true,
+          hire_date: true,
+          basic_salary: true,
+          allowances: true,
+          phone: true,
+          tax_id: true,
+          bank_name: true,
+          bank_account_number: true,
+          npwp: true,
+          ptkp: true,
+          users: {
+            select: {
+              id: true,
+              email: true,
+              roles: true,
+              is_active: true,
+              created_at: true,
+              updated_at: true,
+            }
           }
         }
+      });
+    } catch (selErr: any) {
+      const msg = String(selErr?.message || '');
+      if (msg.includes('Unknown arg') || msg.includes('Unknown field')) {
+        employee = await prisma.employees.findUnique({
+          where: { id: employeeId },
+          select: {
+            id: true,
+            full_name: true,
+            position: true,
+            department: true,
+            gender: true,
+            marital_status: true,
+            blood_type: true,
+            employment_type: true,
+            status: true,
+            education_level: true,
+            hire_date: true,
+            basic_salary: true,
+            allowances: true,
+            phone: true,
+            tax_id: true,
+            users: {
+              select: {
+                id: true,
+                email: true,
+                roles: true,
+                is_active: true,
+                created_at: true,
+                updated_at: true,
+              }
+            }
+          }
+        });
+      } else {
+        throw selErr;
       }
-    });
+    }
 
-    return employee;
+    if (employee) {
+      console.log(`getEmployeeById: found in legacy employees id=${employeeId}`);
+      return { ...employee, basic_salary: employee.basic_salary ? String(employee.basic_salary) : null } as any;
+    }
+
+    // Fallback to hr_employees
+    const hrEmp = await prisma.hr_employees.findUnique({ where: { id: employeeId } as any });
+    if (hrEmp) {
+      console.log(`getEmployeeById: found in hr_employees id=${employeeId}`);
+      return { ...hrEmp, basic_salary: hrEmp.basic_salary ? String(hrEmp.basic_salary) : null } as any;
+    }
+
+    return null;
   } catch (error: any) {
     console.error('Error fetching employee:', error);
     throw new Error('Gagal mengambil data employee: ' + error.message);
@@ -282,9 +486,12 @@ export const updateEmployee = async (employeeId: string, updateData: UpdateEmplo
       dataToUpdate.hire_date = new Date(updateData.hire_date);
     }
     if (updateData.basic_salary !== undefined) {
-      dataToUpdate.basic_salary = typeof updateData.basic_salary === 'string'
-        ? parseFloat(updateData.basic_salary)
-        : updateData.basic_salary;
+      // Normalize to string for Decimal
+      let s = updateData.basic_salary;
+      if (typeof s === 'string') {
+        s = s.replace(/\./g, '').replace(/,/g, '.');
+      }
+      dataToUpdate.basic_salary = typeof s === 'number' ? String(s) : s;
     }
     if (updateData.allowances !== undefined) {
       dataToUpdate.allowances = updateData.allowances;
@@ -320,23 +527,152 @@ export const updateEmployee = async (employeeId: string, updateData: UpdateEmplo
       dataToUpdate.ptkp = updateData.ptkp;
     }
 
-    // Update employee
-    const updatedEmployee = await prisma.employees.update({
-      where: { id: employeeId },
-      data: dataToUpdate,
-      include: {
-        users: {
-          select: {
-            id: true,
-            email: true,
-            roles: true,
-            is_active: true,
-            created_at: true,
-            updated_at: true,
+    // Update employee with fallbacks for client/schema drift
+    let updatedEmployee: any;
+    try {
+      updatedEmployee = await prisma.employees.update({
+        where: { id: employeeId },
+        data: dataToUpdate,
+        select: {
+          id: true,
+          full_name: true,
+          position: true,
+          department: true,
+          gender: true,
+          marital_status: true,
+          blood_type: true,
+          employment_type: true,
+          status: true,
+          education_level: true,
+          hire_date: true,
+          basic_salary: true,
+          allowances: true,
+          bank_name: true,
+          bank_account_number: true,
+          npwp: true,
+          ptkp: true,
+          users: {
+            select: {
+              id: true,
+              email: true,
+              roles: true,
+              is_active: true,
+              created_at: true,
+              updated_at: true,
+            }
           }
         }
+      });
+    } catch (err: any) {
+      const msg = String(err?.message || '');
+      // Handle enum mismatch on blood_type similar to create
+      if (msg.includes('22P02') && msg.includes('BloodType') && dataToUpdate.blood_type) {
+        const { blood_type, ...withoutBlood } = dataToUpdate;
+        try {
+          updatedEmployee = await prisma.employees.update({
+            where: { id: employeeId },
+            data: withoutBlood,
+            select: {
+              id: true,
+              full_name: true,
+              position: true,
+              department: true,
+              gender: true,
+              marital_status: true,
+              blood_type: true,
+              employment_type: true,
+              status: true,
+              education_level: true,
+              hire_date: true,
+              basic_salary: true,
+              allowances: true,
+              bank_name: true,
+              bank_account_number: true,
+              npwp: true,
+              ptkp: true,
+              users: {
+                select: {
+                  id: true,
+                  email: true,
+                  roles: true,
+                  is_active: true,
+                  created_at: true,
+                  updated_at: true,
+                }
+              }
+            }
+          });
+        } catch (err2) {
+          throw err2;
+        }
+      } else if (msg.includes('Unknown arg') || msg.includes('Unknown field')) {
+        // Prisma client doesn't know new fields. Drop the new fields from data and select.
+        const { bank_name, bank_account_number, npwp, ptkp, ...legacyData } = dataToUpdate;
+        updatedEmployee = await prisma.employees.update({
+          where: { id: employeeId },
+          data: legacyData,
+          select: {
+            id: true,
+            full_name: true,
+            position: true,
+            department: true,
+            gender: true,
+            marital_status: true,
+            blood_type: true,
+            employment_type: true,
+            status: true,
+            education_level: true,
+            hire_date: true,
+            basic_salary: true,
+            allowances: true,
+            users: {
+              select: {
+                id: true,
+                email: true,
+                roles: true,
+                is_active: true,
+                created_at: true,
+                updated_at: true,
+              }
+            }
+          }
+        });
+      } else if (msg.includes('does not exist')) {
+        // DB is missing some columns (on older env). Drop the optional fields.
+        const { bank_name, bank_account_number, npwp, ptkp, ...legacyData } = dataToUpdate;
+        updatedEmployee = await prisma.employees.update({
+          where: { id: employeeId },
+          data: legacyData,
+          select: {
+            id: true,
+            full_name: true,
+            position: true,
+            department: true,
+            gender: true,
+            marital_status: true,
+            blood_type: true,
+            employment_type: true,
+            status: true,
+            education_level: true,
+            hire_date: true,
+            basic_salary: true,
+            allowances: true,
+            users: {
+              select: {
+                id: true,
+                email: true,
+                roles: true,
+                is_active: true,
+                created_at: true,
+                updated_at: true,
+              }
+            }
+          }
+        });
+      } else {
+        throw err;
       }
-    });
+    }
 
     return updatedEmployee;
   } catch (error: any) {

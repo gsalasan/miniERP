@@ -13,8 +13,9 @@ import {
   MenuItem,
   Box,
   Typography,
+  IconButton,
 } from "@mui/material";
-import { Close as CloseIcon } from "@mui/icons-material";
+import { Close as CloseIcon, Save as SaveIcon, Add as AddIcon } from "@mui/icons-material";
 import { servicesService } from "../api/servicesApi";
 import { Service, ServiceUnit, ServiceFilterOptions } from "../types/service";
 import { useNotification } from "../contexts/NotificationContext";
@@ -33,7 +34,6 @@ const ServiceFormModal: React.FC<ServiceFormModalProps> = ({ open, onClose, serv
     item_type: "Service",
     category: "",
     unit: "Jam",
-    description: "",
     internal_cost_per_hour: "",
     freelance_cost_per_hour: "",
     default_duration: "",
@@ -53,7 +53,6 @@ const ServiceFormModal: React.FC<ServiceFormModalProps> = ({ open, onClose, serv
           item_type: service.item_type || "Service",
           category: service.category || "",
           unit: service.unit || "Jam",
-          // description: service.description || "", // Remove if not present in Service type
           internal_cost_per_hour: service.internal_cost_per_hour?.toString() || "",
           freelance_cost_per_hour: service.freelance_cost_per_hour?.toString() || "",
           default_duration: service.default_duration?.toString() || "",
@@ -67,7 +66,6 @@ const ServiceFormModal: React.FC<ServiceFormModalProps> = ({ open, onClose, serv
           item_type: "Service",
           category: "",
           unit: "Jam",
-          description: "",
           internal_cost_per_hour: "",
           freelance_cost_per_hour: "",
           default_duration: "",
@@ -116,7 +114,6 @@ const ServiceFormModal: React.FC<ServiceFormModalProps> = ({ open, onClose, serv
         item_type: formData.item_type,
         category: formData.category || undefined,
         unit: formData.unit as ServiceUnit,
-        // description: formData.description || undefined, // Remove if not present in Service type
         internal_cost_per_hour: formData.internal_cost_per_hour
           ? parseFloat(formData.internal_cost_per_hour)
           : undefined,
@@ -151,14 +148,42 @@ const ServiceFormModal: React.FC<ServiceFormModalProps> = ({ open, onClose, serv
 
   return (
     <Dialog open={open} onClose={handleClose} maxWidth="md" fullWidth>
-      <DialogTitle>
-        <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-          <Typography variant="h6">
-            {mode === "edit" ? "Edit Service" : "Add New Service"}
-          </Typography>
-          <Button onClick={handleClose} sx={{ minWidth: "auto", p: 1 }} color="inherit">
+      <DialogTitle sx={{ pb: 1, px: 2, pt: 2, background: "transparent" }}>
+        <Box display="flex" justifyContent="space-between" alignItems="center">
+          <Box display="flex" alignItems="center" sx={{ gap: 1 }}>
+            <Box
+              sx={{
+                width: 44,
+                height: 44,
+                borderRadius: 2,
+                bgcolor: (theme) => `${theme.palette.primary.main}14`,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+              }}
+            >
+              {mode === "edit" ? (
+                <SaveIcon sx={{ fontSize: 20, color: (theme) => theme.palette.primary.main }} />
+              ) : (
+                <AddIcon sx={{ fontSize: 20, color: (theme) => theme.palette.primary.main }} />
+              )}
+            </Box>
+
+            <Box>
+              <Typography variant="h6" component="div" sx={{ fontWeight: 700 }}>
+                {mode === "edit" ? "Edit Service" : "Add New Service"}
+              </Typography>
+              {mode === "edit" && (
+                <Typography variant="body2" sx={{ opacity: 0.85 }}>
+                  {service?.service_name}
+                </Typography>
+              )}
+            </Box>
+          </Box>
+
+          <IconButton onClick={handleClose} sx={{ color: (theme) => theme.palette.text.primary }}>
             <CloseIcon />
-          </Button>
+          </IconButton>
         </Box>
       </DialogTitle>
 
@@ -255,19 +280,6 @@ const ServiceFormModal: React.FC<ServiceFormModalProps> = ({ open, onClose, serv
               }
               disabled={loading}
               placeholder="Hours or Days"
-            />
-          </Grid>
-
-          <Grid item xs={12}>
-            <TextField
-              fullWidth
-              label="Description"
-              multiline
-              rows={3}
-              value={formData.description || ""}
-              // Remove description field if not present in Service type
-              disabled={loading}
-              placeholder="Additional details about this service..."
             />
           </Grid>
 

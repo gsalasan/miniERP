@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { verifyToken } from "../middlewares/auth.middlleware";
+import { verifyToken } from "../middlewares/auth.middleware";
 import {
   getAllCustomerContacts,
   getCustomerContactById,

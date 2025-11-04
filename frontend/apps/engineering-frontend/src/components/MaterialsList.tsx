@@ -129,7 +129,8 @@ const MaterialsList: React.FC<MaterialsListProps> = ({ globalSearch }) => {
 
   useEffect(() => {
     fetchMaterials();
-  }, [page, rowsPerPage, filters]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [page, rowsPerPage, JSON.stringify(filters)]);
 
   // Handle global search from parent component
   useEffect(() => {
@@ -174,10 +175,18 @@ const MaterialsList: React.FC<MaterialsListProps> = ({ globalSearch }) => {
 
   // Handle filter changes
   const handleFilterChange = (field: string, value: string) => {
-    setFilters((prev: MaterialsQueryParams) => ({
-      ...prev,
+    const newFilters = {
+      ...filters,
       [field]: value || undefined,
-    }));
+    };
+    // Remove undefined values
+    Object.keys(newFilters).forEach(key => {
+      if (newFilters[key as keyof MaterialsQueryParams] === undefined || newFilters[key as keyof MaterialsQueryParams] === '') {
+        delete newFilters[key as keyof MaterialsQueryParams];
+      }
+    });
+    console.log('Filter changed:', field, value, 'New filters:', newFilters);
+    setFilters(newFilters);
     setPage(0); // Reset to first page when filtering
   };
 
@@ -453,15 +462,7 @@ const MaterialsList: React.FC<MaterialsListProps> = ({ globalSearch }) => {
                 startIcon={<AddIcon />}
                 onClick={handleAddMaterial}
                 size="medium"
-                sx={{
-                  minWidth: 100,
-                  background: "linear-gradient(135deg, #2563eb 0%, #3b82f6 100%)",
-                  boxShadow: "0 4px 14px 0 rgba(37, 99, 235, 0.3)",
-                  "&:hover": {
-                    background: "linear-gradient(135deg, #1d4ed8 0%, #2563eb 100%)",
-                    boxShadow: "0 6px 20px 0 rgba(37, 99, 235, 0.4)",
-                  },
-                }}
+                sx={{ minWidth: 100 }}
               >
                 Add
               </Button>
