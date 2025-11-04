@@ -1,5 +1,5 @@
-import prisma from "../utils/prisma";
-import { CustomerStatus } from "@prisma/client";
+import prisma from '../utils/prisma';
+import { CustomerStatus } from '@prisma/client';
 
 export interface CreateCustomerData {
   customer_name: string;
@@ -46,7 +46,7 @@ export const getAllCustomersService = async () => {
       customer_contacts: true,
     },
     orderBy: {
-      createdAt: "desc",
+      createdAt: 'desc',
     },
   });
 };
@@ -70,7 +70,7 @@ export const createCustomerService = async (data: CreateCustomerData) => {
       updatedAt: new Date(),
       customer_contacts: contacts
         ? {
-            create: contacts.map((contact) => ({
+            create: contacts.map(contact => ({
               id: crypto.randomUUID(),
               ...contact,
             })),
@@ -83,7 +83,10 @@ export const createCustomerService = async (data: CreateCustomerData) => {
   });
 };
 
-export const updateCustomerService = async (id: string, data: UpdateCustomerData) => {
+export const updateCustomerService = async (
+  id: string,
+  data: UpdateCustomerData
+) => {
   try {
     const { contacts, ...customerData } = data;
 
@@ -98,7 +101,7 @@ export const updateCustomerService = async (id: string, data: UpdateCustomerData
     }
 
     // Update customer dan contacts dalam transaction
-    return await prisma.$transaction(async (tx) => {
+    return await prisma.$transaction(async tx => {
       // Update customer data
       const updatedCustomer = await tx.customers.update({
         where: { id },
@@ -118,7 +121,7 @@ export const updateCustomerService = async (id: string, data: UpdateCustomerData
         // Create new contacts
         if (contacts.length > 0) {
           await tx.customer_contacts.createMany({
-            data: contacts.map((contact) => ({
+            data: contacts.map(contact => ({
               id: crypto.randomUUID(),
               customer_id: id,
               name: contact.name,
@@ -143,7 +146,7 @@ export const updateCustomerService = async (id: string, data: UpdateCustomerData
     });
   } catch (error) {
     // eslint-disable-next-line no-console
-    console.error("Error in updateCustomerService:", error);
+    console.error('Error in updateCustomerService:', error);
     throw error;
   }
 };
@@ -167,7 +170,7 @@ export const deleteCustomerService = async (id: string) => {
     return true;
   } catch (error) {
     // eslint-disable-next-line no-console
-    console.error("Error in deleteCustomerService:", error);
+    console.error('Error in deleteCustomerService:', error);
     throw error;
   }
 };
