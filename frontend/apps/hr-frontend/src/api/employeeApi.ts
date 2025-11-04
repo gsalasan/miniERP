@@ -2,7 +2,7 @@
 const BASE_URL = 'http://localhost:3002/api/v1';
 
 export async function fetchEmployees() {
-  const res = await fetch(`${BASE_URL}/employees/list/all`);
+  const res = await fetch(`${BASE_URL}/employees`);
   const data = await res.json();
   return data.data || [];
 }

@@ -1,0 +1,11 @@
+-- Ensure BloodType enum contains all expected values used by the app
+-- This is safe to run multiple times on PostgreSQL versions that support IF NOT EXISTS
+
+ALTER TYPE "BloodType" ADD VALUE IF NOT EXISTS 'A_POSITIVE';
+ALTER TYPE "BloodType" ADD VALUE IF NOT EXISTS 'A_NEGATIVE';
+ALTER TYPE "BloodType" ADD VALUE IF NOT EXISTS 'B_POSITIVE';
+ALTER TYPE "BloodType" ADD VALUE IF NOT EXISTS 'B_NEGATIVE';
+ALTER TYPE "BloodType" ADD VALUE IF NOT EXISTS 'AB_POSITIVE';
+ALTER TYPE "BloodType" ADD VALUE IF NOT EXISTS 'AB_NEGATIVE';
+ALTER TYPE "BloodType" ADD VALUE IF NOT EXISTS 'O_POSITIVE';
+ALTER TYPE "BloodType" ADD VALUE IF NOT EXISTS 'O_NEGATIVE';

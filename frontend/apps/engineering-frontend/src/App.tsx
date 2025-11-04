@@ -12,25 +12,26 @@ import { NotificationProvider } from "./contexts/NotificationContext";
 const theme = createTheme({
   palette: {
     mode: "light",
+    // Palette tuned to match Unais logo colors (deep navy + light blue)
     primary: {
-      main: "#2563eb",
-      light: "#3b82f6",
-      dark: "#1d4ed8",
+      main: "#08306B", // deep navy
+      light: "#4EA8FF", // lighter sky blue for accents
+      dark: "#042A4A",
       contrastText: "#ffffff",
     },
     secondary: {
-      main: "#7c3aed",
-      light: "#8b5cf6",
-      dark: "#6d28d9",
-      contrastText: "#ffffff",
+      main: "#5BC0FF", // soft cyan/sky blue
+      light: "#8EE6FF",
+      dark: "#2E9ECF",
+      contrastText: "#05233A",
     },
     background: {
       default: "#f8fafc",
       paper: "#ffffff",
     },
     text: {
-      primary: "#1e293b",
-      secondary: "#64748b",
+      primary: "#05233A",
+      secondary: "#475569",
     },
     success: {
       main: "#10b981",
@@ -96,7 +97,7 @@ const theme = createTheme({
       fontSize: "1.125rem",
       fontWeight: 600,
       lineHeight: 1.4,
-      color: "#2563eb",
+      color: "#08306B",
     },
     body1: {
       fontSize: "1rem",
@@ -114,7 +115,7 @@ const theme = createTheme({
     },
   },
   shape: {
-    borderRadius: 12,
+    borderRadius: 4,
   },
   components: {
     MuiCard: {
@@ -123,6 +124,79 @@ const theme = createTheme({
           boxShadow: "0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1)",
           borderRadius: 16,
           border: "1px solid #e2e8f0",
+        },
+      },
+    },
+    MuiDialog: {
+      styleOverrides: {
+        paper: ({ theme }) => ({
+          // slightly larger radius than the global shape so dialogs match the
+          // detail modal appearance (keeps other small elements using theme.shape)
+          // Increased per request to better match detail modal visuals
+          // nudged slightly again to match screenshot
+          borderRadius: 14,
+          padding: 0,
+          backgroundColor: theme.palette.background.paper,
+          position: "fixed",
+          // hide overflow so internal elements don't visually break the rounded corners
+          overflow: "hidden",
+          // Note: no full-width header strip here; per-modal header should render its own accent if needed
+          // On desktop center within the available content area (viewport minus sidebar)
+          // Sidebar width is 280px; center = 280px + (100% - 280px)/2 = calc(50% + 140px)
+          "@media (min-width:960px)": {
+            top: "50%",
+            left: "calc(50% + 100px)",
+            transform: "translate(-50%, -50%)",
+            // Make dialog noticeably larger on desktop while still leaving space for sidebar
+            width: "min(1200px, calc(100% - 360px))",
+            maxHeight: "80vh",
+            overflowY: "auto",
+          },
+        }),
+      },
+    },
+    MuiBackdrop: {
+      styleOverrides: {
+        root: ({ theme }) => ({
+          backgroundColor: "rgba(0,0,0,0.45)",
+          // By default cover full viewport on small screens.
+          // On desktop, limit the backdrop to the content area so the sidebar stays undimmed.
+          "@media (min-width:960px)": {
+            left: 280,
+            right: "auto",
+            width: "calc(100% - 280px)",
+          },
+        }),
+      },
+    },
+    MuiDialogTitle: {
+      styleOverrides: {
+        root: ({ theme }) => ({
+          // keep title area compact and transparent so it doesn't become a full-width bar
+          padding: '12px 20px',
+          backgroundColor: 'transparent',
+          color: theme.palette.text.primary,
+          position: 'relative',
+          marginTop: 4,
+          '& .MuiTypography-root': {
+            fontWeight: 700,
+            color: theme.palette.text.primary,
+          },
+        }),
+      },
+    },
+    MuiDialogContent: {
+      styleOverrides: {
+        root: ({ theme }) => ({
+          padding: '20px',
+          color: theme.palette.text.primary,
+        }),
+      },
+    },
+    MuiDialogActions: {
+      styleOverrides: {
+        root: {
+          padding: '12px 20px',
         },
       },
     },
