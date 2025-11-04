@@ -3,6 +3,8 @@ import {
   createEmployee, 
   getEmployees,
   listAllEmployees,
+  // debug endpoint
+  listDebugEmployees,
   getEmployeeByIdCtrl,
   updateEmployeeCtrl,
   updateEmployeeUserCtrl,
@@ -21,6 +23,9 @@ router.get('/employees', getEmployees);
 
 // GET /api/v1/employees/list - Get all employees with details
 router.get('/employees/list/all', listAllEmployees);
+
+// Debug endpoint: return counts and sample rows from both tables
+router.get('/employees/debug', listDebugEmployees);
 
 // GET /api/v1/employees/:id - Get employee by ID
 router.get('/employees/:id', getEmployeeByIdCtrl);

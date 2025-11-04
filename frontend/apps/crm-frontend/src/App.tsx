@@ -2,13 +2,13 @@ import React from "react";
 import { ThemeProvider } from "@mui/material/styles";
 import { CssBaseline } from "@mui/material";
 import { theme } from "./theme";
-import CRMHome from "./pages";
+import AppRouter from "./router";
 
 function App() {
   return (
     <ThemeProvider theme={theme}>
       <CssBaseline />
-      <CRMHome />
+      <AppRouter />
     </ThemeProvider>
   );
 }
