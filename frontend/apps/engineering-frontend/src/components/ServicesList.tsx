@@ -179,7 +179,6 @@ const ServicesList: React.FC<ServicesListProps> = ({ globalSearch }) => {
         delete newFilters[key as keyof ServicesQueryParams];
       }
     });
-    console.log("Filter changed:", field, value, "New filters:", newFilters);
     setFilters(newFilters);
     setPage(0);
   };
@@ -248,7 +247,7 @@ const ServicesList: React.FC<ServicesListProps> = ({ globalSearch }) => {
         <CardContent sx={{ p: 3 }}>
           <Box sx={{ display: "flex", gap: 3, alignItems: "center", flexWrap: "wrap", justifyContent: "space-between" }}>
             <TextField
-              placeholder="Cari layanan berdasarkan kode, nama, kategori..."
+              placeholder="Cari layanan berdasarkan kode atau nama..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               InputProps={{ startAdornment: <SearchIcon sx={{ color: "action.active", mr: 1.5 }} /> }}
@@ -283,32 +282,38 @@ const ServicesList: React.FC<ServicesListProps> = ({ globalSearch }) => {
           <Collapse in={showAdvancedFilters}>
             <Box sx={{ mt: 2, pt: 2, borderTop: 1, borderColor: "divider" }}>
               <Grid container spacing={2}>
-                <Grid item xs={12} md={4}>
-                  <FormControl fullWidth size="small">
-                    <InputLabel>Kategori</InputLabel>
-                    <Select value={(filters.category as string) || ""} onChange={(e) => handleFilterChange("category", e.target.value as string)} label="Kategori">
-                      <MenuItem value="">All Categories</MenuItem>
-                      {filterOptions?.categories?.map((c) => (<MenuItem key={c} value={c}>{c}</MenuItem>))}
-                    </Select>
-                  </FormControl>
-                </Grid>
-
-                <Grid item xs={12} md={4}>
+                <Grid item xs={12} md={6}>
                   <FormControl fullWidth size="small">
                     <InputLabel>Unit</InputLabel>
-                    <Select value={(filters.unit as string) || ""} onChange={(e) => handleFilterChange("unit", e.target.value as string)} label="Unit">
+                    <Select
+                      value={(filters.unit as string) || ""}
+                      onChange={(e) => handleFilterChange("unit", e.target.value as string)}
+                      label="Unit"
+                    >
                       <MenuItem value="">All Units</MenuItem>
-                      {filterOptions?.units?.map((u) => (<MenuItem key={u} value={u}>{u}</MenuItem>))}
+                      {filterOptions?.units?.map((u) => (
+                        <MenuItem key={u} value={u}>
+                          {u}
+                        </MenuItem>
+                      ))}
                     </Select>
                   </FormControl>
                 </Grid>
 
-                <Grid item xs={12} md={4}>
+                <Grid item xs={12} md={6}>
                   <FormControl fullWidth size="small">
                     <InputLabel>Item Type</InputLabel>
-                    <Select value={(filters.item_type as string) || ""} onChange={(e) => handleFilterChange("item_type", e.target.value as string)} label="Item Type">
+                    <Select
+                      value={(filters.item_type as string) || ""}
+                      onChange={(e) => handleFilterChange("item_type", e.target.value as string)}
+                      label="Item Type"
+                    >
                       <MenuItem value="">All</MenuItem>
-                      {filterOptions?.item_types?.map((it) => (<MenuItem key={it} value={it}>{it}</MenuItem>))}
+                      {filterOptions?.item_types?.map((it) => (
+                        <MenuItem key={it} value={it}>
+                          {it}
+                        </MenuItem>
+                      ))}
                     </Select>
                   </FormControl>
                 </Grid>
@@ -321,13 +326,42 @@ const ServicesList: React.FC<ServicesListProps> = ({ globalSearch }) => {
       {(Object.keys(filters).length > 0 || searchTerm) && (
         <Card sx={{ mb: 2 }}>
           <CardContent sx={{ py: 2 }}>
-            <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 1 }}>
+            <Box
+              sx={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                flexWrap: "wrap",
+                gap: 1,
+              }}
+            >
               <Box sx={{ display: "flex", alignItems: "center", gap: 1, flexWrap: "wrap" }}>
-                <Typography variant="body2" color="textSecondary">Active filters:</Typography>
-                {searchTerm && (<Chip label={`Search: "${searchTerm}"`} size="small" onDelete={() => setSearchTerm("")} variant="outlined" />)}
-                {Object.entries(filters).map(([k, v]) => v ? (<Chip key={k} label={`${k}: ${v}`} size="small" onDelete={() => handleFilterChange(k, "")} variant="outlined" />) : null)}
+                <Typography variant="body2" color="textSecondary">
+                  Active filters:
+                </Typography>
+                {searchTerm && (
+                  <Chip
+                    label={`Search: "${searchTerm}"`}
+                    size="small"
+                    onDelete={() => setSearchTerm("")}
+                    variant="outlined"
+                  />
+                )}
+                {Object.entries(filters).map(([k, v]) =>
+                  v ? (
+                    <Chip
+                      key={k}
+                      label={`${k}: ${v}`}
+                      size="small"
+                      onDelete={() => handleFilterChange(k, "")}
+                      variant="outlined"
+                    />
+                  ) : null,
+                )}
               </Box>
-              <Typography variant="body2" color="textSecondary">{totalCount} results found</Typography>
+              <Typography variant="body2" color="textSecondary">
+                {totalCount} results found
+              </Typography>
             </Box>
           </CardContent>
         </Card>
@@ -346,10 +380,9 @@ const ServicesList: React.FC<ServicesListProps> = ({ globalSearch }) => {
                   <TableRow>
                     <TableCell>Kode Layanan</TableCell>
                     <TableCell>Nama Layanan</TableCell>
-                    <TableCell>Kategori</TableCell>
                     <TableCell>Unit</TableCell>
-                    <TableCell align="right">Biaya Internal</TableCell>
-                    <TableCell align="right">Biaya Freelance</TableCell>
+                    <TableCell>SBU</TableCell>
+                    <TableCell>Kategori Jasa</TableCell>
                     <TableCell align="center">Status</TableCell>
                     <TableCell align="center">Aksi</TableCell>
                   </TableRow>
@@ -357,7 +390,7 @@ const ServicesList: React.FC<ServicesListProps> = ({ globalSearch }) => {
                 <TableBody>
                   {services.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={8} align="center" sx={{ py: 4 }}>
+                      <TableCell colSpan={7} align="center" sx={{ py: 4 }}>
                         <Typography variant="body2" color="textSecondary">{searchTerm ? "Tidak ada layanan yang sesuai dengan pencarian" : "Belum ada data layanan"}</Typography>
                       </TableCell>
                     </TableRow>
@@ -371,16 +404,13 @@ const ServicesList: React.FC<ServicesListProps> = ({ globalSearch }) => {
                           <Typography variant="body2">{service.service_name}</Typography>
                         </TableCell>
                         <TableCell>
-                          <Typography variant="body2">{service.category || "-"}</Typography>
-                        </TableCell>
-                        <TableCell>
                           <Typography variant="body2">{service.unit}</Typography>
                         </TableCell>
-                        <TableCell align="right">
-                          <Typography variant="body2">{formatCurrency(service.internal_cost_per_hour)}</Typography>
+                        <TableCell>
+                          <Typography variant="body2">{service.sbu_name || service.sbu || "-"}</Typography>
                         </TableCell>
-                        <TableCell align="right">
-                          <Typography variant="body2">{formatCurrency(service.freelance_cost_per_hour)}</Typography>
+                        <TableCell>
+                          <Typography variant="body2">{service.kategori_jasa_name || service.kategori_jasa || "-"}</Typography>
                         </TableCell>
                         <TableCell align="center">{getStatusChip(service.is_active)}</TableCell>
                         <TableCell align="center">

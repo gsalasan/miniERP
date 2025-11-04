@@ -20,7 +20,8 @@ import {
 import Autocomplete from "@mui/material/Autocomplete";
 import VendorCreateDialog from "./VendorCreateDialog";
 import { Close as CloseIcon, Save as SaveIcon, Add as AddIcon } from "@mui/icons-material";
-import { Material, MaterialStatus, MaterialLocation, FilterOptions } from "../types/material";
+import { Material, FilterOptions } from "../types/material";
+import { MaterialStatus, MaterialLocation, Components } from "../types/enums";
 import { materialsService } from "../api/materialsApi";
 import { useNotification } from "../contexts/NotificationContext";
 import { vendorsService } from "../api/vendorsApi";
@@ -38,7 +39,7 @@ interface FormData {
   sbu: string;
   system: string;
   subsystem: string;
-  components: string;
+  components: Components | "";
   item_name: string;
   brand: string;
   owner_pn: string;
@@ -457,17 +458,23 @@ const MaterialFormModal: React.FC<MaterialFormModalProps> = ({
           </Grid>
 
           <Grid item xs={12}>
-            <TextField
-              fullWidth
-              label="Components"
-              value={formData.components}
-              onChange={handleInputChange("components")}
-              error={!!formErrors.components}
-              helperText={formErrors.components}
-              disabled={loading}
-              multiline
-              rows={2}
-            />
+            <FormControl fullWidth error={!!formErrors.components} disabled={loading}>
+              <InputLabel>Components</InputLabel>
+              <Select
+                value={formData.components}
+                label="Components"
+                onChange={handleInputChange("components")}
+              >
+                <MenuItem value="">
+                  <em>Select Component Type</em>
+                </MenuItem>
+                {Object.values(Components).map((component) => (
+                  <MenuItem key={component} value={component}>
+                    {component.replace(/_/g, " ")}
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
           </Grid>
 
           {/* Status and Location */}

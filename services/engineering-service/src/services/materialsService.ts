@@ -244,7 +244,7 @@ class MaterialService {
           "brand", "owner_pn", "vendor", "status", "location",
           "cost_ori", "curr", "satuan", "cost_rp", "cost_validity"
         ) VALUES (
-          ${data.sbu}, ${data.system}, ${data.subsystem}, ${data.components}, ${data.item_name},
+          ${data.sbu}, ${data.system}, ${data.subsystem}, ${data.components ?? null}::"Components", ${data.item_name},
           ${data.brand}, ${data.owner_pn}, ${data.vendor}, ${data.status}::"MaterialStatus", ${data.location}::"MaterialLocation",
           ${data.cost_ori || null}, ${data.curr}, ${data.satuan}, 
           ${data.cost_rp || null}, ${data.cost_validity}
@@ -283,8 +283,8 @@ class MaterialService {
         values.push(data.subsystem);
       }
       if (data.components !== undefined) {
-        updateFields.push(`"components" = $${paramIndex++}`);
-        values.push(data.components);
+        updateFields.push(`"components" = $${paramIndex++}::"Components"`);
+        values.push(data.components ?? null);
       }
       if (data.item_name !== undefined) {
         updateFields.push(`"item_name" = $${paramIndex++}`);
@@ -331,13 +331,16 @@ class MaterialService {
         values.push(data.cost_validity);
       }
 
-      // Always update the updated_at field
-      updateFields.push(`"updated_at" = NOW()`);
-
-      if (updateFields.length === 1) {
-        // Only updated_at
-        throw new Error('No fields to update');
+      // If no fields to update, just return current material without error
+      if (updateFields.length === 0) {
+        const current = (await prisma.$queryRaw`
+          SELECT * FROM "Material" WHERE "id" = ${id}::uuid
+        `) as Material[];
+        return current[0] || null;
       }
+
+      // Always update the updated_at field when there are changes
+      updateFields.push(`"updated_at" = NOW()`);
 
       const query = `
         UPDATE "Material" 
