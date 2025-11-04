@@ -4,7 +4,8 @@ import {
   GenderLabels,
   MaritalStatusLabels,
   EmploymentTypeLabels,
-  EmployeeStatusLabels
+  EmployeeStatusLabels,
+  AllowanceCategoryLabels
 } from '../enums/employeeEnums';
 import { PTKP_OPTIONS, normalizeNpwp, isValidNpwp } from '../utils/tax';
 
@@ -287,13 +288,16 @@ function EmployeeEdit({ id, onClose }: EmployeeEditProps) {
               <div className="space-y-2">
                 {allowances.map((a, idx) => (
                   <div key={idx} className="flex gap-2 items-center">
-                    <input
-                      type="text"
-                      placeholder="Allowance name"
+                    <select
                       value={a.name}
                       onChange={e => handleAllowanceChange(idx, 'name', e.target.value)}
-                      className="border border-gray-300 rounded-lg px-3 py-2 bg-white focus:border-blue-400 focus:ring-2 focus:ring-blue-100 text-gray-900 placeholder:text-gray-400 transition flex-1"
-                    />
+                      className="border border-gray-300 rounded-lg px-3 py-2 bg-white focus:border-blue-400 focus:ring-2 focus:ring-blue-100 text-gray-900 transition flex-1"
+                    >
+                      <option value="">Select allowance type</option>
+                      {Object.entries(AllowanceCategoryLabels).map(([key, label]) => (
+                        <option key={key} value={key}>{label}</option>
+                      ))}
+                    </select>
                     <input
                       type="number"
                       placeholder="Amount"

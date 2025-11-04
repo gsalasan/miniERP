@@ -12,6 +12,18 @@ interface CreateEmployeeData {
   hire_date: Date | string;
   basic_salary: number | string;
   allowances?: any;
+  // Optional extended fields
+  department?: string;
+  gender?: string;
+  marital_status?: string;
+  blood_type?: string;
+  employment_type?: string;
+  status?: string;
+  education_level?: string;
+  bank_name?: string;
+  bank_account_number?: string;
+  npwp?: string;
+  ptkp?: string;
 }
 
 interface CreateUserData {
@@ -45,16 +57,31 @@ export const createEmployeeWithUser = async (data: CreateEmployeeWithUserRequest
       const password_hash = await bcrypt.hash(user.password, 10);
 
       // 3. Create employee record (using simple employees table)
+      const employeeCreateData: any = {
+        full_name: employee.full_name,
+        position: employee.position,
+        hire_date: new Date(employee.hire_date),
+        basic_salary: typeof employee.basic_salary === 'string' 
+          ? parseFloat(employee.basic_salary) 
+          : employee.basic_salary,
+        allowances: employee.allowances || {},
+      };
+
+      // Add optional fields if provided
+      if (employee.department) employeeCreateData.department = employee.department;
+      if (employee.gender) employeeCreateData.gender = employee.gender;
+      if (employee.marital_status) employeeCreateData.marital_status = employee.marital_status;
+      if (employee.blood_type) employeeCreateData.blood_type = employee.blood_type;
+      if (employee.employment_type) employeeCreateData.employment_type = employee.employment_type;
+      if (employee.status) employeeCreateData.status = employee.status;
+      if (employee.education_level) employeeCreateData.education_level = employee.education_level;
+      if (employee.bank_name) employeeCreateData.bank_name = employee.bank_name;
+      if (employee.bank_account_number) employeeCreateData.bank_account_number = employee.bank_account_number;
+      if (employee.npwp) employeeCreateData.npwp = employee.npwp;
+      if (employee.ptkp) employeeCreateData.ptkp = employee.ptkp;
+
       const createdEmployee = await tx.employees.create({
-        data: {
-          full_name: employee.full_name,
-          position: employee.position,
-          hire_date: new Date(employee.hire_date),
-          basic_salary: typeof employee.basic_salary === 'string' 
-            ? parseFloat(employee.basic_salary) 
-            : employee.basic_salary,
-          allowances: employee.allowances || {},
-        }
+        data: employeeCreateData
       });
 
       // 4. Create user record linked to employee
@@ -212,9 +239,20 @@ export const getEmployeeById = async (employeeId: string) => {
 interface UpdateEmployeeData {
   full_name?: string;
   position?: string;
+  department?: string;
   hire_date?: Date | string;
   basic_salary?: number | string;
   allowances?: any;
+  gender?: string;
+  marital_status?: string;
+  blood_type?: string;
+  employment_type?: string;
+  status?: string;
+  education_level?: string;
+  bank_name?: string;
+  bank_account_number?: string;
+  npwp?: string;
+  ptkp?: string;
 }
 
 export const updateEmployee = async (employeeId: string, updateData: UpdateEmployeeData) => {
@@ -237,6 +275,9 @@ export const updateEmployee = async (employeeId: string, updateData: UpdateEmplo
     if (updateData.position !== undefined) {
       dataToUpdate.position = updateData.position;
     }
+    if (updateData.department !== undefined) {
+      dataToUpdate.department = updateData.department;
+    }
     if (updateData.hire_date !== undefined) {
       dataToUpdate.hire_date = new Date(updateData.hire_date);
     }
@@ -247,6 +288,36 @@ export const updateEmployee = async (employeeId: string, updateData: UpdateEmplo
     }
     if (updateData.allowances !== undefined) {
       dataToUpdate.allowances = updateData.allowances;
+    }
+    if (updateData.gender !== undefined) {
+      dataToUpdate.gender = updateData.gender;
+    }
+    if (updateData.marital_status !== undefined) {
+      dataToUpdate.marital_status = updateData.marital_status;
+    }
+    if (updateData.blood_type !== undefined) {
+      dataToUpdate.blood_type = updateData.blood_type;
+    }
+    if (updateData.employment_type !== undefined) {
+      dataToUpdate.employment_type = updateData.employment_type;
+    }
+    if (updateData.status !== undefined) {
+      dataToUpdate.status = updateData.status;
+    }
+    if (updateData.education_level !== undefined) {
+      dataToUpdate.education_level = updateData.education_level;
+    }
+    if (updateData.bank_name !== undefined) {
+      dataToUpdate.bank_name = updateData.bank_name;
+    }
+    if (updateData.bank_account_number !== undefined) {
+      dataToUpdate.bank_account_number = updateData.bank_account_number;
+    }
+    if (updateData.npwp !== undefined) {
+      dataToUpdate.npwp = updateData.npwp;
+    }
+    if (updateData.ptkp !== undefined) {
+      dataToUpdate.ptkp = updateData.ptkp;
     }
 
     // Update employee
