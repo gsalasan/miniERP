@@ -13,7 +13,6 @@ const router = Router();
 
 // GET /api/v1/customers
 router.get('/', getAllCustomers);
-// Test endpoint (tanpa auth, hanya untuk testing, bisa dihapus di production)
 router.get("/test", getAllCustomers);
 router.get("/:id", getCustomerById);
 router.post("/", createCustomer);
