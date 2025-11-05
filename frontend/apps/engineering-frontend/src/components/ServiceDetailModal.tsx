@@ -120,7 +120,6 @@ const ServiceDetailModal: React.FC<ServiceDetailModalProps> = ({ open, onClose, 
             <DetailRow label="Service Name" value={service.service_name} />
             <DetailRow label="Service Code" value={service.service_code} />
             <DetailRow label="Item Type" value={service.item_type || "-"} />
-            <DetailRow label="Category" value={service.category || "-"} />
             <DetailRow
               label="Unit"
               value={<Chip label={service.unit} color={getUnitColor(service.unit)} size="small" />}
@@ -144,16 +143,16 @@ const ServiceDetailModal: React.FC<ServiceDetailModalProps> = ({ open, onClose, 
           {/* Cost Information */}
           <Grid item xs={12}>
             <Typography variant="h6" sx={{ mb: 2, color: "primary.main" }}>
-              Cost Information
+              Additional Information
             </Typography>
-            <DetailRow
-              label="Internal Cost per Hour"
-              value={formatCurrency(service.internal_cost_per_hour)}
-            />
-            <DetailRow
-              label="Freelance Cost per Hour"
-              value={formatCurrency(service.freelance_cost_per_hour)}
-            />
+            <DetailRow label="SBU" value={service.sbu_name || service.sbu || "-"} />
+            <DetailRow label="Kategori Sistem" value={service.kategori_sistem_name || service.kategori_sistem || "-"} />
+            <DetailRow label="Sub Sistem" value={service.sub_sistem_name || service.sub_sistem || "-"} />
+            <DetailRow label="Fase Proyek" value={service.fase_proyek_name || service.fase_proyek || "-"} />
+            <DetailRow label="Kategori Jasa" value={service.kategori_jasa_name || service.kategori_jasa || "-"} />
+            <DetailRow label="Jenis Jasa Spesifik" value={service.jenis_jasa_spesifik_name || service.jenis_jasa_spesifik || "-"} />
+            <DetailRow label="Deskripsi" value={service.deskripsi_text || service.deskripsi || "-"} />
+            <DetailRow label="Rekomendasi Tim" value={service.rekomendasi_tim_name || service.rekomendasi_tim || "-"} />
             <DetailRow
               label="Default Duration"
               value={service.default_duration ? `${service.default_duration} ${service.unit}` : "-"}

@@ -14,10 +14,16 @@ const createService = async (req: Request, res: Response) => {
       service_name,
       service_code,
       item_type,
-      category,
+      // taxonomy FKs
+      kategori_sistem_id,
+      sub_sistem_id,
+      kategori_jasa_id,
+      jenis_jasa_spesifik_id,
+      deskripsi_id,
+      rekomendasi_tim_id,
+      fase_proyek_id,
+      sbu_id,
       unit,
-      internal_cost_per_hour,
-      freelance_cost_per_hour,
       default_duration,
       is_active,
     } = req.body;
@@ -26,8 +32,7 @@ const createService = async (req: Request, res: Response) => {
     if (!service_name || !service_code || !unit) {
       return res.status(400).json({
         success: false,
-        message:
-          'Missing required fields: service_name, service_code, and unit are required',
+        message: 'Missing required fields: service_name, service_code, and unit are required',
       });
     }
 
@@ -52,17 +57,16 @@ const createService = async (req: Request, res: Response) => {
       service_name,
       service_code,
       item_type,
-      category,
+      kategori_sistem_id,
+      sub_sistem_id,
+      kategori_jasa_id,
+      jenis_jasa_spesifik_id,
+      deskripsi_id,
+      rekomendasi_tim_id,
+      fase_proyek_id,
+      sbu_id,
       unit,
-      internal_cost_per_hour: internal_cost_per_hour
-        ? parseFloat(internal_cost_per_hour)
-        : undefined,
-      freelance_cost_per_hour: freelance_cost_per_hour
-        ? parseFloat(freelance_cost_per_hour)
-        : undefined,
-      default_duration: default_duration
-        ? parseFloat(default_duration)
-        : undefined,
+      default_duration: default_duration ? parseFloat(default_duration) : undefined,
       is_active,
     });
 
@@ -72,11 +76,11 @@ const createService = async (req: Request, res: Response) => {
       data: service,
     });
   } catch (error) {
+    // eslint-disable-next-line no-console
     console.error('Error creating service:', error);
     res.status(500).json({
       success: false,
-      message:
-        error instanceof Error ? error.message : 'Failed to create service',
+      message: error instanceof Error ? error.message : 'Failed to create service',
     });
   }
 };
@@ -84,6 +88,7 @@ const createService = async (req: Request, res: Response) => {
 // Get all services with filtering, pagination, and search
 const getServices = async (req: Request, res: Response) => {
   try {
+    // eslint-disable-next-line no-console
     console.log('Attempting to fetch services from database...');
 
     // Extract query parameters
@@ -97,16 +102,13 @@ const getServices = async (req: Request, res: Response) => {
     const filters = {
       service_name: req.query.service_name as string,
       service_code: req.query.service_code as string,
-      category: req.query.category as string,
       unit: req.query.unit as ServiceUnit,
-      is_active: req.query.is_active
-        ? req.query.is_active === 'true'
-        : undefined,
+      is_active: req.query.is_active ? req.query.is_active === 'true' : undefined,
       item_type: req.query.item_type as string,
     };
 
     // Remove undefined filters
-    Object.keys(filters).forEach(key => {
+    Object.keys(filters).forEach((key) => {
       if (filters[key as keyof typeof filters] === undefined) {
         delete filters[key as keyof typeof filters];
       }
@@ -128,11 +130,11 @@ const getServices = async (req: Request, res: Response) => {
       pagination: result.pagination,
     });
   } catch (error) {
+    // eslint-disable-next-line no-console
     console.error('Error fetching services:', error);
     res.status(500).json({
       success: false,
-      message:
-        error instanceof Error ? error.message : 'Failed to fetch services',
+      message: error instanceof Error ? error.message : 'Failed to fetch services',
     });
   }
 };
@@ -164,11 +166,11 @@ const getServiceById = async (req: Request, res: Response) => {
       data: service,
     });
   } catch (error) {
+    // eslint-disable-next-line no-console
     console.error('Error fetching service by ID:', error);
     res.status(500).json({
       success: false,
-      message:
-        error instanceof Error ? error.message : 'Failed to fetch service',
+      message: error instanceof Error ? error.message : 'Failed to fetch service',
     });
   }
 };
@@ -200,11 +202,11 @@ const getServiceByCode = async (req: Request, res: Response) => {
       data: service,
     });
   } catch (error) {
-    console.error('Error fetching service by code:', error);
+    // eslint-disable-next-line no-console
+    console.error('Error fetching service by ID:', error);
     res.status(500).json({
       success: false,
-      message:
-        error instanceof Error ? error.message : 'Failed to fetch service',
+      message: error instanceof Error ? error.message : 'Failed to fetch service',
     });
   }
 };
@@ -217,10 +219,16 @@ const updateService = async (req: Request, res: Response) => {
       service_name,
       service_code,
       item_type,
-      category,
+      sbu_id,
+      fase_proyek_id,
+      // taxonomy FKs
+      kategori_sistem_id,
+      sub_sistem_id,
+      kategori_jasa_id,
+      jenis_jasa_spesifik_id,
+      deskripsi_id,
+      rekomendasi_tim_id,
       unit,
-      internal_cost_per_hour,
-      freelance_cost_per_hour,
       default_duration,
       is_active,
     } = req.body;
@@ -240,18 +248,21 @@ const updateService = async (req: Request, res: Response) => {
       });
     }
 
-    const updateData: any = {};
+    const updateData: Record<string, unknown> = {};
     if (service_name !== undefined) updateData.service_name = service_name;
     if (service_code !== undefined) updateData.service_code = service_code;
     if (item_type !== undefined) updateData.item_type = item_type;
-    if (category !== undefined) updateData.category = category;
+    if (sbu_id !== undefined) updateData.sbu_id = sbu_id;
+    if (kategori_sistem_id !== undefined) updateData.kategori_sistem_id = kategori_sistem_id;
+    if (sub_sistem_id !== undefined) updateData.sub_sistem_id = sub_sistem_id;
+    if (fase_proyek_id !== undefined) updateData.fase_proyek_id = fase_proyek_id;
+    if (kategori_jasa_id !== undefined) updateData.kategori_jasa_id = kategori_jasa_id;
+    if (jenis_jasa_spesifik_id !== undefined)
+      updateData.jenis_jasa_spesifik_id = jenis_jasa_spesifik_id;
+    if (deskripsi_id !== undefined) updateData.deskripsi_id = deskripsi_id;
+  if (rekomendasi_tim_id !== undefined) updateData.rekomendasi_tim_id = rekomendasi_tim_id;
     if (unit !== undefined) updateData.unit = unit;
-    if (internal_cost_per_hour !== undefined)
-      updateData.internal_cost_per_hour = parseFloat(internal_cost_per_hour);
-    if (freelance_cost_per_hour !== undefined)
-      updateData.freelance_cost_per_hour = parseFloat(freelance_cost_per_hour);
-    if (default_duration !== undefined)
-      updateData.default_duration = parseFloat(default_duration);
+    if (default_duration !== undefined) updateData.default_duration = parseFloat(default_duration);
     if (is_active !== undefined) updateData.is_active = is_active;
 
     const service = await serviceService.updateService(id, updateData);
@@ -262,11 +273,11 @@ const updateService = async (req: Request, res: Response) => {
       data: service,
     });
   } catch (error) {
+    // eslint-disable-next-line no-console
     console.error('Error updating service:', error);
     res.status(500).json({
       success: false,
-      message:
-        error instanceof Error ? error.message : 'Failed to update service',
+      message: error instanceof Error ? error.message : 'Failed to update service',
     });
   }
 };
@@ -291,11 +302,11 @@ const deleteService = async (req: Request, res: Response) => {
       data: service,
     });
   } catch (error) {
+    // eslint-disable-next-line no-console
     console.error('Error deleting service:', error);
     res.status(500).json({
       success: false,
-      message:
-        error instanceof Error ? error.message : 'Failed to delete service',
+      message: error instanceof Error ? error.message : 'Failed to delete service',
     });
   }
 };
@@ -320,13 +331,11 @@ const hardDeleteService = async (req: Request, res: Response) => {
       data: service,
     });
   } catch (error) {
+    // eslint-disable-next-line no-console
     console.error('Error permanently deleting service:', error);
     res.status(500).json({
       success: false,
-      message:
-        error instanceof Error
-          ? error.message
-          : 'Failed to permanently delete service',
+      message: error instanceof Error ? error.message : 'Failed to permanently delete service',
     });
   }
 };
@@ -351,15 +360,14 @@ const restoreService = async (req: Request, res: Response) => {
       data: service,
     });
   } catch (error) {
+    // eslint-disable-next-line no-console
     console.error('Error restoring service:', error);
     res.status(500).json({
       success: false,
-      message:
-        error instanceof Error ? error.message : 'Failed to restore service',
+      message: error instanceof Error ? error.message : 'Failed to restore service',
     });
   }
 };
-
 // Get service statistics
 const getServiceStats = async (req: Request, res: Response) => {
   try {
@@ -371,13 +379,11 @@ const getServiceStats = async (req: Request, res: Response) => {
       data: stats,
     });
   } catch (error) {
+    // eslint-disable-next-line no-console
     console.error('Error fetching service statistics:', error);
     res.status(500).json({
       success: false,
-      message:
-        error instanceof Error
-          ? error.message
-          : 'Failed to fetch service statistics',
+      message: error instanceof Error ? error.message : 'Failed to fetch service statistics',
     });
   }
 };

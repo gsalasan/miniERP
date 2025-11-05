@@ -22,7 +22,14 @@ import {
   Business as BusinessIcon,
   Category as CategoryIcon,
 } from "@mui/icons-material";
-import { Material, MaterialStatus, MaterialLocation } from "../types/material";
+import { Material } from "../types/material";
+import { MaterialStatus, MaterialLocation } from "../types/enums";
+
+// Helper function to format component names
+const formatComponentName = (component: string | undefined): string => {
+  if (!component) return "-";
+  return component.replace(/_/g, " ");
+};
 
 interface MaterialDetailModalProps {
   open: boolean;
@@ -235,7 +242,7 @@ const MaterialDetailModal: React.FC<MaterialDetailModalProps> = ({ open, onClose
                     <Typography variant="caption" color="text.secondary">
                       Components
                     </Typography>
-                    <Typography variant="body1">{material.components || "-"}</Typography>
+                    <Typography variant="body1">{formatComponentName(material.components)}</Typography>
                   </Grid>
                 </Grid>
               </CardContent>

@@ -39,7 +39,8 @@ import {
   Visibility as VisibilityIcon,
 } from "@mui/icons-material";
 import { materialsService } from "../api/materialsApi";
-import { Material, MaterialsQueryParams, MaterialStatus, FilterOptions } from "../types/material";
+import { Material, MaterialsQueryParams, FilterOptions } from "../types/material";
+import { MaterialStatus } from "../types/enums";
 import MaterialFormModal from "./MaterialFormModal";
 import MaterialDetailModal from "./MaterialDetailModal";
 import DeleteConfirmationModal from "./DeleteConfirmationModal";
@@ -49,6 +50,12 @@ import { useNotification } from "../contexts/NotificationContext";
 interface MaterialsListProps {
   globalSearch?: string;
 }
+
+// Helper function to format component names
+const formatComponentName = (component: string | undefined): string => {
+  if (!component) return "-";
+  return component.replace(/_/g, " ");
+};
 
 const MaterialsList: React.FC<MaterialsListProps> = ({ globalSearch }) => {
   const [materials, setMaterials] = useState<Material[]>([]);
@@ -740,14 +747,14 @@ const MaterialsList: React.FC<MaterialsListProps> = ({ globalSearch }) => {
                           </Box>
                         </TableCell>
                         <TableCell>
-                          <Tooltip title={material.components || "No components specified"}>
+                          <Tooltip title={formatComponentName(material.components) || "No components specified"}>
                             <Typography
                               variant="caption"
                               color="textSecondary"
                               noWrap
                               sx={{ maxWidth: 150, display: "block" }}
                             >
-                              {material.components || "-"}
+                              {formatComponentName(material.components)}
                             </Typography>
                           </Tooltip>
                         </TableCell>
@@ -828,7 +835,6 @@ const MaterialsList: React.FC<MaterialsListProps> = ({ globalSearch }) => {
         open={isDeleteModalOpen}
         onClose={handleCloseDeleteModal}
         onConfirm={handleConfirmDelete}
-        material={deletingMaterial}
         loading={deleteLoading}
         error={deleteError}
       />

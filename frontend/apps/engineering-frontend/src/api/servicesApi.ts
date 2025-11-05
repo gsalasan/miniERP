@@ -1,13 +1,13 @@
 import axios from "axios";
 import {
   Service,
-  ServiceUnit,
   ServicesQueryParams,
   ServicesResponse,
   ServiceResponse,
   ServicesStatsResponse,
   ServiceFilterOptions,
 } from "../types/service";
+import { ServiceUnit } from "../types/enums";
 
 // Base API configuration
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:4001";
@@ -49,35 +49,22 @@ export class ServicesService {
 
   // Get all services with optional filters and pagination
   async getServices(params: ServicesQueryParams = {}): Promise<ServicesResponse> {
-    try {
-      const response = await apiClient.get(this.baseUrl, { params });
-      return response.data;
-    } catch (error) {
-      console.error("Error fetching services:", error);
-      throw error;
-    }
+    const response = await apiClient.get(this.baseUrl, { params });
+    return response.data;
   }
 
   // Get a single service by ID
   async getService(id: string): Promise<ServiceResponse> {
-    try {
-      const response = await apiClient.get(`${this.baseUrl}/${id}`);
-      return response.data;
-    } catch (error) {
-      throw error;
-    }
+    const response = await apiClient.get(`${this.baseUrl}/${id}`);
+    return response.data;
   }
 
   // Create a new service
   async createService(
     serviceData: Omit<Service, "id" | "created_at" | "updated_at">,
   ): Promise<ServiceResponse> {
-    try {
-      const response = await apiClient.post(this.baseUrl, serviceData);
-      return response.data;
-    } catch (error) {
-      throw error;
-    }
+    const response = await apiClient.post(this.baseUrl, serviceData);
+    return response.data;
   }
 
   // Update an existing service
@@ -85,22 +72,14 @@ export class ServicesService {
     id: string,
     serviceData: Partial<Omit<Service, "id" | "created_at" | "updated_at">>,
   ): Promise<ServiceResponse> {
-    try {
-      const response = await apiClient.put(`${this.baseUrl}/${id}`, serviceData);
-      return response.data;
-    } catch (error) {
-      throw error;
-    }
+    const response = await apiClient.put(`${this.baseUrl}/${id}`, serviceData);
+    return response.data;
   }
 
   // Delete a service
   async deleteService(id: string): Promise<{ success: boolean; message: string }> {
-    try {
-      const response = await apiClient.delete(`${this.baseUrl}/${id}`);
-      return response.data;
-    } catch (error) {
-      throw error;
-    }
+    const response = await apiClient.delete(`${this.baseUrl}/${id}`);
+    return response.data;
   }
 
   // Get services statistics
@@ -114,7 +93,6 @@ export class ServicesService {
     // TODO: Implement backend endpoint for filter options
     // For now, return mock filter options
     return {
-      categories: ["Engineering", "Maintenance", "Support", "Consultation"],
       units: [ServiceUnit.Jam, ServiceUnit.Hari],
       item_types: ["Service"],
     };
@@ -122,15 +100,11 @@ export class ServicesService {
 
   // Export services data
   async exportServices(params: ServicesQueryParams = {}): Promise<Blob> {
-    try {
-      const response = await apiClient.get(`${this.baseUrl}/export`, {
-        params,
-        responseType: "blob",
-      });
-      return response.data;
-    } catch (error) {
-      throw error;
-    }
+    const response = await apiClient.get(`${this.baseUrl}/export`, {
+      params,
+      responseType: "blob",
+    });
+    return response.data;
   }
 }
 

@@ -188,7 +188,6 @@ class SearchService {
         WHERE "service_name" ILIKE ${searchQuery}
            OR "service_code" ILIKE ${searchQuery}
            OR "item_type" ILIKE ${searchQuery}
-           OR "category" ILIKE ${searchQuery}
       `) as any[];
 
       const total = countResult[0]?.count || 0;
@@ -198,7 +197,6 @@ class SearchService {
         WHERE "service_name" ILIKE ${searchQuery}
            OR "service_code" ILIKE ${searchQuery}
            OR "item_type" ILIKE ${searchQuery}
-           OR "category" ILIKE ${searchQuery}
         ORDER BY 
           CASE 
             WHEN "service_name" ILIKE ${query + '%'} THEN 1
@@ -246,7 +244,6 @@ class SearchService {
       name: service.service_name,
       type: 'service',
       code: service.service_code,
-      category: service.category,
       unit: service.unit,
       cost: service.internal_cost_per_hour || service.freelance_cost_per_hour,
       status: service.is_active ? 'Active' : 'Inactive',
