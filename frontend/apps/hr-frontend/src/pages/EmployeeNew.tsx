@@ -2,6 +2,7 @@ import React, { useMemo, useState } from 'react';
 import Layout from '../components/Layout';
 import { ChevronRight, ChevronLeft, User, DollarSign, Shield, Plus, X } from 'lucide-react';
 import { PTKP_OPTIONS, isValidNpwp, normalizeNpwp, sumAllowancesFromArray, estimatePPh21Monthly, formatCurrencyID } from '../utils/tax';
+import { AllowanceCategoryLabels } from '../enums/employeeEnums';
 
 interface Allowance {
   name: string;
@@ -42,8 +43,8 @@ export default function EmployeeNew({ onClose }: Props) {
     // Tab 4: Account & Tax
     bank_name: '',
     bank_account_number: '',
-    npwp: '',
-    ptkp: '',
+  npwp: '',
+  ptkp: 'TK/0',
     // Tab 5: System Account
     email: '',
     password: '',
@@ -132,7 +133,7 @@ export default function EmployeeNew({ onClose }: Props) {
         allowances: allowancesObj,
       };
 
-      // Add optional fields only if they have values
+  // Add optional fields only if they have values
       if (form.department && form.department.trim()) employeeData.department = form.department;
       if (form.gender && form.gender.trim()) employeeData.gender = form.gender;
       if (form.marital_status && form.marital_status.trim()) employeeData.marital_status = form.marital_status;
@@ -142,8 +143,9 @@ export default function EmployeeNew({ onClose }: Props) {
       if (form.education_level && form.education_level.trim()) employeeData.education_level = form.education_level;
       if (form.bank_name && form.bank_name.trim()) employeeData.bank_name = form.bank_name;
       if (form.bank_account_number && form.bank_account_number.trim()) employeeData.bank_account_number = form.bank_account_number;
-      if (form.npwp && form.npwp.trim()) employeeData.npwp = normalizeNpwp(form.npwp);
-      if (form.ptkp && form.ptkp.trim()) employeeData.ptkp = form.ptkp;
+  if (form.npwp && form.npwp.trim()) employeeData.npwp = normalizeNpwp(form.npwp);
+  // Always send PTKP; default to TK/0 for persistence so detail view doesn't show '-'
+  employeeData.ptkp = (form.ptkp && form.ptkp.trim()) ? form.ptkp : 'TK/0';
 
       const payload = {
         employee: employeeData,
@@ -168,7 +170,7 @@ export default function EmployeeNew({ onClose }: Props) {
           full_name: '', ktp_number: '', address: '', phone: '', emergency_contact_name: '', emergency_contact_phone: '',
           gender: '', marital_status: '', blood_type: '', education_level: '',
           position: '', department: '', hire_date: '', employment_type: 'FULL_TIME', status: 'ACTIVE', contract_end_date: '',
-          basic_salary: '', bank_name: '', bank_account_number: '', npwp: '', ptkp: '', email: '', password: '', roles: ['EMPLOYEE']
+          basic_salary: '', bank_name: '', bank_account_number: '', npwp: '', ptkp: 'TK/0', email: '', password: '', roles: ['EMPLOYEE']
         });
         setAllowances([]);
         setCurrentStep(1);
@@ -217,6 +219,52 @@ export default function EmployeeNew({ onClose }: Props) {
                 <label className="block mb-2 text-blue-900 font-semibold">Emergency Contact - Phone</label>
                 <input name="emergency_contact_phone" value={form.emergency_contact_phone} onChange={handleChange} className="w-full border border-blue-200 rounded-xl px-4 py-3 bg-blue-50" />
               </div>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div>
+                <label className="block mb-2 text-blue-900 font-semibold">Gender</label>
+                <select name="gender" value={form.gender} onChange={handleChange} className="w-full border border-blue-200 rounded-xl px-4 py-3 bg-blue-50">
+                  <option value="">(select)</option>
+                  <option value="MALE">MALE</option>
+                  <option value="FEMALE">FEMALE</option>
+                  <option value="OTHER">OTHER</option>
+                </select>
+              </div>
+              <div>
+                <label className="block mb-2 text-blue-900 font-semibold">Marital Status</label>
+                <select name="marital_status" value={form.marital_status} onChange={handleChange} className="w-full border border-blue-200 rounded-xl px-4 py-3 bg-blue-50">
+                  <option value="">(select)</option>
+                  <option value="SINGLE">SINGLE</option>
+                  <option value="MARRIED">MARRIED</option>
+                  <option value="DIVORCED">DIVORCED</option>
+                  <option value="WIDOWED">WIDOWED</option>
+                </select>
+              </div>
+              <div>
+                <label className="block mb-2 text-blue-900 font-semibold">Blood Type</label>
+                <select name="blood_type" value={form.blood_type} onChange={handleChange} className="w-full border border-blue-200 rounded-xl px-4 py-3 bg-blue-50">
+                  <option value="">Select Blood Type</option>
+                  <option value="A_POSITIVE">A+</option>
+                  <option value="A_NEGATIVE">A-</option>
+                  <option value="B_POSITIVE">B+</option>
+                  <option value="B_NEGATIVE">B-</option>
+                  <option value="AB_POSITIVE">AB+</option>
+                  <option value="AB_NEGATIVE">AB-</option>
+                  <option value="O_POSITIVE">O+</option>
+                  <option value="O_NEGATIVE">O-</option>
+                </select>
+              </div>
+            </div>
+            <div>
+              <label className="block mb-2 text-blue-900 font-semibold">Education Level</label>
+              <select name="education_level" value={form.education_level} onChange={handleChange} className="w-full border border-blue-200 rounded-xl px-4 py-3 bg-blue-50">
+                <option value="">(select)</option>
+                <option value="HIGH_SCHOOL">HIGH_SCHOOL</option>
+                <option value="DIPLOMA">DIPLOMA</option>
+                <option value="BACHELOR">BACHELOR</option>
+                <option value="MASTER">MASTER</option>
+                <option value="DOCTORATE">DOCTORATE</option>
+              </select>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div>
@@ -337,7 +385,16 @@ export default function EmployeeNew({ onClose }: Props) {
               {allowances.map((allowance, index) => (
                 <div key={index} className="flex items-center space-x-3 p-4 bg-blue-50 rounded-xl">
                   <div className="flex-1">
-                    <input type="text" placeholder="Allowance name (example: Transport)" value={allowance.name} onChange={(e) => updateAllowance(index, 'name', e.target.value)} className="w-full border border-blue-200 rounded-lg px-3 py-2 bg-white" />
+                    <select 
+                      value={allowance.name} 
+                      onChange={(e) => updateAllowance(index, 'name', e.target.value)} 
+                      className="w-full border border-blue-200 rounded-lg px-3 py-2 bg-white"
+                    >
+                      <option value="">Select allowance type</option>
+                      {Object.entries(AllowanceCategoryLabels).map(([key, label]) => (
+                        <option key={key} value={key}>{label}</option>
+                      ))}
+                    </select>
                   </div>
                   <div className="flex-1">
                     <input type="number" placeholder="Amount" value={allowance.amount || ''} onChange={(e) => updateAllowance(index, 'amount', parseFloat(e.target.value) || 0)} className="w-full border border-blue-200 rounded-lg px-3 py-2 bg-white" />

@@ -7,11 +7,16 @@ dotenv.config({ path: path.join(__dirname, '..', '.env') });
 import express from 'express';
 import cors from 'cors';
 import employeeRoutes from './routes/employee.routes';
+import attendanceRoutes from './routes/attendance.routes';
 import { getPrisma } from './utils/prisma';
+import { startAutoCheckoutJob } from './jobs/auto-checkout.job';
 
 // Initialize express app only; defer Prisma until used
 
 const app = express();
+
+// Start auto check-out cron job
+startAutoCheckoutJob();
 
 // Middleware
 app.use(cors());
@@ -57,10 +62,10 @@ app.get('/api/v1/test-hr-models', async (req, res) => {
 
 // API routes
 app.use('/api/v1', employeeRoutes);
+app.use('/api/v1/attendances', attendanceRoutes);
 // API routes will be added here
 // app.use('/api/v1/employees', employeeRoutes);
 
-// app.use('/api/v1/attendance', attendanceRoutes);
 // app.use('/api/v1/leaves', leaveRoutes);
 // app.use('/api/v1/performance', performanceRoutes);
 

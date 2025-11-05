@@ -47,3 +47,12 @@ export const EducationLevelLabels: Record<string, string> = {
   MASTER: 'Master',
   DOCTORATE: 'Doctorate',
 };
+
+export const AllowanceCategoryLabels: Record<string, string> = {
+  ATTENDANCE: 'Attendance Allowance',
+  COMMUNICATION: 'Communication Allowance',
+  TRANSPORTATION: 'Transportation Allowance',
+  MEALS: 'Meal Allowance',
+  HOUSING: 'Housing Allowance',
+  POSITION: 'Position Allowance',
+};
