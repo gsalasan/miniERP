@@ -22,7 +22,14 @@ import {
   Business as BusinessIcon,
   Category as CategoryIcon,
 } from "@mui/icons-material";
-import { Material, MaterialStatus, MaterialLocation } from "../types/material";
+import { Material } from "../types/material";
+import { MaterialStatus, MaterialLocation } from "../types/enums";
+
+// Helper function to format component names
+const formatComponentName = (component: string | undefined): string => {
+  if (!component) return "-";
+  return component.replace(/_/g, " ");
+};
 
 interface MaterialDetailModalProps {
   open: boolean;
@@ -85,59 +92,40 @@ const MaterialDetailModal: React.FC<MaterialDetailModalProps> = ({ open, onClose
       PaperProps={{
         sx: {
           minHeight: "70vh",
-          borderRadius: 3,
+          // use theme's shared borderRadius so all dialogs match the app theme
+          borderRadius: (theme) => theme.shape.borderRadius,
           boxShadow: "0 12px 40px rgba(0, 0, 0, 0.15)",
         },
       }}
     >
-      <DialogTitle
-        sx={{
-          pb: 2,
-          background: "linear-gradient(135deg, #1976d2 0%, #1565c0 100%)",
-          color: "white",
-          position: "relative",
-          overflow: "hidden",
-          "&::before": {
-            content: '""',
-            position: "absolute",
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            background:
-              'url("data:image/svg+xml,%3Csvg width="60" height="60" viewBox="0 0 60 60" xmlns="http://www.w3.org/2000/svg"%3E%3Cg fill="none" fill-rule="evenodd"%3E%3Cg fill="%23ffffff" fill-opacity="0.05"%3E%3Ccircle cx="60" cy="60" r="60"/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")',
-          },
-        }}
-      >
-        <Box
-          display="flex"
-          justifyContent="space-between"
-          alignItems="center"
-          sx={{ position: "relative", zIndex: 1 }}
-        >
-          <Box display="flex" alignItems="center">
-            <InfoIcon sx={{ mr: 2, fontSize: 32 }} />
+      <DialogTitle sx={{ pb: 1, px: 2, pt: 2, background: "transparent" }}>
+        <Box display="flex" justifyContent="space-between" alignItems="center">
+          <Box display="flex" alignItems="center" sx={{ gap: 1 }}>
+            <Box
+              sx={{
+                width: 44,
+                height: 44,
+                borderRadius: 2,
+                bgcolor: (theme) => `${theme.palette.primary.main}22`,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+              }}
+            >
+              <InfoIcon sx={{ fontSize: 24, color: (theme) => theme.palette.primary.main }} />
+            </Box>
+
             <Box>
-              <Typography variant="h5" component="div" sx={{ fontWeight: 600, mb: 0.5 }}>
+              <Typography variant="h6" component="div" sx={{ fontWeight: 700 }}>
                 Material Details
               </Typography>
-              <Typography variant="body2" sx={{ opacity: 0.9 }}>
+              <Typography variant="body2" sx={{ opacity: 0.85 }}>
                 {material?.item_name}
               </Typography>
             </Box>
           </Box>
-          <IconButton
-            onClick={onClose}
-            sx={{
-              color: "white",
-              backgroundColor: "rgba(255, 255, 255, 0.1)",
-              "&:hover": {
-                backgroundColor: "rgba(255, 255, 255, 0.2)",
-                transform: "scale(1.05)",
-              },
-              transition: "all 0.2s",
-            }}
-          >
+
+          <IconButton onClick={onClose} sx={{ color: (theme) => theme.palette.text.primary }}>
             <CloseIcon />
           </IconButton>
         </Box>
@@ -254,7 +242,7 @@ const MaterialDetailModal: React.FC<MaterialDetailModalProps> = ({ open, onClose
                     <Typography variant="caption" color="text.secondary">
                       Components
                     </Typography>
-                    <Typography variant="body1">{material.components || "-"}</Typography>
+                    <Typography variant="body1">{formatComponentName(material.components)}</Typography>
                   </Grid>
                 </Grid>
               </CardContent>
