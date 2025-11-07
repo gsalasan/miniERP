@@ -246,6 +246,7 @@ interface UpdateEmployeeData {
   gender?: string;
   marital_status?: string;
   blood_type?: string;
+  phone?: string;
   employment_type?: string;
   status?: string;
   education_level?: string;
@@ -297,6 +298,9 @@ export const updateEmployee = async (employeeId: string, updateData: UpdateEmplo
     }
     if (updateData.blood_type !== undefined) {
       dataToUpdate.blood_type = updateData.blood_type;
+    }
+    if (updateData.phone !== undefined) {
+      dataToUpdate.phone = updateData.phone;
     }
     if (updateData.employment_type !== undefined) {
       dataToUpdate.employment_type = updateData.employment_type;

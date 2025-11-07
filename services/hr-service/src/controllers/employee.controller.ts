@@ -203,7 +203,7 @@ export const getEmployeeByIdCtrl = async (req: Request, res: Response) => {
 export const updateEmployeeCtrl = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
-    const { full_name, position, department, hire_date, basic_salary, allowances, gender, marital_status, blood_type, employment_type, status, education_level, bank_name, bank_account_number, npwp, ptkp } = req.body;
+    const { full_name, position, department, hire_date, basic_salary, allowances, gender, marital_status, blood_type, phone, employment_type, status, education_level, bank_name, bank_account_number, npwp, ptkp } = req.body;
 
     if (!id) {
       return res.status(400).json({
@@ -212,7 +212,7 @@ export const updateEmployeeCtrl = async (req: Request, res: Response) => {
       });
     }
 
-    if (!full_name && !position && !department && !hire_date && !basic_salary && !allowances && !gender && !marital_status && !blood_type && !employment_type && !status && !education_level && !bank_name && !bank_account_number && !npwp && !ptkp) {
+    if (!full_name && !position && !department && !hire_date && !basic_salary && !allowances && !gender && !marital_status && !blood_type && !phone && !employment_type && !status && !education_level && !bank_name && !bank_account_number && !npwp && !ptkp) {
       return res.status(400).json({
         success: false,
         message: 'At least one field must be provided for update'
@@ -229,6 +229,7 @@ export const updateEmployeeCtrl = async (req: Request, res: Response) => {
       gender,
       marital_status,
       blood_type,
+      phone,
       employment_type,
       status,
       education_level,
