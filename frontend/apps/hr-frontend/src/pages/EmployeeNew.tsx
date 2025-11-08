@@ -266,6 +266,17 @@ export default function EmployeeNew({ onClose }: Props) {
                 <option value="DOCTORATE">DOCTORATE</option>
               </select>
             </div>
+            <div>
+              <label className="block mb-2 text-blue-900 font-semibold">Education Level</label>
+              <select name="education_level" value={form.education_level} onChange={handleChange} className="w-full border border-blue-200 rounded-xl px-4 py-3 bg-blue-50">
+                <option value="">(select)</option>
+                <option value="HIGH_SCHOOL">HIGH_SCHOOL</option>
+                <option value="DIPLOMA">DIPLOMA</option>
+                <option value="BACHELOR">BACHELOR</option>
+                <option value="MASTER">MASTER</option>
+                <option value="DOCTORATE">DOCTORATE</option>
+              </select>
+            </div>
           </div>
         );
       case 2:
@@ -465,6 +476,138 @@ export default function EmployeeNew({ onClose }: Props) {
               <label className="block mb-2 text-blue-900 font-semibold">Account Email <span className="text-red-500">*</span></label>
               <input name="email" type="email" value={form.email} onChange={handleChange} required className="w-full border border-blue-200 rounded-xl px-4 py-3 bg-blue-50" placeholder="email@company.com" />
             </div>
+            <div className="space-y-4">
+              {allowances.length === 0 && (
+                <div className="text-center py-8">
+                  <DollarSign className="w-12 h-12 text-blue-300 mx-auto mb-4" />
+                  <p className="text-blue-600 mb-4">No allowances added yet</p>
+                </div>
+              )}
+              {allowances.map((allowance, index) => (
+                <div key={index} className="flex items-center space-x-3 p-4 bg-blue-50 rounded-xl">
+                  <div className="flex-1">
+                    <select 
+                      value={allowance.name} 
+                      onChange={(e) => updateAllowance(index, 'name', e.target.value)} 
+                      className="w-full border border-blue-200 rounded-lg px-3 py-2 bg-white"
+                    >
+                      <option value="">Select allowance type</option>
+                      {Object.entries(AllowanceCategoryLabels).map(([key, label]) => (
+                        <option key={key} value={key}>{label}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div className="flex-1">
+                    <input type="number" placeholder="Amount" value={allowance.amount || ''} onChange={(e) => updateAllowance(index, 'amount', parseFloat(e.target.value) || 0)} className="w-full border border-blue-200 rounded-lg px-3 py-2 bg-white" />
+                  </div>
+                  <button type="button" onClick={() => removeAllowance(index)} className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors" title="Delete">
+                    <X className="w-5 h-5" />
+                  </button>
+                </div>
+              ))}
+              <button type="button" onClick={addAllowance} className="w-full py-3 border-2 border-dashed border-blue-300 text-blue-600 rounded-xl hover:border-blue-400 hover:bg-blue-50 transition-colors duration-200 flex items-center justify-center">
+                <Plus className="w-5 h-5 mr-2" />
+                Add Another Allowance
+              </button>
+            </div>
+          </div>
+        );
+      case 4:
+        return (
+          <div className="space-y-6">
+            <div className="text-center mb-6">
+              <Shield className="w-12 h-12 text-blue-500 mx-auto mb-3" />
+              <h3 className="text-lg font-semibold text-blue-900">Account & Tax Information</h3>
+              <p className="text-sm text-gray-600 mt-1">Employee bank account and tax data</p>
+            </div>
+            
+            <div className="bg-blue-50 border border-blue-200 rounded-xl p-6 space-y-4">
+              <h4 className="font-semibold text-blue-900 mb-3">Bank Account Information</h4>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block mb-2 text-blue-900 font-medium">Bank Name</label>
+                  <input 
+                    name="bank_name" 
+                    value={form.bank_name} 
+                    onChange={handleChange} 
+                    className="w-full border border-blue-200 rounded-lg px-4 py-2.5 bg-white focus:ring-2 focus:ring-blue-400 focus:border-transparent" 
+                    placeholder="Example: BCA, Mandiri"
+                  />
+                </div>
+                <div>
+                  <label className="block mb-2 text-blue-900 font-medium">Account Number</label>
+                  <input 
+                    name="bank_account_number" 
+                    value={form.bank_account_number} 
+                    onChange={handleChange} 
+                    className="w-full border border-blue-200 rounded-lg px-4 py-2.5 bg-white focus:ring-2 focus:ring-blue-400 focus:border-transparent" 
+                    placeholder="Bank account number"
+                  />
+                </div>
+              </div>
+            </div>
+            
+            <div className="bg-amber-50 border border-amber-200 rounded-xl p-6 space-y-4">
+              <h4 className="font-semibold text-amber-900 mb-3">Tax Information</h4>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block mb-2 text-amber-900 font-medium">NPWP</label>
+                  <input 
+                    name="npwp" 
+                    value={form.npwp} 
+                    onChange={handleChange} 
+                    className={`w-full border rounded-lg px-4 py-2.5 bg-white focus:ring-2 focus:ring-amber-400 focus:border-transparent ${npwpError ? 'border-red-400' : 'border-amber-200'}`} 
+                    placeholder="00.000.000.0-000.000"
+                  />
+                  {npwpError ? (
+                    <p className="text-xs text-red-600 mt-1">{npwpError}</p>
+                  ) : (
+                    <p className="text-xs text-amber-700 mt-1">Optional. Without NPWP, PPh21 estimate increases by 20%.</p>
+                  )}
+                </div>
+                <div>
+                  <label className="block mb-2 text-amber-900 font-medium">PTKP Status</label>
+                  <select
+                    name="ptkp"
+                    value={form.ptkp}
+                    onChange={handleChange}
+                    className="w-full border border-amber-200 rounded-lg px-4 py-2.5 bg-white focus:ring-2 focus:ring-amber-400 focus:border-transparent"
+                  >
+                    <option value="">Select PTKP status</option>
+                    {PTKP_OPTIONS.map((opt) => (
+                      <option key={opt.code} value={opt.code}>{opt.label}</option>
+                    ))}
+                  </select>
+                  <p className="text-xs text-amber-700 mt-1">PTKP reduces tax base. If empty, TK/0 is assumed for estimation.</p>
+                </div>
+              </div>
+              {/* Estimator */}
+              <div className="mt-2 grid grid-cols-1 md:grid-cols-3 gap-3">
+                <div className="rounded-lg bg-white border border-amber-200 p-3">
+                  <p className="text-xs text-amber-700">Gross / month</p>
+                  <p className="text-base font-semibold text-amber-900">{formatCurrencyID(brutoMonthly)}</p>
+                </div>
+                <div className="rounded-lg bg-white border border-amber-200 p-3">
+                  <p className="text-xs text-amber-700">PPh21 estimate / month</p>
+                  <p className="text-base font-semibold text-amber-900">{formatCurrencyID(monthlyTaxEstimate)}</p>
+                </div>
+                <div className="rounded-lg bg-white border border-amber-200 p-3">
+                  <p className="text-xs text-amber-700">Take Home Pay (estimate)</p>
+                  <p className="text-base font-semibold text-amber-900">{formatCurrencyID(takeHomeMonthly)}</p>
+                </div>
+              </div>
+            </div>
+            
+            <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
+              <p className="text-xs text-gray-600">
+                <strong>Info:</strong> This data will be stored in the database and can be used for payroll and tax calculations.
+              </p>
+            </div>
+          </div>
+        );
+      case 5:
+        return (
+          <div className="space-y-6">
             <div>
               <label className="block mb-2 text-blue-900 font-semibold">Password <span className="text-red-500">*</span></label>
               <input name="password" type="password" value={form.password} onChange={handleChange} required className="w-full border border-blue-200 rounded-xl px-4 py-3 bg-blue-50" placeholder="Minimum 8 characters" />

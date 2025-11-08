@@ -19,18 +19,27 @@ import {
   IconButton,
   Tooltip,
   Button,
+  Collapse,
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem,
 } from "@mui/material";
 import {
   Search as SearchIcon,
   Refresh as RefreshIcon,
   FilterList as FilterIcon,
+  ExpandMore as ExpandMoreIcon,
+  ExpandLess as ExpandLessIcon,
+  Clear as ClearIcon,
+  GetApp as ExportIcon,
   Add as AddIcon,
   Edit as EditIcon,
   Delete as DeleteIcon,
   Visibility as VisibilityIcon,
 } from "@mui/icons-material";
 import { servicesService } from "../api/servicesApi";
-import { Service, ServicesQueryParams } from "../types/service";
+import { Service, ServicesQueryParams, ServiceFilterOptions } from "../types/service";
 import ServicesTableSkeleton from "./ServicesTableSkeleton";
 import ServiceFormModal from "./ServiceFormModal";
 import ServiceDetailModal from "./ServiceDetailModal";
@@ -42,52 +51,48 @@ interface ServicesListProps {
 }
 
 const ServicesList: React.FC<ServicesListProps> = ({ globalSearch }) => {
-  // State untuk dialog konfirmasi hapus
+
+  // Notification hook
+  const { showSuccess, showError } = useNotification();
+
+  // State untuk data services dan UI
+  const [services, setServices] = useState<Service[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  // Pagination
+  const [page, setPage] = useState(0);
+  const [rowsPerPage, setRowsPerPage] = useState(10);
+  const [totalCount, setTotalCount] = useState(0);
+
+  // Filters & search
+  const [searchTerm, setSearchTerm] = useState("");
+  const [filters, setFilters] = useState<Partial<ServicesQueryParams>>({});
+  const [filterOptions, setFilterOptions] = useState<ServiceFilterOptions | null>(null);
+  const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
+  const [searchDebounce, setSearchDebounce] = useState<NodeJS.Timeout | null>(null);
+
+  // Modal / dialog state
+  const [openFormModal, setOpenFormModal] = useState(false);
+  const [openDetailModal, setOpenDetailModal] = useState(false);
+  const [selectedService, setSelectedService] = useState<Service | null>(null);
+  const [formMode, setFormMode] = useState<"create" | "edit">("create");
+
+  // Delete state (using existing DeleteConfirmationModal)
   const [openDeleteDialog, setOpenDeleteDialog] = useState(false);
   const [serviceToDelete, setServiceToDelete] = useState<Service | null>(null);
   const [deleteLoading, setDeleteLoading] = useState(false);
   const [deleteError, setDeleteError] = useState<string | null>(null);
 
-  // Handler hapus layanan
-  const handleDeleteService = async () => {
-    if (!serviceToDelete) return;
-    setDeleteLoading(true);
-    setDeleteError(null);
+  // Fetch filter options
+  const fetchFilterOptions = async () => {
     try {
-      await servicesService.deleteService(serviceToDelete.id);
-      showSuccess(`Layanan "${serviceToDelete.service_name}" berhasil dihapus.`);
-      setOpenDeleteDialog(false);
-      setServiceToDelete(null);
-      fetchServices();
-    } catch (error) {
-      setDeleteError("Gagal menghapus layanan");
-      showError("Gagal menghapus layanan");
-    } finally {
-      setDeleteLoading(false);
+      const opts = await servicesService.getFilterOptions();
+      setFilterOptions(opts);
+    } catch (err) {
+      showError("Gagal memuat opsi filter");
     }
   };
-  const { showSuccess, showError } = useNotification();
-
-  // State untuk data services
-  const [services, setServices] = useState<Service[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
-  // State pagination
-  const [page, setPage] = useState(0);
-  const [rowsPerPage, setRowsPerPage] = useState(10);
-  const [totalCount, setTotalCount] = useState(0);
-
-  // State filter dan search
-  const [searchTerm, setSearchTerm] = useState("");
-  const [filters] = useState<Partial<ServicesQueryParams>>({});
-  const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
-
-  // State untuk modal
-  const [openFormModal, setOpenFormModal] = useState(false);
-  const [openDetailModal, setOpenDetailModal] = useState(false);
-  const [selectedService, setSelectedService] = useState<Service | null>(null);
-  const [formMode, setFormMode] = useState<'create' | 'edit'>('create');
 
   // Fetch services data
   const fetchServices = async () => {
@@ -123,8 +128,32 @@ const ServicesList: React.FC<ServicesListProps> = ({ globalSearch }) => {
 
   // Effects
   useEffect(() => {
+    fetchFilterOptions();
+  }, []);
+
+  useEffect(() => {
     fetchServices();
-  }, [page, rowsPerPage, globalSearch, filters]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [page, rowsPerPage, JSON.stringify(filters)]);
+
+  // React to external globalSearch changes
+  useEffect(() => {
+    if (globalSearch !== undefined) {
+      setPage(0);
+      fetchServices();
+    }
+  }, [globalSearch]);
+
+  // Debounced search
+  useEffect(() => {
+    if (searchDebounce) clearTimeout(searchDebounce);
+    const t = setTimeout(() => {
+      setPage(0);
+      fetchServices();
+    }, 500);
+    setSearchDebounce(t);
+    return () => clearTimeout(t);
+  }, [searchTerm]);
 
   // Handlers
   const handleChangePage = (_: unknown, newPage: number) => {
@@ -134,6 +163,59 @@ const ServicesList: React.FC<ServicesListProps> = ({ globalSearch }) => {
   const handleChangeRowsPerPage = (event: React.ChangeEvent<HTMLInputElement>) => {
     setRowsPerPage(parseInt(event.target.value, 10));
     setPage(0);
+  };
+
+  const handleFilterChange = (field: string, value: string) => {
+    const newFilters = {
+      ...filters,
+      [field]: value || undefined,
+    };
+    // Remove undefined values
+    Object.keys(newFilters).forEach((key) => {
+      if (
+        newFilters[key as keyof ServicesQueryParams] === undefined ||
+        newFilters[key as keyof ServicesQueryParams] === ""
+      ) {
+        delete newFilters[key as keyof ServicesQueryParams];
+      }
+    });
+    setFilters(newFilters);
+    setPage(0);
+  };
+
+  const clearAllFilters = () => {
+    setFilters({});
+    setSearchTerm("");
+    setPage(0);
+  };
+
+  const activeFiltersCount =
+    Object.values(filters).filter((v) => v && v !== "").length + (searchTerm ? 1 : 0);
+
+  const handleRefresh = () => {
+    fetchServices();
+    fetchFilterOptions();
+  };
+
+  const handleExport = async () => {
+    try {
+      const params: ServicesQueryParams = {
+        search: globalSearch || searchTerm || undefined,
+        ...filters,
+      };
+      // Prefer backend export endpoint which returns a blob
+      const blob = await servicesService.exportServices(params);
+      const url = window.URL.createObjectURL(blob as Blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.setAttribute("download", `services_${new Date().toISOString().split("T")[0]}.csv`);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
+    } catch (err) {
+      showError("Gagal mengekspor data layanan");
+    }
   };
 
   // Format currency
@@ -152,7 +234,7 @@ const ServicesList: React.FC<ServicesListProps> = ({ globalSearch }) => {
   const getStatusChip = (isActive?: boolean) => {
     return (
       <Chip
-        label={isActive ? "Aktif" : "Tidak Aktif"}
+        label={isActive ? "Active" : "Inactive"}
         color={isActive ? "success" : "default"}
         size="small"
       />
@@ -160,225 +242,270 @@ const ServicesList: React.FC<ServicesListProps> = ({ globalSearch }) => {
   };
 
   return (
-    <Box>
-      {/* Header */}
-      <Card sx={{ mb: 2 }}>
-        <CardContent>
-          <Grid container spacing={2} alignItems="center">
-            <Grid item xs={12} md={6}>
-              <TextField
-                fullWidth
-                size="small"
-                placeholder="Cari layanan..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                InputProps={{
-                  startAdornment: <SearchIcon sx={{ color: "text.secondary", mr: 1 }} />,
-                }}
-              />
-            </Grid>
+    <Box sx={{ p: 3 }}>
+      <Card sx={{ mb: 3, overflow: "visible" }}>
+        <CardContent sx={{ p: 3 }}>
+          <Box sx={{ display: "flex", gap: 3, alignItems: "center", flexWrap: "wrap", justifyContent: "space-between" }}>
+            <TextField
+              placeholder="Cari layanan berdasarkan kode atau nama..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              InputProps={{ startAdornment: <SearchIcon sx={{ color: "action.active", mr: 1.5 }} /> }}
+              sx={{ flexGrow: 1, minWidth: 300, "& .MuiOutlinedInput-root": { backgroundColor: "background.paper", "& input": { py: 1.5, fontSize: "1rem" } } }}
+            />
 
-            <Grid item xs={12} md={6}>
-              <Box sx={{ display: "flex", justifyContent: "flex-end", gap: 1 }}>
-                <Tooltip title="Filter">
-                  <IconButton
-                    onClick={() => setShowAdvancedFilters(!showAdvancedFilters)}
-                    color={showAdvancedFilters ? "primary" : "default"}
-                  >
-                    <FilterIcon />
-                  </IconButton>
-                </Tooltip>
+            <Box sx={{ display: "flex", gap: 2, alignItems: "center", flexWrap: "wrap" }}>
+              <Button
+                variant={showAdvancedFilters ? "contained" : "outlined"}
+                startIcon={<FilterIcon />}
+                onClick={() => setShowAdvancedFilters(!showAdvancedFilters)}
+                size="medium"
+                sx={{ minWidth: 120, position: "relative", "&::after": activeFiltersCount > 0 ? { content: `"${activeFiltersCount}"`, position: "absolute", top: -8, right: -8, backgroundColor: "error.main", color: "white", borderRadius: "50%", minWidth: 20, height: 20, fontSize: "0.75rem", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 600 } : {} }}
+              >
+                Filters
+                {showAdvancedFilters ? <ExpandLessIcon /> : <ExpandMoreIcon />}
+              </Button>
 
-                <Tooltip title="Refresh">
-                  <IconButton onClick={fetchServices} disabled={loading}>
-                    <RefreshIcon />
-                  </IconButton>
-                </Tooltip>
+              {activeFiltersCount > 0 && (
+                <Button variant="text" startIcon={<ClearIcon />} onClick={clearAllFilters} color="error" size="small">Clear All ({activeFiltersCount})</Button>
+              )}
 
-                <Button
-                  variant="contained"
-                  startIcon={<AddIcon />}
-                  onClick={() => {
-                    setFormMode('create');
-                    setSelectedService(null);
-                    setOpenFormModal(true);
-                  }}
-                >
-                  Tambah Layanan
-                </Button>
-              </Box>
-            </Grid>
-          </Grid>
+              <Button variant="text" startIcon={<RefreshIcon />} onClick={handleRefresh} size="small">Refresh</Button>
+            </Box>
+
+            <Box sx={{ display: "flex", gap: 2 }}>
+              <Button variant="outlined" startIcon={<ExportIcon />} onClick={handleExport} disabled={services.length === 0} size="medium" sx={{ minWidth: 100 }}>Export</Button>
+              <Button variant="contained" startIcon={<AddIcon />} onClick={() => { setFormMode("create"); setSelectedService(null); setOpenFormModal(true); }} size="medium" sx={{ minWidth: 100 }}>Add</Button>
+            </Box>
+          </Box>
+
+          <Collapse in={showAdvancedFilters}>
+            <Box sx={{ mt: 2, pt: 2, borderTop: 1, borderColor: "divider" }}>
+              <Grid container spacing={2}>
+                <Grid item xs={12} md={6}>
+                  <FormControl fullWidth size="small">
+                    <InputLabel>Unit</InputLabel>
+                    <Select
+                      value={(filters.unit as string) || ""}
+                      onChange={(e) => handleFilterChange("unit", e.target.value as string)}
+                      label="Unit"
+                    >
+                      <MenuItem value="">All Units</MenuItem>
+                      {filterOptions?.units?.map((u) => (
+                        <MenuItem key={u} value={u}>
+                          {u}
+                        </MenuItem>
+                      ))}
+                    </Select>
+                  </FormControl>
+                </Grid>
+
+                <Grid item xs={12} md={6}>
+                  <FormControl fullWidth size="small">
+                    <InputLabel>Item Type</InputLabel>
+                    <Select
+                      value={(filters.item_type as string) || ""}
+                      onChange={(e) => handleFilterChange("item_type", e.target.value as string)}
+                      label="Item Type"
+                    >
+                      <MenuItem value="">All</MenuItem>
+                      {filterOptions?.item_types?.map((it) => (
+                        <MenuItem key={it} value={it}>
+                          {it}
+                        </MenuItem>
+                      ))}
+                    </Select>
+                  </FormControl>
+                </Grid>
+              </Grid>
+            </Box>
+          </Collapse>
         </CardContent>
       </Card>
 
-      {/* Data Table */}
+      {(Object.keys(filters).length > 0 || searchTerm) && (
+        <Card sx={{ mb: 2 }}>
+          <CardContent sx={{ py: 2 }}>
+            <Box
+              sx={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                flexWrap: "wrap",
+                gap: 1,
+              }}
+            >
+              <Box sx={{ display: "flex", alignItems: "center", gap: 1, flexWrap: "wrap" }}>
+                <Typography variant="body2" color="textSecondary">
+                  Active filters:
+                </Typography>
+                {searchTerm && (
+                  <Chip
+                    label={`Search: "${searchTerm}"`}
+                    size="small"
+                    onDelete={() => setSearchTerm("")}
+                    variant="outlined"
+                  />
+                )}
+                {Object.entries(filters).map(([k, v]) =>
+                  v ? (
+                    <Chip
+                      key={k}
+                      label={`${k}: ${v}`}
+                      size="small"
+                      onDelete={() => handleFilterChange(k, "")}
+                      variant="outlined"
+                    />
+                  ) : null,
+                )}
+              </Box>
+              <Typography variant="body2" color="textSecondary">
+                {totalCount} results found
+              </Typography>
+            </Box>
+          </CardContent>
+        </Card>
+      )}
+
+      {error && (<Alert severity="error" sx={{ mb: 2 }} onClose={() => setError(null)}>{error}</Alert>)}
+
       <Card>
         <CardContent sx={{ p: 0 }}>
-          {error && (
-            <Alert severity="error" sx={{ m: 2 }}>
-              {error}
-            </Alert>
-          )}
-
           <TableContainer component={Paper} elevation={0}>
-            <Table>
-              <TableHead>
-                <TableRow sx={{ bgcolor: "grey.50" }}>
-                  <TableCell>Kode Layanan</TableCell>
-                  <TableCell>Nama Layanan</TableCell>
-                  <TableCell>Kategori</TableCell>
-                  <TableCell>Unit</TableCell>
-                  <TableCell align="right">Biaya Internal</TableCell>
-                  <TableCell align="right">Biaya Freelance</TableCell>
-                  <TableCell align="center">Status</TableCell>
-                  <TableCell align="center">Aksi</TableCell>
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                {loading ? (
-                  <ServicesTableSkeleton rows={rowsPerPage} />
-                ) : error ? (
+            {loading ? (
+              <ServicesTableSkeleton rows={rowsPerPage} />
+            ) : (
+              <Table stickyHeader>
+                <TableHead>
                   <TableRow>
-                    <TableCell colSpan={8} align="center" sx={{ py: 4 }}>
-                      <Typography variant="body2" color="error">
-                        {error}
-                      </Typography>
-                    </TableCell>
+                    <TableCell>Kode Layanan</TableCell>
+                    <TableCell>Nama Layanan</TableCell>
+                    <TableCell>Unit</TableCell>
+                    <TableCell>SBU</TableCell>
+                    <TableCell>Kategori Jasa</TableCell>
+                    <TableCell align="center">Status</TableCell>
+                    <TableCell align="center">Aksi</TableCell>
                   </TableRow>
-                ) : services.length > 0 ? (
-                  services.map((service) => (
-                    <TableRow
-                      key={service.id}
-                      hover
-                      sx={{ "&:hover": { bgcolor: "action.hover" } }}
-                    >
-                      <TableCell>
-                        <Typography variant="body2" fontWeight="medium">
-                          {service.service_code}
-                        </Typography>
-                      </TableCell>
-                      <TableCell>
-                        <Typography variant="body2">{service.service_name}</Typography>
-                      </TableCell>
-                      <TableCell>
-                        <Typography variant="body2">{service.category || "-"}</Typography>
-                      </TableCell>
-                      <TableCell>
-                        <Typography variant="body2">{service.unit}</Typography>
-                      </TableCell>
-                      <TableCell align="right">
-                        <Typography variant="body2">
-                          {formatCurrency(service.internal_cost_per_hour)}
-                        </Typography>
-                      </TableCell>
-                      <TableCell align="right">
-                        <Typography variant="body2">
-                          {formatCurrency(service.freelance_cost_per_hour)}
-                        </Typography>
-                      </TableCell>
-                      <TableCell align="center">{getStatusChip(service.is_active)}</TableCell>
-                      <TableCell align="center">
-                        <Box sx={{ display: "flex", justifyContent: "center", gap: 0.5 }}>
-                          <Tooltip title="Lihat Detail">
-                            <IconButton size="small" onClick={() => {
-                              setSelectedService(service);
-                              setOpenDetailModal(true);
-                            }}>
-                              <VisibilityIcon fontSize="small" />
-                            </IconButton>
-                          </Tooltip>
-
-                          <Tooltip title="Edit">
-                            <IconButton size="small" onClick={() => {
-                              setFormMode('edit');
-                              setSelectedService(service);
-                              setOpenFormModal(true);
-                            }}>
-                              <EditIcon fontSize="small" />
-                            </IconButton>
-                          </Tooltip>
-
-                          <Tooltip title="Hapus">
-                            <IconButton size="small" color="error" onClick={() => {
-                              setServiceToDelete(service);
-                              setOpenDeleteDialog(true);
-                            }}>
-                              <DeleteIcon fontSize="small" />
-                            </IconButton>
-                          </Tooltip>
-                        </Box>
+                </TableHead>
+                <TableBody>
+                  {services.length === 0 ? (
+                    <TableRow>
+                      <TableCell colSpan={7} align="center" sx={{ py: 4 }}>
+                        <Typography variant="body2" color="textSecondary">{searchTerm ? "Tidak ada layanan yang sesuai dengan pencarian" : "Belum ada data layanan"}</Typography>
                       </TableCell>
                     </TableRow>
-                  ))
-                ) : (
-                  <TableRow>
-                    <TableCell colSpan={8} align="center" sx={{ py: 4 }}>
-                      <Typography variant="body2" color="text.secondary">
-                        {searchTerm
-                          ? "Tidak ada layanan yang sesuai dengan pencarian"
-                          : "Belum ada data layanan"}
-                      </Typography>
-                    </TableCell>
-                  </TableRow>
-                )}
-              </TableBody>
-            </Table>
+                  ) : (
+                    services.map((service) => (
+                      <TableRow key={service.id} hover>
+                        <TableCell>
+                          <Typography variant="body2" fontWeight="medium">{service.service_code}</Typography>
+                        </TableCell>
+                        <TableCell>
+                          <Typography variant="body2">{service.service_name}</Typography>
+                        </TableCell>
+                        <TableCell>
+                          <Typography variant="body2">{service.unit}</Typography>
+                        </TableCell>
+                        <TableCell>
+                          <Typography variant="body2">{service.sbu_name || service.sbu || "-"}</Typography>
+                        </TableCell>
+                        <TableCell>
+                          <Typography variant="body2">{service.kategori_jasa_name || service.kategori_jasa || "-"}</Typography>
+                        </TableCell>
+                        <TableCell align="center">{getStatusChip(service.is_active)}</TableCell>
+                        <TableCell align="center">
+                          <Box sx={{ display: "flex", justifyContent: "center", gap: 0.5 }}>
+                            <Tooltip title="Lihat Detail">
+                              <IconButton size="small" onClick={() => { setSelectedService(service); setOpenDetailModal(true); }} color="info">
+                                <VisibilityIcon fontSize="small" />
+                              </IconButton>
+                            </Tooltip>
+
+                            <Tooltip title="Edit">
+                              <IconButton size="small" onClick={() => { setFormMode("edit"); setSelectedService(service); setOpenFormModal(true); }} color="primary">
+                                <EditIcon fontSize="small" />
+                              </IconButton>
+                            </Tooltip>
+
+                            <Tooltip title="Hapus">
+                              <IconButton size="small" color="error" onClick={() => { setServiceToDelete(service); setOpenDeleteDialog(true); }}>
+                                <DeleteIcon fontSize="small" />
+                              </IconButton>
+                            </Tooltip>
+                          </Box>
+                        </TableCell>
+                      </TableRow>
+                    ))
+                  )}
+                </TableBody>
+              </Table>
+            )}
           </TableContainer>
 
-          {/* Pagination */}
-          {!loading && services.length > 0 && (
-            <TablePagination
-              component="div"
-              count={totalCount}
-              page={page}
-              onPageChange={handleChangePage}
-              rowsPerPage={rowsPerPage}
-              onRowsPerPageChange={handleChangeRowsPerPage}
-              rowsPerPageOptions={[5, 10, 25, 50]}
-              labelRowsPerPage="Baris per halaman:"
-              labelDisplayedRows={({ from, to, count }) =>
-                `${from}–${to} dari ${count !== -1 ? count : `lebih dari ${to}`}`
-              }
-            />
-          )}
+          <TablePagination
+            rowsPerPageOptions={[5, 10, 25, 50]}
+            component="div"
+            count={totalCount}
+            rowsPerPage={rowsPerPage}
+            page={page}
+            onPageChange={handleChangePage}
+            onRowsPerPageChange={handleChangeRowsPerPage}
+            labelRowsPerPage="Rows per page:"
+            labelDisplayedRows={({ from, to, count }) => `${from}–${to} of ${count !== -1 ? count : `more than ${to}`}`}
+          />
         </CardContent>
       </Card>
-    {/* Modal Tambah/Edit */}
-    <ServiceFormModal
-      open={openFormModal}
-      onClose={(refresh) => {
-        setOpenFormModal(false);
-        setSelectedService(null);
-        if (refresh) fetchServices();
-      }}
-      service={selectedService}
-      mode={formMode}
-    />
 
-    {/* Modal Detail */}
-    <ServiceDetailModal
-      open={openDetailModal}
-      onClose={() => {
-        setOpenDetailModal(false);
-        setSelectedService(null);
-      }}
-      service={selectedService}
-    />
-    {/* Dialog Konfirmasi Hapus */}
-    <DeleteConfirmationModal
-      open={openDeleteDialog}
-      onClose={() => {
-        setOpenDeleteDialog(false);
-        setServiceToDelete(null);
-        setDeleteError(null);
-      }}
-      onConfirm={handleDeleteService}
-      title="Konfirmasi Hapus Layanan"
-      message={serviceToDelete ? `Apakah Anda yakin ingin menghapus layanan "${serviceToDelete.service_name}"? Tindakan ini tidak dapat dibatalkan.` : ""}
-      loading={deleteLoading}
-      error={deleteError}
-    />
+      {/* Modals and confirmation */}
+      <ServiceFormModal
+        open={openFormModal}
+        onClose={(refresh) => {
+          setOpenFormModal(false);
+          setSelectedService(null);
+          if (refresh) fetchServices();
+        }}
+        service={selectedService}
+        mode={formMode}
+      />
+
+      <ServiceDetailModal
+        open={openDetailModal}
+        onClose={() => {
+          setOpenDetailModal(false);
+          setSelectedService(null);
+        }}
+        service={selectedService}
+      />
+
+      <DeleteConfirmationModal
+        open={openDeleteDialog}
+        onClose={() => {
+          setOpenDeleteDialog(false);
+          setServiceToDelete(null);
+          setDeleteError(null);
+        }}
+        onConfirm={async () => {
+          if (!serviceToDelete) return;
+          setDeleteLoading(true);
+          setDeleteError(null);
+          try {
+            await servicesService.deleteService(serviceToDelete.id);
+            showSuccess(`Layanan "${serviceToDelete.service_name}" berhasil dihapus.`);
+            setOpenDeleteDialog(false);
+            setServiceToDelete(null);
+            fetchServices();
+          } catch (err) {
+            setDeleteError("Gagal menghapus layanan");
+            showError("Gagal menghapus layanan");
+          } finally {
+            setDeleteLoading(false);
+          }
+        }}
+        title="Konfirmasi Hapus Layanan"
+        message={serviceToDelete ? `Apakah Anda yakin ingin menghapus layanan "${serviceToDelete.service_name}"? Tindakan ini tidak dapat dibatalkan.` : ""}
+        loading={deleteLoading}
+        error={deleteError}
+      />
     </Box>
   );
 };

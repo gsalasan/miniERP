@@ -1,22 +1,12 @@
 // Material related types
-
-export enum MaterialStatus {
-  Active = "Active",
-  EndOfLife = "EndOfLife",
-  Discontinue = "Discontinue",
-}
-
-export enum MaterialLocation {
-  Local = "Local",
-  Import = "Import",
-}
+import { MaterialStatus, MaterialLocation, Components } from './enums';
 
 export interface Material {
   id: string;
   sbu?: string;
   system?: string;
   subsystem?: string;
-  components?: string;
+  components?: Components;
   item_name: string;
   brand?: string;
   owner_pn?: string;
@@ -48,11 +38,13 @@ export interface MaterialsQueryParams {
 export interface MaterialsResponse {
   success: boolean;
   data: Material[];
-  meta: {
+  pagination: {
     total: number;
     page: number;
     limit: number;
-    pages: number;
+    totalPages: number;
+    hasNext?: boolean;
+    hasPrev?: boolean;
   };
 }
 

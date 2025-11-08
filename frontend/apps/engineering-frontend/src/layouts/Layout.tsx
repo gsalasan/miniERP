@@ -33,29 +33,22 @@ interface LayoutProps {
 // Logo Component with fallback
 const LogoContainer: React.FC = () => {
   const [imageError, setImageError] = React.useState(false);
+  const theme = useTheme();
 
   return (
-    <Box
-      sx={{
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-      }}
-    >
-      {!imageError ? (
-        <img
-          src="/unais.png"
-          alt="Company Logo"
-          style={{
-            width: "180px",
-            height: "180px",
-            objectFit: "contain",
-          }}
-          onError={() => setImageError(true)}
-        />
-      ) : (
-        <EngineeringIcon sx={{ fontSize: 90, color: "#1976d2" }} />
-      )}
+    <Box sx={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center" }}>
+      <Box sx={{ py: 2, px: 2, bgcolor: "transparent", width: "100%", display: "flex", justifyContent: "center" }}>
+        {!imageError ? (
+          <img
+            src="/unais.png"
+            alt="Company Logo"
+            style={{ width: 160, height: 80, objectFit: "contain" }}
+            onError={() => setImageError(true)}
+          />
+        ) : (
+          <EngineeringIcon sx={{ fontSize: 56, color: theme.palette.primary.main }} />
+        )}
+      </Box>
     </Box>
   );
 };
@@ -118,22 +111,16 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
         height: "100%",
         display: "flex",
         flexDirection: "column",
-        bgcolor: "#f8f9fa",
+        bgcolor: "#ffffff",
       }}
     >
       {/* Logo Section */}
-      <Box
-        sx={{
-          p: 0,
-          textAlign: "center",
-          bgcolor: "#f8f9fa",
-        }}
-      >
+      <Box sx={{ p: 0, textAlign: "center", bgcolor: "#ffffff" }}>
         <LogoContainer />
       </Box>
 
       {/* Navigation Menu */}
-      <Box sx={{ flexGrow: 1, px: 2, mt: -2 }}>
+  <Box sx={{ flexGrow: 1, px: 2, mt: 2 }}>
         <List sx={{ p: 0 }}>
           {menuItems.map((item) => (
             <ListItem key={item.text} disablePadding sx={{ mb: 1 }}>
@@ -145,18 +132,19 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
                   py: 1.5,
                   px: 2,
                   "&.Mui-selected": {
-                    bgcolor: "#e3f2fd",
-                    color: "#1976d2",
+                    bgcolor: (theme) => `${theme.palette.primary.light}33`, // subtle translucent accent
+                    color: (theme) => theme.palette.primary.main,
                     "& .MuiListItemIcon-root": {
-                      color: "#1976d2",
+                      color: (theme) => theme.palette.primary.main,
                     },
+                    boxShadow: "inset 4px 0 0 0 rgba(8,48,107,0.08)",
                   },
                 }}
               >
                 <ListItemIcon
                   sx={{
                     minWidth: 36,
-                    color: isItemSelected(item) ? "#1976d2" : "#6c757d",
+                    color: isItemSelected(item) ? (theme.palette.primary.main as any) : "#6c757d",
                   }}
                 >
                   {item.icon}
@@ -166,7 +154,7 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
                   primaryTypographyProps={{
                     fontSize: "0.95rem",
                     fontWeight: isItemSelected(item) ? 600 : 400,
-                    color: isItemSelected(item) ? "#1976d2" : "#495057",
+                    color: isItemSelected(item) ? (theme.palette.primary.main as any) : "#495057",
                   }}
                 />
               </ListItemButton>
@@ -176,14 +164,7 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
       </Box>
 
       {/* Footer */}
-      <Box
-        sx={{
-          p: 2,
-          borderTop: "1px solid #e9ecef",
-          textAlign: "center",
-          bgcolor: "#f8f9fa",
-        }}
-      >
+      <Box sx={{ p: 2, borderTop: "1px solid #e9ecef", textAlign: "center", bgcolor: "#ffffff" }}>
         <Typography variant="caption" sx={{ color: "#6c757d", fontSize: "0.75rem" }}>
           miniERP Engineering
         </Typography>

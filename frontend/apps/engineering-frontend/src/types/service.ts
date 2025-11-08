@@ -1,18 +1,39 @@
 // Service related types
-export enum ServiceUnit {
-  Jam = "Jam",
-  Hari = "Hari",
-}
+import { ServiceUnit } from "./enums";
 
 export interface Service {
   id: string;
   service_name: string;
   service_code: string;
   item_type?: string;
-  category?: string;
+  // Legacy string fields (for backward compatibility with old data)
+  sbu?: string;
+  kategori_sistem?: string;
+  sub_sistem?: string;
+  fase_proyek?: string;
+  kategori_jasa?: string;
+  jenis_jasa_spesifik?: string;
+  deskripsi?: string;
+  rekomendasi_tim?: string;
+  // New UUID FK fields
+  kategori_sistem_id?: string;
+  sub_sistem_id?: string;
+  kategori_jasa_id?: string;
+  jenis_jasa_spesifik_id?: string;
+  deskripsi_id?: string;
+  rekomendasi_tim_id?: string;
+  fase_proyek_id?: string;
+  sbu_id?: string;
+  // Joined taxonomy names (from backend)
+  kategori_sistem_name?: string;
+  sub_sistem_name?: string;
+  kategori_jasa_name?: string;
+  jenis_jasa_spesifik_name?: string;
+  deskripsi_text?: string;
+  rekomendasi_tim_name?: string;
+  fase_proyek_name?: string;
+  sbu_name?: string;
   unit: ServiceUnit;
-  internal_cost_per_hour?: number;
-  freelance_cost_per_hour?: number;
   default_duration?: number;
   is_active?: boolean;
   created_at: string;
@@ -25,7 +46,6 @@ export interface ServicesQueryParams {
   search?: string;
   service_name?: string;
   service_code?: string;
-  category?: string;
   unit?: ServiceUnit;
   is_active?: boolean;
   item_type?: string;
@@ -62,11 +82,9 @@ export interface ServicesStats {
   active: number;
   inactive: number;
   byUnit: { unit: string; count: number }[];
-  byCategory: { category: string; count: number }[];
 }
 
 export interface ServiceFilterOptions {
-  categories: string[];
   units: ServiceUnit[];
   item_types: string[];
 }
