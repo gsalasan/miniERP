@@ -1,11 +1,11 @@
 import { Request, Response } from "express";
-import { PrismaClient } from '@prisma/client';
+import { prisma } from '../lib/prisma';
 
-const prisma = new PrismaClient();
-
-// Controller untuk ambil daftar akun (Chart of Accounts)
+// GET - Ambil semua Chart of Accounts
 export const getChartOfAccounts = async (req: Request, res: Response): Promise<void> => {
+  console.log("🔍 getChartOfAccounts called");
   try {
+    console.log("🔍 Calling prisma.chartOfAccounts.findMany...");
     const chartOfAccounts = await prisma.chartOfAccounts.findMany({
       select: {
         id: true,
@@ -16,8 +16,9 @@ export const getChartOfAccounts = async (req: Request, res: Response): Promise<v
         created_at: true,
         updated_at: true,
       },
-      orderBy: { id: "asc" },
+      orderBy: { account_code: "asc" },
     });
+    console.log(`🔍 Found ${chartOfAccounts.length} accounts`);
 
     res.status(200).json({
       success: true,
@@ -25,7 +26,7 @@ export const getChartOfAccounts = async (req: Request, res: Response): Promise<v
       data: chartOfAccounts,
     });
   } catch (error) {
-    console.error("Error mengambil Chart of Accounts:", error);
+    console.error("❌ CONTROLLER ERROR:", error);
     const errMsg = error instanceof Error ? error.message : "Unknown error";
 
     res.status(500).json({
@@ -36,12 +37,44 @@ export const getChartOfAccounts = async (req: Request, res: Response): Promise<v
   }
 };
 
-// Controller untuk membuat akun baru
+// GET BY ID - Ambil satu Chart of Account berdasarkan ID
+export const getChartOfAccountById = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { id } = req.params;
+    const account = await prisma.chartOfAccounts.findUnique({
+      where: { id: parseInt(id) },
+    });
+
+    if (!account) {
+      res.status(404).json({
+        success: false,
+        message: "Chart of Account tidak ditemukan",
+      });
+      return;
+    }
+
+    res.status(200).json({
+      success: true,
+      data: account,
+    });
+  } catch (error) {
+    console.error("Error mengambil Chart of Account:", error);
+    const errMsg = error instanceof Error ? error.message : "Unknown error";
+
+    res.status(500).json({
+      success: false,
+      message: "Terjadi kesalahan server",
+      error: errMsg,
+    });
+  }
+};
+
+// POST - Buat Chart of Account baru
 export const createChartOfAccount = async (req: Request, res: Response): Promise<void> => {
   try {
     const { account_code, account_name, account_type, description } = req.body;
 
-    // Validasi input
+    // Validasi required fields
     if (!account_code || !account_name || !account_type) {
       res.status(400).json({
         success: false,
@@ -51,14 +84,14 @@ export const createChartOfAccount = async (req: Request, res: Response): Promise
     }
 
     // Cek apakah account_code sudah ada
-    const existingAccount = await prisma.chartOfAccounts.findUnique({
+    const existing = await prisma.chartOfAccounts.findUnique({
       where: { account_code },
     });
 
-    if (existingAccount) {
+    if (existing) {
       res.status(409).json({
         success: false,
-        message: "Account code sudah digunakan",
+        message: `Account code ${account_code} sudah digunakan`,
       });
       return;
     }
@@ -68,7 +101,7 @@ export const createChartOfAccount = async (req: Request, res: Response): Promise
         account_code,
         account_name,
         account_type,
-        description,
+        description: description || null,
       },
     });
 
@@ -89,18 +122,18 @@ export const createChartOfAccount = async (req: Request, res: Response): Promise
   }
 };
 
-// Controller untuk update akun
+// PUT - Update Chart of Account
 export const updateChartOfAccount = async (req: Request, res: Response): Promise<void> => {
   try {
     const { id } = req.params;
     const { account_code, account_name, account_type, description } = req.body;
 
-    // Cek apakah akun ada
-    const existingAccount = await prisma.chartOfAccounts.findUnique({
+    // Cek apakah account ada
+    const existing = await prisma.chartOfAccounts.findUnique({
       where: { id: parseInt(id) },
     });
 
-    if (!existingAccount) {
+    if (!existing) {
       res.status(404).json({
         success: false,
         message: "Chart of Account tidak ditemukan",
@@ -108,16 +141,16 @@ export const updateChartOfAccount = async (req: Request, res: Response): Promise
       return;
     }
 
-    // Jika account_code diubah, cek apakah kode baru sudah digunakan
-    if (account_code && account_code !== existingAccount.account_code) {
-      const duplicateAccount = await prisma.chartOfAccounts.findUnique({
+    // Jika account_code diubah, cek duplikasi
+    if (account_code && account_code !== existing.account_code) {
+      const duplicate = await prisma.chartOfAccounts.findUnique({
         where: { account_code },
       });
 
-      if (duplicateAccount) {
+      if (duplicate) {
         res.status(409).json({
           success: false,
-          message: "Account code sudah digunakan",
+          message: `Account code ${account_code} sudah digunakan`,
         });
         return;
       }
@@ -126,44 +159,57 @@ export const updateChartOfAccount = async (req: Request, res: Response): Promise
     const updatedAccount = await prisma.chartOfAccounts.update({
       where: { id: parseInt(id) },
       data: {
-        ...(account_code && { account_code }),
-        ...(account_name && { account_name }),
-        ...(account_type && { account_type }),
-        ...(description !== undefined && { description }),
+        account_code: account_code || existing.account_code,
+        account_name: account_name || existing.account_name,
+        account_type: account_type || existing.account_type,
+        description: description !== undefined ? description : existing.description,
       },
     });
 
     res.status(200).json({
       success: true,
-      message: "Chart of Account berhasil diperbarui",
+      message: "Chart of Account berhasil diupdate",
       data: updatedAccount,
     });
   } catch (error) {
-    console.error("Error update Chart of Account:", error);
+    console.error("Error mengupdate Chart of Account:", error);
     const errMsg = error instanceof Error ? error.message : "Unknown error";
 
     res.status(500).json({
       success: false,
-      message: "Terjadi kesalahan server saat update Chart of Account",
+      message: "Terjadi kesalahan server saat mengupdate Chart of Account",
       error: errMsg,
     });
   }
 };
 
-// Controller untuk delete akun
+// DELETE - Hapus Chart of Account
 export const deleteChartOfAccount = async (req: Request, res: Response): Promise<void> => {
   try {
     const { id } = req.params;
 
-    // Cek apakah akun ada
-    const existingAccount = await prisma.chartOfAccounts.findUnique({
+    // Cek apakah account ada
+    const existing = await prisma.chartOfAccounts.findUnique({
       where: { id: parseInt(id) },
     });
 
-    if (!existingAccount) {
+    if (!existing) {
       res.status(404).json({
         success: false,
         message: "Chart of Account tidak ditemukan",
+      });
+      return;
+    }
+
+    // Cek apakah ada journal entries yang menggunakan account ini
+    const journalCount = await prisma.journal_entries.count({
+      where: { account_id: parseInt(id) },
+    });
+
+    if (journalCount > 0) {
+      res.status(400).json({
+        success: false,
+        message: `Tidak dapat menghapus account karena masih digunakan di ${journalCount} journal entries`,
       });
       return;
     }
@@ -177,12 +223,12 @@ export const deleteChartOfAccount = async (req: Request, res: Response): Promise
       message: "Chart of Account berhasil dihapus",
     });
   } catch (error) {
-    console.error("Error delete Chart of Account:", error);
+    console.error("Error menghapus Chart of Account:", error);
     const errMsg = error instanceof Error ? error.message : "Unknown error";
 
     res.status(500).json({
       success: false,
-      message: "Terjadi kesalahan server saat hapus Chart of Account",
+      message: "Terjadi kesalahan server saat menghapus Chart of Account",
       error: errMsg,
     });
   }

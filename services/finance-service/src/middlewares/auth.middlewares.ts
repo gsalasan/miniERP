@@ -2,10 +2,9 @@ import { Request, Response, NextFunction } from "express";
 import jwt from "jsonwebtoken";
 
 export const verifyToken = (req: Request, res: Response, next: NextFunction) => {
-  // Development mode: skip authentication
-  if (process.env.NODE_ENV === 'development') {
-    console.log('🔓 Development mode: Skipping authentication');
-    (req as any).user = { id: 'dev-user', role: 'admin' };
+  // TEMPORARY: Bypass auth in development mode
+  if (process.env.NODE_ENV === "development") {
+    console.log("⚠️  AUTH BYPASSED (Development Mode)");
     return next();
   }
 

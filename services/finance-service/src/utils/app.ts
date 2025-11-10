@@ -1,60 +1,33 @@
 // src/utils/app.ts
 import express from "express";
-import cors from "cors";
 import chartOfAccountsRoutes from "../routes/chartofaccounts.route";
+import journalEntriesRoutes from "../routes/journalentries.route";
 import taxRatesRoutes from "../routes/taxrates.route";
 import exchangeRatesRoutes from "../routes/exchangerates.route";
-<<<<<<< HEAD
+import pricingRulesRoutes from "../routes/pricingrules.routes";
+import overheadAllocationsRoutes from "../routes/overheadallocations.routes";
+import discountPoliciesRoutes from "../routes/discountpolicies.routes";
 import invoicesRoutes from "../routes/invoices.route";
-import journalEntriesRoutes from "../routes/journalentries.route";
-=======
->>>>>>> main
+import reportsRoutes from "../routes/reports.route";
 
 const app = express();
-
-// CORS Configuration - Allow frontend to access API
-app.use(cors({
-  origin: function(origin, callback) {
-    // Allow requests with no origin (like mobile apps, curl, Postman, or local HTML files)
-    if (!origin) return callback(null, true);
-    
-    const allowedOrigins = [
-      'http://localhost:3012',
-      'http://localhost:3013', 
-      'http://localhost:5173',
-      'http://localhost:3000',
-      'http://127.0.0.1:3012',
-      'null' // For local file:// protocol
-    ];
-    
-    if (allowedOrigins.indexOf(origin) !== -1 || origin === 'null') {
-      callback(null, true);
-    } else {
-      console.log('⚠️ CORS blocked origin:', origin);
-      callback(null, true); // Allow anyway for development
-    }
-  },
-  credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'Cache-Control', 'Pragma'],
-}));
 
 // Middleware bawaan Express
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-<<<<<<< HEAD
-// Request logging middleware
-app.use((req, res, next) => {
-  console.log(`📨 ${req.method} ${req.path}`);
-  next();
-});
-=======
-// Routes utama (finance)
-app.use("/api", chartOfAccountsRoutes);
-app.use("/api", taxRatesRoutes);
-app.use("/api", exchangeRatesRoutes);
->>>>>>> main
+// Routes utama (finance) - FULL KOKPIT FINANSIAL
+console.log("📍 Loading ALL finance routes for Kokpit Finansial...");
+app.use("/api", chartOfAccountsRoutes);                      // Chart of Accounts
+app.use("/api/journal-entries", journalEntriesRoutes);       // Journal Entries (FITUR 3.4.C)
+app.use("/api", taxRatesRoutes);                             // Tax Rates (FITUR 3.4.F - Kokpit) ✅
+app.use("/api", exchangeRatesRoutes);                        // Exchange Rates (FITUR 3.4.F - Kokpit) ✅
+app.use("/api/pricing-rules", pricingRulesRoutes);           // Pricing Rules (FITUR 3.4.F - Kokpit)
+app.use("/api/overhead-allocations", overheadAllocationsRoutes); // Overhead (FITUR 3.4.F - Kokpit)
+app.use("/api/discount-policies", discountPoliciesRoutes);   // Discount Policies (FITUR 3.4.F - Kokpit)
+app.use("/api/invoices", invoicesRoutes);                    // Invoices (FITUR 3.4.A & B)
+app.use("/api/reports", reportsRoutes);                      // Financial Reports (FITUR 3.4.D - Automation) ⭐
+console.log("✅ FULL Kokpit Finansial ACTIVE! Tax Rates ✅ Exchange Rates ✅");
 
 // Default route untuk test server
 app.get("/", (req, res) => {
@@ -64,31 +37,15 @@ app.get("/", (req, res) => {
   });
 });
 
-// Routes utama (finance)
-app.use("/api", chartOfAccountsRoutes);
-app.use("/api", taxRatesRoutes);
-app.use("/api", exchangeRatesRoutes);
-app.use("/api", invoicesRoutes);
-app.use("/api/journal-entries", journalEntriesRoutes);
-
-// 404 handler - pastikan mengembalikan JSON (HARUS SETELAH SEMUA ROUTES)
-app.use((req, res, next) => {
-  res.status(404).json({
-    success: false,
-    message: `Route ${req.method} ${req.path} not found`,
-  });
-});
-
-// Global error handler - HARUS PALING AKHIR dengan 4 parameters
-app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
-  console.error('❌ Error:', err);
-  
-  // Pastikan response adalah JSON
-  res.status(err.status || 500).json({
-    success: false,
-    message: err.message || "Internal Server Error",
-    error: process.env.NODE_ENV === 'development' ? err.stack : undefined
-  });
-});
+// Global error handler - COMMENTED OUT FOR DEBUGGING
+// app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
+//   console.error('❌ GLOBAL ERROR HANDLER:', err);
+//   res.status(500).json({
+//     success: false,
+//     message: 'Internal server error',
+//     error: err.message,
+//     stack: process.env.NODE_ENV === 'development' ? err.stack : undefined
+//   });
+// });
 
 export default app;

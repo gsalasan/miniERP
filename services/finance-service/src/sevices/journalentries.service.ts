@@ -1,7 +1,5 @@
 // Journal Entries Service
-import { PrismaClient } from '@prisma/client';
-
-const prisma = new PrismaClient();
+import { prisma } from '../lib/prisma';
 
 export interface CreateJournalEntryDto {
   transaction_date: string;
