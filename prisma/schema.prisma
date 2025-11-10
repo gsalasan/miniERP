@@ -8,6 +8,14 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+enum UserRole {
+  ADMIN
+  EMPLOYEE
+  MANAGER
+  HR
+  FINANCE
+}
+
 model users {
   id            String     @id @default(uuid())
   email         String     @unique
@@ -310,96 +318,63 @@ enum CustomerStatus {
   PROSPECT
 }
 
-enum Gender {
-  MALE
-  FEMALE
-}
-
-enum MaritalStatus {
-  SINGLE
-  MARRIED
-  DIVORCED
-  WIDOWED
-}
-
-enum BloodType {
-  A
-  B
-  AB
-  O
-}
-
-enum EmploymentType {
-  FULL_TIME
-  PART_TIME
-  CONTRACT
-  INTERNSHIP
-  FREELANCE
-}
-
-enum EmployeeStatus {
-  ACTIVE
-  INACTIVE
-  TERMINATED
-  ON_LEAVE
-  PROBATION
-}
-
-enum EducationLevel {
-  HIGH_SCHOOL
-  DIPLOMA
-  BACHELOR
-  MASTER
-  DOCTORATE
-}
-
-enum AttendanceStatus {
-  PRESENT
-  ABSENT
-  LATE
-  HALF_DAY
-  SICK_LEAVE
-  VACATION
-}
-
-enum LeaveType {
-  ANNUAL
-  SICK
-  MATERNITY
-  PATERNITY
-  EMERGENCY
-  UNPAID
-}
-
-enum LeaveStatus {
-  PENDING
-  APPROVED
-  REJECTED
-  CANCELLED
-}
-
-enum CustomerStatus {
-  ACTIVE
-  INACTIVE
-  PROSPECT
-}
-
 model tax_rates {
-  id               Int      @id @default(autoincrement())
-  tax_name         String   @unique
-  rate_percentage  Decimal  @db.Decimal(5, 2)
-  created_at       DateTime @default(now())
-  updated_at       DateTime @updatedAt
+  id           Int      @id @default(autoincrement())
+  tax_name     String   @unique
+  tax_code     String?
+  rate         Decimal  @db.Decimal(10, 2)
+  description  String?
+  is_active    Boolean  @default(true)
+  created_at   DateTime @default(now())
+  updated_at   DateTime @updatedAt
 
   @@map("tax_rates")
 }
 
 model exchange_rates {
-  currency_code String   @id @db.VarChar(3)
-  rate_to_idr   Decimal  @db.Decimal(15, 4)
-  updated_at    DateTime @default(now()) @db.Timestamptz(6)
+  id              Int      @id @default(autoincrement())
+  currency_from   String   @db.VarChar(10)
+  currency_to     String   @db.VarChar(10)
+  rate            Decimal  @db.Decimal(15, 4)
+  effective_date  DateTime @db.Date
+  is_active       Boolean  @default(true)
+  created_at      DateTime @default(now())
+  updated_at      DateTime @updatedAt
 
+  @@unique([currency_from, currency_to, effective_date])
   @@map("exchange_rates")
+}
+
+model pricing_rules {
+  id                Int      @id @default(autoincrement())
+  category          String   @unique @db.VarChar(255)
+  markup_percentage Decimal  @db.Decimal(5, 2)
+  created_at        DateTime @default(now())
+  updated_at        DateTime @updatedAt
+
+  @@map("pricing_rules")
+}
+
+model overhead_cost_allocations {
+  id                           Int      @id @default(autoincrement())
+  cost_category                String   @unique @db.VarChar(255)
+  target_percentage            Decimal? @db.Decimal(5, 2)
+  allocation_percentage_to_hpp Decimal  @db.Decimal(5, 2)
+  created_at                   DateTime @default(now())
+  updated_at                   DateTime @updatedAt
+
+  @@map("overhead_cost_allocations")
+}
+
+model discount_policies {
+  id                        Int      @id @default(autoincrement())
+  user_role                 UserRole @unique
+  max_discount_percentage   Decimal  @db.Decimal(5, 2)
+  requires_approval_above   Decimal? @db.Decimal(5, 2)
+  created_at                DateTime @default(now())
+  updated_at                DateTime @updatedAt
+
+  @@map("discount_policies")
 }
 
 enum AccountType {
@@ -408,6 +383,7 @@ enum AccountType {
   Equity
   Revenue
   Expense
+  CostOfService
 }
 
 enum InvoiceStatus {
@@ -416,6 +392,23 @@ enum InvoiceStatus {
   PAID
   OVERDUE
   CANCELLED
+}
+
+model invoices {
+  id              Int           @id @default(autoincrement())
+  invoice_number  String        @unique @db.VarChar(50)
+  customer_name   String        @db.VarChar(255)
+  issue_date      DateTime      @default(now())
+  due_date        DateTime
+  amount          Decimal       @db.Decimal(15, 2)
+  tax_amount      Decimal       @default(0) @db.Decimal(15, 2)
+  total_amount    Decimal       @db.Decimal(15, 2)
+  status          InvoiceStatus @default(DRAFT)
+  notes           String?       @db.Text
+  created_at      DateTime      @default(now())
+  updated_at      DateTime      @updatedAt
+
+  @@map("invoices")
 }
 
 model vendors {
@@ -436,4 +429,35 @@ enum VendorClassification {
   LARGE
   ENTERPRISE
   GOVERNMENT
+}
+
+model ChartOfAccounts {
+  id              Int               @id @default(autoincrement())
+  account_code    String            @unique
+  account_name    String
+  account_type    AccountType
+  description     String?
+  created_at      DateTime          @default(now())
+  updated_at      DateTime          @updatedAt
+  journal_entries journal_entries[]
+}
+
+model journal_entries {
+  id               BigInt          @id @default(autoincrement())
+  transaction_date DateTime        @db.Date
+  description      String?         @db.Text
+  account_id       Int
+  debit            Decimal?        @db.Decimal(15, 2)
+  credit           Decimal?        @db.Decimal(15, 2)
+  reference_id     String?         @db.Uuid
+  reference_type   String?         @db.VarChar(50)
+  created_by       String?         @db.Text
+  created_at       DateTime        @default(now()) @db.Timestamp(3)
+  updated_at       DateTime        @default(now()) @updatedAt @db.Timestamp(3)
+
+  account ChartOfAccounts @relation(fields: [account_id], references: [id], onDelete: Restrict)
+
+  @@index([account_id])
+  @@index([transaction_date])
+  @@index([reference_id])
 }
