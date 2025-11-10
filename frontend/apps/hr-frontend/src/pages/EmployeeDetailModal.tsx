@@ -1,9 +1,29 @@
 
 import React, { useEffect, useState } from 'react';
-import { FaUserCircle, FaEnvelope, FaMoneyBillWave, FaCalendarAlt, FaUserShield, FaTimes } from 'react-icons/fa';
+import { 
+  FaUserCircle, 
+  FaEnvelope, 
+  FaMoneyBillWave, 
+  FaCalendarAlt, 
+  FaUserShield, 
+  FaTimes,
+  FaVenusMars,
+  FaRing,
+  FaTint,
+  FaPhone,
+  FaGraduationCap,
+  FaBriefcase,
+  FaCheckCircle,
+  FaUniversity,
+  FaCreditCard,
+  FaFileInvoice,
+  FaIdCard
+} from 'react-icons/fa';
 import {
   GenderLabels,
   MaritalStatusLabels,
+  BloodTypeLabels,
+  EducationLevelLabels,
   EmploymentTypeLabels,
   EmployeeStatusLabels
 } from '../enums/employeeEnums';
@@ -29,6 +49,7 @@ export interface Employee {
   department?: string | null;
   gender?: string | null;
   marital_status?: string | null;
+  phone?: string | null;
   employment_type?: string | null;
   status?: string | null;
   blood_type?: string | null;
@@ -142,23 +163,23 @@ export default function EmployeeDetailModal({ id, onClose }: EmployeeDetailModal
           <div className="flex border-b border-gray-200 bg-gray-50">
             <button
               onClick={() => setActiveTab('info')}
-              className={`flex-1 px-4 py-3 font-semibold text-sm transition-colors ${
+              className={`flex-1 px-4 py-3 font-semibold text-sm transition-colors flex items-center justify-center gap-2 ${
                 activeTab === 'info'
                   ? 'text-blue-600 border-b-2 border-blue-600 bg-white'
                   : 'text-gray-600 hover:text-blue-600 hover:bg-gray-100'
               }`}
             >
-              📋 General Information
+              <FaIdCard /> General Information
             </button>
             <button
               onClick={() => setActiveTab('finance')}
-              className={`flex-1 px-4 py-3 font-semibold text-sm transition-colors ${
+              className={`flex-1 px-4 py-3 font-semibold text-sm transition-colors flex items-center justify-center gap-2 ${
                 activeTab === 'finance'
                   ? 'text-blue-600 border-b-2 border-blue-600 bg-white'
                   : 'text-gray-600 hover:text-blue-600 hover:bg-gray-100'
               }`}
             >
-              💰 Finance & Tax
+              <FaMoneyBillWave /> Finance & Tax
             </button>
           </div>
 
@@ -167,31 +188,43 @@ export default function EmployeeDetailModal({ id, onClose }: EmployeeDetailModal
             {activeTab === 'info' && (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <div className="font-medium text-gray-500 flex items-center gap-1 mb-1 text-sm"><FaEnvelope /> Email</div>
+                  <div className="font-medium text-gray-500 flex items-center gap-2 mb-1 text-sm"><FaEnvelope className="text-blue-500" /> Email</div>
                   <div className="text-gray-800">{user?.email ?? <span className="italic text-gray-400">No email</span>}</div>
                 </div>
                 <div>
-                  <div className="font-medium text-gray-500 flex items-center gap-1 mb-1 text-sm"><FaUserShield /> Roles</div>
+                  <div className="font-medium text-gray-500 flex items-center gap-2 mb-1 text-sm"><FaUserShield className="text-purple-500" /> Roles</div>
                   <div className="text-gray-800 text-sm">{user?.roles?.length ? user.roles.join(', ') : <span className="italic text-gray-400">No role</span>}</div>
                 </div>
                 <div>
-                  <div className="font-medium text-gray-500 flex items-center gap-1 mb-1 text-sm"><FaCalendarAlt /> Hire Date</div>
+                  <div className="font-medium text-gray-500 flex items-center gap-2 mb-1 text-sm"><FaCalendarAlt className="text-green-500" /> Hire Date</div>
                   <div className="text-gray-800">{employee.hire_date ? new Date(employee.hire_date).toLocaleDateString('en-US', { day: 'numeric', month: 'long', year: 'numeric' }) : '-'}</div>
                 </div>
                 <div>
-                  <div className="font-medium text-gray-500 mb-1 text-sm">Gender</div>
+                  <div className="font-medium text-gray-500 flex items-center gap-2 mb-1 text-sm"><FaVenusMars className="text-pink-500" /> Gender</div>
                   <div className="text-gray-800">{employee.gender ? GenderLabels[employee.gender] || employee.gender : '-'}</div>
                 </div>
                 <div>
-                  <div className="font-medium text-gray-500 mb-1 text-sm">Marital Status</div>
+                  <div className="font-medium text-gray-500 flex items-center gap-2 mb-1 text-sm"><FaRing className="text-yellow-600" /> Marital Status</div>
                   <div className="text-gray-800">{employee.marital_status ? MaritalStatusLabels[employee.marital_status] || employee.marital_status : '-'}</div>
                 </div>
                 <div>
-                  <div className="font-medium text-gray-500 mb-1 text-sm">Employment Type</div>
+                  <div className="font-medium text-gray-500 flex items-center gap-2 mb-1 text-sm"><FaTint className="text-red-500" /> Blood Type</div>
+                  <div className="text-gray-800">{employee.blood_type ? BloodTypeLabels[employee.blood_type] || employee.blood_type : '-'}</div>
+                </div>
+                <div>
+                  <div className="font-medium text-gray-500 flex items-center gap-2 mb-1 text-sm"><FaPhone className="text-teal-500" /> Phone</div>
+                  <div className="text-gray-800">{employee.phone || '-'}</div>
+                </div>
+                <div>
+                  <div className="font-medium text-gray-500 flex items-center gap-2 mb-1 text-sm"><FaGraduationCap className="text-indigo-500" /> Education Level</div>
+                  <div className="text-gray-800">{employee.education_level ? EducationLevelLabels[employee.education_level] || employee.education_level : '-'}</div>
+                </div>
+                <div>
+                  <div className="font-medium text-gray-500 flex items-center gap-2 mb-1 text-sm"><FaBriefcase className="text-gray-600" /> Employment Type</div>
                   <div className="text-gray-800">{employee.employment_type ? EmploymentTypeLabels[employee.employment_type] || employee.employment_type : '-'}</div>
                 </div>
                 <div>
-                  <div className="font-medium text-gray-500 mb-1 text-sm">Employee Status</div>
+                  <div className="font-medium text-gray-500 flex items-center gap-2 mb-1 text-sm"><FaCheckCircle className="text-green-600" /> Employee Status</div>
                   <div className="text-gray-800">{employee.status ? EmployeeStatusLabels[employee.status] || employee.status : '-'}</div>
                 </div>
               </div>
@@ -202,15 +235,19 @@ export default function EmployeeDetailModal({ id, onClose }: EmployeeDetailModal
                 {/* Bank Information */}
                 <div>
                   <h3 className="text-sm font-bold text-gray-700 mb-3 flex items-center gap-2">
-                    🏦 Bank Information
+                    <FaUniversity className="text-blue-600" /> Bank Information
                   </h3>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4 bg-blue-50 p-4 rounded-lg">
                     <div>
-                      <div className="font-medium text-gray-600 mb-1 text-sm">Bank Name</div>
+                      <div className="font-medium text-gray-600 mb-1 text-sm flex items-center gap-2">
+                        <FaUniversity className="text-blue-500" /> Bank Name
+                      </div>
                       <div className="text-gray-900 font-semibold">{employee.bank_name || '-'}</div>
                     </div>
                     <div>
-                      <div className="font-medium text-gray-600 mb-1 text-sm">Account Number</div>
+                      <div className="font-medium text-gray-600 mb-1 text-sm flex items-center gap-2">
+                        <FaCreditCard className="text-blue-500" /> Account Number
+                      </div>
                       <div className="text-gray-900 font-semibold">{employee.bank_account_number || '-'}</div>
                     </div>
                   </div>
@@ -219,15 +256,19 @@ export default function EmployeeDetailModal({ id, onClose }: EmployeeDetailModal
                 {/* Tax Information */}
                 <div>
                   <h3 className="text-sm font-bold text-gray-700 mb-3 flex items-center gap-2">
-                    📄 Tax Information
+                    <FaFileInvoice className="text-amber-600" /> Tax Information
                   </h3>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4 bg-amber-50 p-4 rounded-lg">
                     <div>
-                      <div className="font-medium text-gray-600 mb-1 text-sm">NPWP</div>
+                      <div className="font-medium text-gray-600 mb-1 text-sm flex items-center gap-2">
+                        <FaIdCard className="text-amber-600" /> NPWP
+                      </div>
                       <div className="text-gray-900 font-semibold">{employee.npwp || '-'}</div>
                     </div>
                     <div>
-                      <div className="font-medium text-gray-600 mb-1 text-sm">PTKP Status</div>
+                      <div className="font-medium text-gray-600 mb-1 text-sm flex items-center gap-2">
+                        <FaFileInvoice className="text-amber-600" /> PTKP Status
+                      </div>
                       <div className="text-gray-900 font-semibold">{employee.ptkp || '-'}</div>
                     </div>
                   </div>
@@ -236,7 +277,7 @@ export default function EmployeeDetailModal({ id, onClose }: EmployeeDetailModal
                 {/* Salary & Allowances */}
                 <div>
                   <h3 className="text-sm font-bold text-gray-700 mb-3 flex items-center gap-2">
-                    <FaMoneyBillWave /> Salary & Allowances
+                    <FaMoneyBillWave className="text-green-600" /> Salary & Allowances
                   </h3>
                   <div className="bg-green-50 p-4 rounded-lg mb-3">
                     <div className="font-medium text-gray-600 mb-1 text-sm">Basic Salary</div>

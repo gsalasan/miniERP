@@ -8,6 +8,7 @@ import express from 'express';
 import cors from 'cors';
 import employeeRoutes from './routes/employee.routes';
 import attendanceRoutes from './routes/attendance.routes';
+import hrRoutes from './routes/hr.routes';
 import { getPrisma } from './utils/prisma';
 import { startAutoCheckoutJob } from './jobs/auto-checkout.job';
 
@@ -63,6 +64,7 @@ app.get('/api/v1/test-hr-models', async (req, res) => {
 // API routes
 app.use('/api/v1', employeeRoutes);
 app.use('/api/v1/attendances', attendanceRoutes);
+app.use('/api/v1/hr', hrRoutes);
 // API routes will be added here
 // app.use('/api/v1/employees', employeeRoutes);
 
