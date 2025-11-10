@@ -81,18 +81,16 @@ const JournalEntriesTab: React.FC<JournalEntriesTabProps> = ({ onSuccess, onErro
   const fetchData = async () => {
     setLoading(true);
     try {
-      const [accountsResponse, entriesResponse] = await Promise.all([
+      const [accounts, entries] = await Promise.all([
         chartOfAccountsAPI.getAll(),
         journalEntriesAPI.getAll(),
       ]);
 
-      if (accountsResponse.success && accountsResponse.data) {
-        setAccounts(accountsResponse.data);
-      }
-
-      if (entriesResponse.success && entriesResponse.data) {
-        setEntries(entriesResponse.data);
-      }
+      console.log('🔍 Accounts loaded:', accounts.length, 'items', accounts);
+      console.log('🔍 Entries loaded:', entries.length, 'items');
+      
+      setAccounts(accounts);
+      setEntries(entries);
     } catch (err: any) {
       onError(err.message || 'Gagal mengambil data');
       console.error('Error fetching data:', err);
