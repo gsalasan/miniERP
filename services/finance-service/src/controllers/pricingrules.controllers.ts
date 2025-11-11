@@ -10,12 +10,17 @@ export const getAllPricingRules = async (req: Request, res: Response): Promise<v
       orderBy: { id: "asc" },
     });
 
-    res.status(200).json(pricingRules);
+    res.status(200).json({
+      success: true,
+      message: "Pricing rules fetched successfully",
+      data: pricingRules
+    });
   } catch (error) {
     console.error("Error fetching pricing rules:", error);
     const errMsg = error instanceof Error ? error.message : "Unknown error";
 
     res.status(500).json({
+      success: false,
       message: "Failed to fetch pricing rules",
       error: errMsg,
     });

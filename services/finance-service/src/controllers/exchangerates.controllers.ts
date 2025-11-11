@@ -339,15 +339,29 @@ export const bulkUpdateExchangeRates = async (req: Request, res: Response): Prom
     const results = [];
     for (const rate of rates) {
       const result = await prisma.exchange_rates.upsert({
-        where: { currency_code: rate.currency_code.toUpperCase() },
-        update: { rate_to_idr: rate.rate_to_idr },
+        where: { 
+          currency_from_currency_to_effective_date: {
+            currency_from: rate.currency_code.toUpperCase(),
+            currency_to: 'IDR',
+            effective_date: new Date()
+          }
+        },
+        update: { 
+          rate: rate.rate_to_idr,
+          is_active: true
+        },
         create: {
-          currency_code: rate.currency_code.toUpperCase(),
-          rate_to_idr: rate.rate_to_idr,
+          currency_from: rate.currency_code.toUpperCase(),
+          currency_to: 'IDR',
+          rate: rate.rate_to_idr,
+          effective_date: new Date(),
+          is_active: true,
         },
         select: {
-          currency_code: true,
-          rate_to_idr: true,
+          currency_from: true,
+          currency_to: true,
+          rate: true,
+          effective_date: true,
           updated_at: true,
         },
       });

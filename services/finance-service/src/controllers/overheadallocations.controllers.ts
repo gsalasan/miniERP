@@ -10,12 +10,17 @@ export const getAllOverheadAllocations = async (req: Request, res: Response): Pr
       orderBy: { id: "asc" },
     });
 
-    res.status(200).json(allocations);
+    res.status(200).json({
+      success: true,
+      message: "Overhead allocations fetched successfully",
+      data: allocations
+    });
   } catch (error) {
     console.error("Error fetching overhead allocations:", error);
     const errMsg = error instanceof Error ? error.message : "Unknown error";
 
     res.status(500).json({
+      success: false,
       message: "Failed to fetch overhead allocations",
       error: errMsg,
     });

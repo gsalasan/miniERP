@@ -37,15 +37,15 @@ app.get("/", (req, res) => {
   });
 });
 
-// Global error handler - COMMENTED OUT FOR DEBUGGING
-// app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
-//   console.error('❌ GLOBAL ERROR HANDLER:', err);
-//   res.status(500).json({
-//     success: false,
-//     message: 'Internal server error',
-//     error: err.message,
-//     stack: process.env.NODE_ENV === 'development' ? err.stack : undefined
-//   });
-// });
+// Global error handler
+app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
+  console.error('❌ GLOBAL ERROR HANDLER:', err);
+  res.status(500).json({
+    success: false,
+    message: 'Internal server error',
+    error: err.message,
+    stack: process.env.NODE_ENV === 'development' ? err.stack : undefined
+  });
+});
 
 export default app;

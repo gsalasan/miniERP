@@ -10,12 +10,17 @@ export const getAllDiscountPolicies = async (req: Request, res: Response): Promi
       orderBy: { id: "asc" },
     });
 
-    res.status(200).json(policies);
+    res.status(200).json({
+      success: true,
+      message: "Discount policies fetched successfully",
+      data: policies
+    });
   } catch (error) {
     console.error("Error fetching discount policies:", error);
     const errMsg = error instanceof Error ? error.message : "Unknown error";
 
     res.status(500).json({
+      success: false,
       message: "Failed to fetch discount policies",
       error: errMsg,
     });
