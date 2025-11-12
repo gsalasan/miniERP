@@ -10,13 +10,6 @@ import { Layout, Modal, ConfirmDialog, Toast } from '../components';
 import { useToast } from '../hooks/useToast';
 import { exportToCSV, exportToJSON } from '../utils/exportUtils';
 import JournalEntriesTab from './COA/JournalEntriesTab';
-<<<<<<< HEAD
-import GeneralLedgerTab from '../components/COA/GeneralLedgerTab';
-import TrialBalanceTab from '../components/COA/TrialBalanceTab';
-import BalanceSheetTab from '../components/COA/BalanceSheetTab';
-import IncomeStatementTab from '../components/COA/IncomeStatementTab';
-=======
->>>>>>> origin/main
 import {
   MagnifyingGlassIcon,
   PlusIcon,
@@ -30,11 +23,7 @@ import {
 } from '@heroicons/react/24/outline';
 
 const COA: React.FC = () => {
-<<<<<<< HEAD
-  const [activeTab, setActiveTab] = useState<'accounts' | 'journal-entries' | 'general-ledger' | 'trial-balance' | 'balance-sheet' | 'income-statement'>('accounts');
-=======
   const [activeTab, setActiveTab] = useState<'accounts' | 'journal-entries'>('accounts');
->>>>>>> origin/main
   const [accounts, setAccounts] = useState<ChartOfAccount[]>([]);
   const [loading, setLoading] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -71,13 +60,9 @@ const COA: React.FC = () => {
     setLoading(true);
     try {
       const response = await chartOfAccountsAPI.getAll();
-<<<<<<< HEAD
-      setAccounts(response);
-=======
       if (response.success && response.data) {
         setAccounts(response.data);
       }
->>>>>>> origin/main
     } catch (err: any) {
       error(err.message || 'Gagal mengambil data');
       console.error('Error fetching accounts:', err);
@@ -283,105 +268,6 @@ const COA: React.FC = () => {
         <Toast key={toast.id} message={toast.message} type={toast.type} onClose={() => hideToast(toast.id)} />
       ))}
 
-<<<<<<< HEAD
-      {/* Modern Header with Gradient - TSD Style */}
-      <div className="space-y-6 mb-6">
-        <div className="bg-[#C9A86A] rounded-lg shadow-md p-8 border border-[#B89858]">
-          <div className="flex items-center space-x-4">
-            <div className="p-3 bg-white/20 rounded-lg backdrop-blur-sm">
-              <ChartBarIcon className="h-8 w-8 text-[#6B5744]" />
-            </div>
-            <div>
-              <h1 className="text-3xl font-bold text-[#4A3F2F]">Chart of Accounts</h1>
-              <p className="text-[#6B5744] mt-1">
-                Kelola daftar akun keuangan dan journal entries perusahaan
-              </p>
-            </div>
-          </div>
-        </div>
-
-        {/* Stats Cards - TSD Style */}
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-7 gap-3">
-          <div className="bg-gradient-to-br from-slate-700 to-slate-600 rounded-lg p-3 border border-slate-500 shadow-md hover:shadow-lg transition-shadow">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-xs text-slate-200 font-semibold">Total</p>
-                <p className="text-xl font-bold text-white mt-1">{accounts.length}</p>
-              </div>
-              <DocumentTextIcon className="w-8 h-8 text-slate-300" />
-            </div>
-          </div>
-          
-          {ACCOUNT_TYPES.map((type) => {
-            const count = accounts.filter(acc => acc.account_type === type.value).length;
-            const colors: Record<string, { bg: string; text: string; icon: string; border: string }> = {
-              Asset: { bg: 'bg-gradient-to-br from-emerald-100 to-teal-50', text: 'text-emerald-900', icon: 'text-emerald-700', border: 'border-emerald-300' },
-              Liability: { bg: 'bg-gradient-to-br from-rose-100 to-pink-50', text: 'text-rose-900', icon: 'text-rose-700', border: 'border-rose-300' },
-              Equity: { bg: 'bg-gradient-to-br from-amber-100 to-yellow-50', text: 'text-amber-900', icon: 'text-amber-700', border: 'border-amber-300' },
-              Revenue: { bg: 'bg-gradient-to-br from-amber-200 to-orange-100', text: 'text-amber-900', icon: 'text-amber-800', border: 'border-amber-400' },
-              'Cost of Service': { bg: 'bg-gradient-to-br from-sky-100 to-blue-50', text: 'text-sky-900', icon: 'text-sky-700', border: 'border-sky-300' },
-              Expense: { bg: 'bg-gradient-to-br from-slate-200 to-gray-100', text: 'text-slate-900', icon: 'text-slate-700', border: 'border-slate-400' },
-            };
-            const color = colors[type.value] || colors.Asset;
-            
-            return (
-              <div key={type.value} className={`${color.bg} rounded-lg p-3 border ${color.border} shadow-md hover:shadow-lg transition-shadow`}>
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-xs font-semibold text-stone-600">{type.label}</p>
-                    <p className={`text-xl font-bold ${color.text} mt-1`}>{count}</p>
-                  </div>
-                  <ChartBarIcon className={`w-7 h-7 ${color.icon}`} />
-                </div>
-              </div>
-            );
-          })}
-        </div>
-
-        {/* Action Buttons */}
-        {activeTab === 'accounts' && (
-          <div className="flex justify-end gap-3">
-            <div className="relative">
-              <button
-                onClick={() => setShowFilters(!showFilters)}
-                className="flex items-center gap-2 px-4 py-2 bg-white text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors shadow-sm"
-              >
-                <ArrowDownTrayIcon className="h-5 w-5" />
-                Export
-              </button>
-              {showFilters && (
-                <div className="absolute right-0 mt-2 w-40 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-10">
-                  <button
-                    onClick={() => {
-                      handleExport('csv');
-                      setShowFilters(false);
-                    }}
-                    className="w-full text-left px-4 py-2 hover:bg-gray-50 text-sm text-gray-700"
-                  >
-                    Export CSV
-                  </button>
-                  <button
-                    onClick={() => {
-                      handleExport('json');
-                      setShowFilters(false);
-                    }}
-                    className="w-full text-left px-4 py-2 hover:bg-gray-50 text-sm text-gray-700"
-                  >
-                    Export JSON
-                  </button>
-                </div>
-              )}
-            </div>
-            <button
-              onClick={openCreateModal}
-              className="flex items-center gap-2 px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors shadow-md font-semibold"
-            >
-              <PlusIcon className="h-5 w-5" />
-              Tambah Akun Baru
-            </button>
-          </div>
-        )}
-=======
       {/* Page Header */}
       <div className="mb-6">
         <div className="bg-surface-card rounded-xl shadow-md border border-gray-100 p-6">
@@ -444,21 +330,11 @@ const COA: React.FC = () => {
             )}
           </div>
         </div>
->>>>>>> origin/main
       </div>
 
       {/* Tab Navigation */}
       <div className="mb-6">
         <div className="bg-surface-card rounded-xl shadow-sm border border-gray-200 p-1">
-<<<<<<< HEAD
-          <div className="flex gap-2 overflow-x-auto">
-            <button
-              onClick={() => setActiveTab('accounts')}
-              className={`flex items-center gap-2 px-4 py-3 rounded-lg font-medium transition-all whitespace-nowrap ${
-                activeTab === 'accounts'
-                  ? 'bg-gradient-to-br from-amber-100 to-yellow-50 text-amber-900 shadow-md border border-amber-300'
-                  : 'text-stone-600 hover:text-stone-900 hover:bg-stone-50'
-=======
           <div className="flex gap-2">
             <button
               onClick={() => setActiveTab('accounts')}
@@ -466,7 +342,6 @@ const COA: React.FC = () => {
                 activeTab === 'accounts'
                   ? 'bg-accent-gold text-primary-dark shadow-md'
                   : 'text-text-secondary hover:text-text-primary hover:bg-surface-bg'
->>>>>>> origin/main
               }`}
             >
               <ChartBarIcon className="h-5 w-5" />
@@ -474,69 +349,15 @@ const COA: React.FC = () => {
             </button>
             <button
               onClick={() => setActiveTab('journal-entries')}
-<<<<<<< HEAD
-              className={`flex items-center gap-2 px-4 py-3 rounded-lg font-medium transition-all whitespace-nowrap ${
-                activeTab === 'journal-entries'
-                  ? 'bg-gradient-to-br from-amber-100 to-yellow-50 text-amber-900 shadow-md border border-amber-300'
-                  : 'text-stone-600 hover:text-stone-900 hover:bg-stone-50'
-=======
               className={`flex items-center gap-2 px-6 py-3 rounded-lg font-medium transition-all ${
                 activeTab === 'journal-entries'
                   ? 'bg-accent-gold text-primary-dark shadow-md'
                   : 'text-text-secondary hover:text-text-primary hover:bg-surface-bg'
->>>>>>> origin/main
               }`}
             >
               <DocumentTextIcon className="h-5 w-5" />
               Journal Entries
             </button>
-<<<<<<< HEAD
-            <button
-              onClick={() => setActiveTab('general-ledger')}
-              className={`flex items-center gap-2 px-4 py-3 rounded-lg font-medium transition-all whitespace-nowrap ${
-                activeTab === 'general-ledger'
-                  ? 'bg-gradient-to-br from-emerald-100 to-teal-50 text-emerald-900 shadow-md border border-emerald-300'
-                  : 'text-stone-600 hover:text-stone-900 hover:bg-stone-50'
-              }`}
-            >
-              <DocumentTextIcon className="h-5 w-5" />
-              Buku Besar
-            </button>
-            <button
-              onClick={() => setActiveTab('trial-balance')}
-              className={`flex items-center gap-2 px-4 py-3 rounded-lg font-medium transition-all whitespace-nowrap ${
-                activeTab === 'trial-balance'
-                  ? 'bg-gradient-to-br from-violet-100 to-purple-50 text-violet-900 shadow-md border border-violet-300'
-                  : 'text-stone-600 hover:text-stone-900 hover:bg-stone-50'
-              }`}
-            >
-              <ChartBarIcon className="h-5 w-5" />
-              Neraca Saldo
-            </button>
-            <button
-              onClick={() => setActiveTab('balance-sheet')}
-              className={`flex items-center gap-2 px-4 py-3 rounded-lg font-medium transition-all whitespace-nowrap ${
-                activeTab === 'balance-sheet'
-                  ? 'bg-gradient-to-br from-sky-100 to-blue-50 text-sky-900 shadow-md border border-sky-300'
-                  : 'text-stone-600 hover:text-stone-900 hover:bg-stone-50'
-              }`}
-            >
-              <ChartBarIcon className="h-5 w-5" />
-              Neraca
-            </button>
-            <button
-              onClick={() => setActiveTab('income-statement')}
-              className={`flex items-center gap-2 px-4 py-3 rounded-lg font-medium transition-all whitespace-nowrap ${
-                activeTab === 'income-statement'
-                  ? 'bg-gradient-to-br from-rose-100 to-pink-50 text-rose-900 shadow-md border border-rose-300'
-                  : 'text-stone-600 hover:text-stone-900 hover:bg-stone-50'
-              }`}
-            >
-              <ChartBarIcon className="h-5 w-5" />
-              Laba Rugi
-            </button>
-=======
->>>>>>> origin/main
           </div>
         </div>
       </div>
@@ -544,17 +365,6 @@ const COA: React.FC = () => {
       {/* Tab Content */}
       {activeTab === 'journal-entries' ? (
         <JournalEntriesTab onSuccess={success} onError={error} />
-<<<<<<< HEAD
-      ) : activeTab === 'general-ledger' ? (
-        <GeneralLedgerTab />
-      ) : activeTab === 'trial-balance' ? (
-        <TrialBalanceTab />
-      ) : activeTab === 'balance-sheet' ? (
-        <BalanceSheetTab />
-      ) : activeTab === 'income-statement' ? (
-        <IncomeStatementTab />
-=======
->>>>>>> origin/main
       ) : (
         <>
           {/* Filters & Search */}

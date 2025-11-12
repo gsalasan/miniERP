@@ -2,15 +2,12 @@
 import dotenv from "dotenv";
 import path from "path";
 
-// ✅ CRITICAL: Load .env BEFORE importing app (which imports prisma)
-dotenv.config({ path: path.resolve(__dirname, '../../../../.env') });
-console.log("🔧 DATABASE_URL:", process.env.DATABASE_URL ? "✅ Loaded" : "❌ NOT FOUND");
-console.log("🔧 DB Host:", process.env.DATABASE_URL?.includes('192.168.1.72') ? "✅ Correct (192.168.1.72)" : "❌ Wrong host");
+// Load variabel environment dari .env dengan override untuk menghindari konflik
+dotenv.config({ path: require('path').join(__dirname, '../../.env'), override: false });
 
-// NOW import app after .env is loaded
-import app from "./app";
-
-const PORT = process.env.PORT || 5002;
+// Force PORT dari .env local jika ada, atau gunakan default
+const envPort = process.env.PORT;
+const PORT = envPort && !isNaN(parseInt(envPort)) ? parseInt(envPort) : 8080;
 
 // Catch unhandled rejections
 process.on('unhandledRejection', (reason, promise) => {

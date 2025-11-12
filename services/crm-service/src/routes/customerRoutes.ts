@@ -1,4 +1,5 @@
 import { Router } from "express";
+import { verifyToken } from "../middlewares/auth.middleware";
 import {
   getAllCustomers,
   getCustomerById,
@@ -10,10 +11,9 @@ import { deleteCustomerContact } from "../controllers/customerContactsController
 
 const router = Router();
 
-// Test endpoint
+// GET /api/v1/customers
+router.get('/', getAllCustomers);
 router.get("/test", getAllCustomers);
-
-router.get("/", getAllCustomers);
 router.get("/:id", getCustomerById);
 router.post("/", createCustomer);
 router.put("/:id", updateCustomer);

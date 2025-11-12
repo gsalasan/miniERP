@@ -2,7 +2,6 @@ generator client {
   provider = "prisma-client-js"
 }
 
-
 datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
@@ -20,8 +19,7 @@ model users {
   id            String     @id @default(uuid())
   email         String     @unique
   password_hash String
-  role          UserRole
-  employee_id   String? @unique
+  employee_id   String?    @unique
   is_active     Boolean    @default(true)
   created_at    DateTime   @default(now())
   updated_at    DateTime   @updatedAt
@@ -30,15 +28,100 @@ model users {
 }
 
 model employees {
-  id           String   @id @default(uuid())
-  full_name    String
-  position     String
-  hire_date    DateTime
-  basic_salary Decimal
-  allowances   Json
-  users        users?
+  id              String          @id @default(uuid())
+  full_name       String
+  position        String
+  department      String?
+  gender          Gender?
+  marital_status  MaritalStatus?
+  blood_type      BloodType?
+  employment_type EmploymentType  @default(FULL_TIME)
+  status          EmployeeStatus  @default(ACTIVE)
+  education_level EducationLevel?
+  hire_date       DateTime
+  basic_salary    Decimal
+  allowances      Json
+  users           users?
+  // Contact
+  phone               String?
+  // Account & Tax (optional)
+  bank_name           String?
+  bank_account_number String?
+  tax_id              String?
+  npwp                String?
+  ptkp                String?
+  
+  // Relations
+  attendances         hr_attendances[]
+}
+model Material {
+  id            String            @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  sbu           String?
+  system        String?
+  subsystem     String?
+  components    Components?
+  item_name     String
+  brand         String?
+  owner_pn      String?           @map("owner_pn")
+  vendor        String?
+  status        MaterialStatus?
+  location      MaterialLocation?
+  cost_ori      Decimal?          @db.Decimal(14, 2)
+  curr          String?           @db.VarChar(3)
+  satuan        String?           @db.VarChar(50)
+  cost_rp       Decimal?          @db.Decimal(14, 2)
+  cost_date     DateTime          @default(now()) @db.Timestamptz(6)
+  cost_validity DateTime?         @db.Timestamptz(6)
+  created_at    DateTime          @default(now()) @db.Timestamptz(6)
+  updated_at    DateTime          @default(now()) @db.Timestamptz(6)
+  vendorPricelist VendorPricelist[]
 }
 
+model Service {
+  id                      String                    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  service_name            String
+  service_code            String                    @unique
+  item_type               String                    @default("Service")
+  unit                    ServiceUnit
+  default_duration        Decimal?                  @db.Decimal(10, 2)
+  is_active               Boolean                   @default(true)
+  created_at              DateTime                  @default(now()) @db.Timestamptz(6)
+  updated_at              DateTime                  @default(now()) @db.Timestamptz(6)
+
+  // New normalized lookup relations (optional during migration)
+  kategori_sistem_id      String?                  @db.Uuid
+  kategoriSistem          ServiceSystemCategory?    @relation("ServiceKategoriSistem", fields: [kategori_sistem_id], references: [id])
+
+  sub_sistem_id           String?                  @db.Uuid
+  subSistem               ServiceSubSystem?         @relation("ServiceSubSistem", fields: [sub_sistem_id], references: [id])
+
+  kategori_jasa_id        String?                  @db.Uuid
+  kategoriJasa            ServiceCategory?          @relation("ServiceKategoriJasa", fields: [kategori_jasa_id], references: [id])
+
+  jenis_jasa_spesifik_id  String?                  @db.Uuid
+  jenisJasaSpesifik       ServiceSpecificType?      @relation("ServiceJenisJasaSpesifik", fields: [jenis_jasa_spesifik_id], references: [id])
+
+  deskripsi_id            String?                  @db.Uuid
+  deskripsiRef            ServiceDescription?       @relation("ServiceDeskripsi", fields: [deskripsi_id], references: [id])
+
+  rekomendasi_tim_id      String?                  @db.Uuid
+  rekomendasiTim          TeamRecommendation?       @relation("ServiceRekomendasiTim", fields: [rekomendasi_tim_id], references: [id])
+
+  fase_proyek_id          String?                  @db.Uuid
+  faseProyekRef           FaseProyekLookup?         @relation("ServiceFaseProyek", fields: [fase_proyek_id], references: [id])
+
+  sbu_id                  String?                  @db.Uuid
+  sbuRef                  SBULookup?                @relation("ServiceSBU", fields: [sbu_id], references: [id])
+
+  @@index([kategori_sistem_id])
+  @@index([sub_sistem_id])
+  @@index([kategori_jasa_id])
+  @@index([jenis_jasa_spesifik_id])
+  @@index([deskripsi_id])
+  @@index([rekomendasi_tim_id])
+  @@index([fase_proyek_id])
+  @@index([sbu_id])
+}
 
 model hr_employees {
   id                         String                   @id @default(uuid())
@@ -99,7 +182,6 @@ model hr_employees {
   updated_at                 DateTime                 @updatedAt
   created_by                 String?
   updated_by                 String?
-  attendances                hr_attendances[]
   documents                  hr_employee_documents[]
   manager                    hr_employees?            @relation("EmployeeManager", fields: [manager_id], references: [id])
   subordinates               hr_employees[]           @relation("EmployeeManager")
@@ -111,22 +193,29 @@ model hr_employees {
 }
 
 model hr_attendances {
-  id             String           @id @default(uuid())
-  employee_id    String
-  date           DateTime         @db.Date
-  check_in_time  DateTime?
-  check_out_time DateTime?
-  break_start    DateTime?
-  break_end      DateTime?
-  status         AttendanceStatus @default(PRESENT)
-  total_hours    Decimal?         @db.Decimal(5, 2)
-  overtime_hours Decimal?         @db.Decimal(5, 2)
-  notes          String?
-  location       String?
-  ip_address     String?
-  created_at     DateTime         @default(now())
-  updated_at     DateTime         @updatedAt
-  employee       hr_employees     @relation(fields: [employee_id], references: [id], onDelete: Cascade)
+  id                    String           @id @default(uuid())
+  employee_id           String
+  date                  DateTime         @db.Date
+  check_in_time         DateTime?
+  check_in_latitude     Decimal?         @db.Decimal(10, 8)
+  check_in_longitude    Decimal?         @db.Decimal(11, 8)
+  check_in_location     String?
+  check_out_time        DateTime?
+  check_out_latitude    Decimal?         @db.Decimal(10, 8)
+  check_out_longitude   Decimal?         @db.Decimal(11, 8)
+  check_out_location    String?
+  work_duration_minutes Int?
+  break_start           DateTime?
+  break_end             DateTime?
+  status                AttendanceStatus @default(PRESENT)
+  total_hours           Decimal?         @db.Decimal(5, 2)
+  overtime_hours        Decimal?         @db.Decimal(5, 2)
+  notes                 String?
+  location              String?
+  ip_address            String?
+  created_at            DateTime         @default(now())
+  updated_at            DateTime         @updatedAt
+  employee              employees        @relation(fields: [employee_id], references: [id], onDelete: Cascade)
 
   @@unique([employee_id, date])
   @@map("hr_attendances")
@@ -237,6 +326,152 @@ model customers {
   createdAt         DateTime            @default(now())
   updatedAt         DateTime
   customer_contacts customer_contacts[]
+  projects          Project[]
+}
+
+model ChartOfAccounts {
+  id              Int               @id @default(autoincrement())
+  account_code    String            @unique
+  account_name    String
+  account_type    AccountType
+  description     String?
+  created_at      DateTime          @default(now())
+  updated_at      DateTime          @updatedAt
+  journal_entries journal_entries[]
+}
+
+model exchange_rates {
+  id             Int      @id @default(autoincrement())
+  currency_from  String   @db.VarChar(3)
+  currency_to    String   @db.VarChar(3)
+  rate           Decimal  @db.Decimal(18, 6)
+  effective_date DateTime @db.Date
+  is_active      Boolean  @default(true)
+  created_at     DateTime @default(now())
+  updated_at     DateTime @default(now())
+
+  @@unique([currency_from, currency_to, effective_date])
+}
+
+model invoices {
+  id               String        @id
+  invoice_number   String        @unique
+  invoice_date     DateTime      @db.Date
+  due_date         DateTime      @db.Date
+  customer_id      String?
+  customer_name    String
+  customer_address String?
+  customer_phone   String?
+  customer_email   String?
+  subtotal         Decimal       @db.Decimal(15, 2)
+  tax_amount       Decimal       @default(0) @db.Decimal(15, 2)
+  discount_amount  Decimal       @default(0) @db.Decimal(15, 2)
+  total_amount     Decimal       @db.Decimal(15, 2)
+  currency         String        @default("IDR") @db.VarChar(3)
+  status           InvoiceStatus @default(DRAFT)
+  notes            String?
+  payment_terms    String?
+  created_by       String?
+  updated_by       String?
+  created_at       DateTime      @default(now())
+  updated_at       DateTime
+}
+
+model tax_rates {
+  id          Int      @id @default(autoincrement())
+  tax_name    String   @unique
+  tax_code    String   @unique
+  rate        Decimal  @db.Decimal(5, 2)
+  description String?
+  is_active   Boolean  @default(true)
+  created_at  DateTime @default(now())
+  updated_at  DateTime @default(now())
+}
+
+model vendors {
+  id                     String                   @id @default(uuid())
+  vendor_name            String
+  category               String?
+  classification         VendorClassification
+  is_preferred           Boolean                  @default(false)
+  created_at             DateTime                 @default(now())
+  updated_at             DateTime                 @updatedAt
+  vendorPricelist        VendorPricelist[]
+
+  @@map("vendors")
+}
+
+model VendorPricelist {
+  id               String   @id @default(uuid())
+  material_id      String   @db.Uuid
+  vendor_id        String
+  price            Decimal  @db.Decimal(18, 2)
+  currency         String   @db.VarChar(3)
+  price_updated_at DateTime @default(now()) @db.Timestamptz(6)
+
+  Material Material @relation(fields: [material_id], references: [id], onDelete: Cascade)
+  Vendor   vendors  @relation(fields: [vendor_id], references: [id], onDelete: Cascade)
+
+  @@index([vendor_id])
+  @@index([material_id])
+  @@map("vendor_pricelist")
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model journal_entries {
+  id               BigInt          @id @default(autoincrement())
+  transaction_date DateTime        @db.Date
+  description      String?
+  account_id       Int
+  debit            Decimal?        @db.Decimal(15, 2)
+  credit           Decimal?        @db.Decimal(15, 2)
+  reference_id     String?         @db.Uuid
+  reference_type   String?         @db.VarChar(50)
+  created_by       String?
+  created_at       DateTime        @default(now())
+  updated_at       DateTime        @default(now())
+  ChartOfAccounts  ChartOfAccounts @relation(fields: [account_id], references: [id])
+
+  @@index([account_id])
+  @@index([reference_id])
+  @@index([transaction_date])
+}
+
+enum UserRole {
+  CEO
+  FINANCE_ADMIN
+  SALES
+  SALES_MANAGER
+  PROJECT_MANAGER
+  PROJECT_ENGINEER
+  HR_ADMIN
+  EMPLOYEE
+  PROCUREMENT_ADMIN
+  ASSET_ADMIN
+  SYSTEM_ADMIN
+}
+
+enum MaterialStatus {
+  Active
+  EndOfLife
+  Discontinue
+}
+
+enum MaterialLocation {
+  Local
+  Import
+}
+
+enum Components {
+  Main_Equipment
+  Supporting_Equipment
+  Installation_Material
+  Consumables
+}
+
+enum ServiceUnit {
+  Jam
+  Hari
 }
 
 enum Gender {
@@ -276,6 +511,7 @@ enum EmployeeStatus {
   INACTIVE
   TERMINATED
   ON_LEAVE
+  PROBATION
 }
 
 enum EducationLevel {
@@ -286,23 +522,31 @@ enum EducationLevel {
   DOCTORATE
 }
 
+enum AllowanceCategory {
+  ATTENDANCE
+  COMMUNICATION
+  TRANSPORTATION
+  MEALS
+  HOUSING
+  POSITION
+}
+
 enum AttendanceStatus {
   PRESENT
   ABSENT
   LATE
   HALF_DAY
   SICK_LEAVE
-  PERSONAL_LEAVE
+  VACATION
 }
 
 enum LeaveType {
-  ANNUAL_LEAVE
-  SICK_LEAVE
-  PERSONAL_LEAVE
-  MATERNITY_LEAVE
-  PATERNITY_LEAVE
-  EMERGENCY_LEAVE
-  UNPAID_LEAVE
+  ANNUAL
+  SICK
+  MATERNITY
+  PATERNITY
+  EMERGENCY
+  UNPAID
 }
 
 enum LeaveStatus {
@@ -316,65 +560,6 @@ enum CustomerStatus {
   ACTIVE
   INACTIVE
   PROSPECT
-}
-
-model tax_rates {
-  id           Int      @id @default(autoincrement())
-  tax_name     String   @unique
-  tax_code     String?
-  rate         Decimal  @db.Decimal(10, 2)
-  description  String?
-  is_active    Boolean  @default(true)
-  created_at   DateTime @default(now())
-  updated_at   DateTime @updatedAt
-
-  @@map("tax_rates")
-}
-
-model exchange_rates {
-  id              Int      @id @default(autoincrement())
-  currency_from   String   @db.VarChar(10)
-  currency_to     String   @db.VarChar(10)
-  rate            Decimal  @db.Decimal(15, 4)
-  effective_date  DateTime @db.Date
-  is_active       Boolean  @default(true)
-  created_at      DateTime @default(now())
-  updated_at      DateTime @updatedAt
-
-  @@unique([currency_from, currency_to, effective_date])
-  @@map("exchange_rates")
-}
-
-model pricing_rules {
-  id                Int      @id @default(autoincrement())
-  category          String   @unique @db.VarChar(255)
-  markup_percentage Decimal  @db.Decimal(5, 2)
-  created_at        DateTime @default(now())
-  updated_at        DateTime @updatedAt
-
-  @@map("pricing_rules")
-}
-
-model overhead_cost_allocations {
-  id                           Int      @id @default(autoincrement())
-  cost_category                String   @unique @db.VarChar(255)
-  target_percentage            Decimal? @db.Decimal(5, 2)
-  allocation_percentage_to_hpp Decimal  @db.Decimal(5, 2)
-  created_at                   DateTime @default(now())
-  updated_at                   DateTime @updatedAt
-
-  @@map("overhead_cost_allocations")
-}
-
-model discount_policies {
-  id                        Int      @id @default(autoincrement())
-  user_role                 UserRole @unique
-  max_discount_percentage   Decimal  @db.Decimal(5, 2)
-  requires_approval_above   Decimal? @db.Decimal(5, 2)
-  created_at                DateTime @default(now())
-  updated_at                DateTime @updatedAt
-
-  @@map("discount_policies")
 }
 
 enum AccountType {
@@ -394,70 +579,214 @@ enum InvoiceStatus {
   CANCELLED
 }
 
-model invoices {
-  id              Int           @id @default(autoincrement())
-  invoice_number  String        @unique @db.VarChar(50)
-  customer_name   String        @db.VarChar(255)
-  issue_date      DateTime      @default(now())
-  due_date        DateTime
-  amount          Decimal       @db.Decimal(15, 2)
-  tax_amount      Decimal       @default(0) @db.Decimal(15, 2)
-  total_amount    Decimal       @db.Decimal(15, 2)
-  status          InvoiceStatus @default(DRAFT)
-  notes           String?       @db.Text
-  created_at      DateTime      @default(now())
-  updated_at      DateTime      @updatedAt
-
-  @@map("invoices")
-}
-
-model vendors {
-  id             String              @id @default(uuid())
-  vendor_name    String
-  category       String?
-  classification VendorClassification
-  is_preferred   Boolean             @default(false)
-  created_at     DateTime            @default(now())
-  updated_at     DateTime            @updatedAt
-
-  @@map("vendors")
-}
-
 enum VendorClassification {
-  SMALL
-  MEDIUM
-  LARGE
-  ENTERPRISE
-  GOVERNMENT
+  Local
+  International
+  Principal
+  Distributor
+  Freelance
 }
 
-model ChartOfAccounts {
-  id              Int               @id @default(autoincrement())
-  account_code    String            @unique
-  account_name    String
-  account_type    AccountType
-  description     String?
-  created_at      DateTime          @default(now())
-  updated_at      DateTime          @updatedAt
-  journal_entries journal_entries[]
+// ====================
+// Service Taxonomy LUTs
+// ====================
+
+model ServiceSystemCategory {
+  id         String             @id @default(uuid()) @db.Uuid
+  name       String             @unique
+  created_at DateTime           @default(now()) @db.Timestamptz(6)
+  updated_at DateTime           @default(now()) @db.Timestamptz(6)
+
+  // Inverse relation to Service
+  services   Service[]          @relation("ServiceKategoriSistem")
+
+  // One-to-many to subsystems
+  subsystems ServiceSubSystem[]
 }
 
-model journal_entries {
-  id               BigInt          @id @default(autoincrement())
-  transaction_date DateTime        @db.Date
-  description      String?         @db.Text
-  account_id       Int
-  debit            Decimal?        @db.Decimal(15, 2)
-  credit           Decimal?        @db.Decimal(15, 2)
-  reference_id     String?         @db.Uuid
-  reference_type   String?         @db.VarChar(50)
-  created_by       String?         @db.Text
-  created_at       DateTime        @default(now()) @db.Timestamp(3)
-  updated_at       DateTime        @default(now()) @updatedAt @db.Timestamp(3)
+model ServiceSubSystem {
+  id                   String                  @id @default(uuid()) @db.Uuid
+  name                 String
+  system_category_id   String                  @db.Uuid
+  created_at           DateTime                @default(now()) @db.Timestamptz(6)
+  updated_at           DateTime                @default(now()) @db.Timestamptz(6)
 
-  account ChartOfAccounts @relation(fields: [account_id], references: [id], onDelete: Restrict)
+  systemCategory       ServiceSystemCategory   @relation(fields: [system_category_id], references: [id])
+  services             Service[]               @relation("ServiceSubSistem")
 
-  @@index([account_id])
-  @@index([transaction_date])
-  @@index([reference_id])
+  @@index([system_category_id])
+  @@unique([name, system_category_id])
+}
+
+model ServiceCategory {
+  id           String                @id @default(uuid()) @db.Uuid
+  name         String                @unique
+  created_at   DateTime              @default(now()) @db.Timestamptz(6)
+  updated_at   DateTime              @default(now()) @db.Timestamptz(6)
+
+  services     Service[]             @relation("ServiceKategoriJasa")
+  specificTypes ServiceSpecificType[]
+}
+
+model ServiceSpecificType {
+  id           String            @id @default(uuid()) @db.Uuid
+  name         String
+  category_id  String            @db.Uuid
+  created_at   DateTime          @default(now()) @db.Timestamptz(6)
+  updated_at   DateTime          @default(now()) @db.Timestamptz(6)
+
+  category     ServiceCategory   @relation(fields: [category_id], references: [id])
+  services     Service[]         @relation("ServiceJenisJasaSpesifik")
+
+  @@index([category_id])
+  @@unique([name, category_id])
+}
+
+model ServiceDescription {
+  id         String     @id @default(uuid()) @db.Uuid
+  text       String
+  created_at DateTime   @default(now()) @db.Timestamptz(6)
+  updated_at DateTime   @default(now()) @db.Timestamptz(6)
+
+  services   Service[]  @relation("ServiceDeskripsi")
+}
+
+model TeamRecommendation {
+  id         String     @id @default(uuid()) @db.Uuid
+  name       String     @unique
+  created_at DateTime   @default(now()) @db.Timestamptz(6)
+  updated_at DateTime   @default(now()) @db.Timestamptz(6)
+
+  services   Service[]  @relation("ServiceRekomendasiTim")
+}
+
+model FaseProyekLookup {
+  id         String     @id @default(uuid()) @db.Uuid
+  name       String     @unique
+  created_at DateTime   @default(now()) @db.Timestamptz(6)
+  updated_at DateTime   @default(now()) @db.Timestamptz(6)
+
+  services   Service[]  @relation("ServiceFaseProyek")
+}
+
+model SBULookup {
+  id         String     @id @default(uuid()) @db.Uuid
+  name       String     @unique
+  created_at DateTime   @default(now()) @db.Timestamptz(6)
+  updated_at DateTime   @default(now()) @db.Timestamptz(6)
+
+  services   Service[]  @relation("ServiceSBU")
+}
+
+model Project {
+  id              String    @id @default(uuid())
+  project_name    String
+  project_number  String    @unique
+  customer_id     String
+  customer       customers  @relation(fields: [customer_id], references: [id])
+  status          ProjectStatus
+  contract_value  Decimal   @db.Decimal(18, 2)
+  estimated_hpp   Decimal?  @db.Decimal(18, 2)
+  actual_cost     Decimal?  @db.Decimal(18, 2)
+
+  estimations     Estimation[]
+  project_boms    ProjectBOM[]
+  milestones      ProjectMilestone[]
+
+  @@map("projects")
+}
+
+model Estimation {
+  id                        String    @id @default(uuid())
+  project_id                String
+  version                   Int
+  status                    EstimationStatus
+  total_direct_hpp          Decimal   @db.Decimal(18, 2)
+  total_overhead_allocation Decimal   @db.Decimal(18, 2)
+  total_hpp                 Decimal   @db.Decimal(18, 2)
+  total_sell_price          Decimal   @db.Decimal(18, 2)
+
+  project     Project         @relation(fields: [project_id], references: [id])
+  items       EstimationItem[]
+
+  @@map("estimations")
+}
+
+model EstimationItem {
+  id                       String    @id @default(uuid())
+  estimation_id            String
+  item_id                  String
+  item_type                ItemType
+  quantity                 Decimal   @db.Decimal(18, 2)
+  source                   SourceType
+  hpp_at_estimation        Decimal   @db.Decimal(18, 2)
+  sell_price_at_estimation Decimal   @db.Decimal(18, 2)
+
+  estimation  Estimation  @relation(fields: [estimation_id], references: [id])
+
+  @@map("estimation_items")
+}
+
+model ProjectBOM {
+  id         String    @id @default(uuid())
+  project_id String
+  item_id    String
+  item_type  ItemType
+  quantity   Decimal   @db.Decimal(18, 2)
+
+  project    Project   @relation(fields: [project_id], references: [id])
+
+  @@map("project_boms")
+}
+
+model MilestoneTemplate {
+  id            Int       @id @default(autoincrement())
+  template_name String    @unique
+  project_type  String?
+  milestones    Json
+
+  @@map("milestone_templates")
+}
+
+model ProjectMilestone {
+  id          String    @id @default(uuid())
+  project_id  String
+  name        String
+  start_date  DateTime?
+  end_date    DateTime?
+  status      MilestoneStatus
+  project     Project   @relation(fields: [project_id], references: [id])
+
+  @@map("project_milestones")
+}
+
+
+enum ProjectStatus {
+  DRAFT
+  ONGOING
+  COMPLETED
+  CANCELLED
+}
+
+enum EstimationStatus {
+  DRAFT
+  APPROVED
+  REJECTED
+  ARCHIVED
+}
+
+enum ItemType {
+  MATERIAL
+  SERVICE
+}
+
+enum SourceType {
+  INTERNAL
+  EXTERNAL
+}
+
+enum MilestoneStatus {
+  PLANNED
+  IN_PROGRESS
+  DONE
 }

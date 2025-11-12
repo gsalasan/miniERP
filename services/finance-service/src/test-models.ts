@@ -5,11 +5,11 @@ const prisma = new PrismaClient();
 async function testPrisma() {
   try {
     console.log('Testing Tax Rates...');
-    const taxRates = await prisma.tax_rates.findMany();
+    const taxRates = await prisma.taxRates.findMany();
     console.log('✅ Tax Rates:', taxRates.length, 'records');
     
     console.log('Testing Exchange Rates...');
-    const exchangeRates = await prisma.exchange_rates.findMany();
+    const exchangeRates = await prisma.exchangeRates.findMany();
     console.log('✅ Exchange Rates:', exchangeRates.length, 'records');
     
     console.log('\n🎉 All working!');

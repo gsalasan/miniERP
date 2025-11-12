@@ -12,6 +12,13 @@ enum MaterialLocation {
   Import = 'Import',
 }
 
+enum Components {
+  Main_Equipment = 'Main_Equipment',
+  Supporting_Equipment = 'Supporting_Equipment',
+  Installation_Material = 'Installation_Material',
+  Consumables = 'Consumables',
+}
+
 // Validation middleware for creating materials
 export const validateCreateMaterial = (
   req: Request,
@@ -54,6 +61,13 @@ export const validateCreateMaterial = (
     );
   }
 
+  // Validate components enum if provided
+  if (req.body.components && !Object.values(Components).includes(req.body.components)) {
+    errors.push(
+      `components must be one of: ${Object.values(Components).join(', ')}`
+    );
+  }
+
   // Validate cost_ori if provided
   if (cost_ori !== undefined && cost_ori !== null) {
     const costNum = parseFloat(cost_ori);
@@ -80,7 +94,6 @@ export const validateCreateMaterial = (
     'sbu',
     'system',
     'subsystem',
-    'components',
     'brand',
     'owner_pn',
     'vendor',
@@ -140,6 +153,13 @@ export const validateUpdateMaterial = (
     );
   }
 
+  // Validate components enum if provided
+  if (req.body.components && !Object.values(Components).includes(req.body.components)) {
+    errors.push(
+      `components must be one of: ${Object.values(Components).join(', ')}`
+    );
+  }
+
   // Validate cost_ori if provided
   if (cost_ori !== undefined && cost_ori !== null) {
     const costNum = parseFloat(cost_ori);
@@ -166,7 +186,6 @@ export const validateUpdateMaterial = (
     'sbu',
     'system',
     'subsystem',
-    'components',
     'brand',
     'owner_pn',
     'vendor',

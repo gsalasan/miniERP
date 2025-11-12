@@ -9,7 +9,7 @@ const auth_service_1 = require("../services/auth.service");
 const auth_service_2 = require("../services/auth.service");
 // REGISTER
 const register = async (req, res) => {
-    const { email, password, roles, employee_id } = req.body;
+    const { email, password, roles } = req.body;
     if (!email || !password || !roles) {
         return res.status(400).json({
             success: false,
@@ -25,7 +25,7 @@ const register = async (req, res) => {
         }
         // Pastikan roles adalah array
         const rolesArray = Array.isArray(roles) ? roles : [roles];
-        const user = await (0, auth_service_2.createUser)(email, password, rolesArray, employee_id);
+        const user = await (0, auth_service_2.createUser)(email, password, rolesArray);
         return res.status(201).json({
             success: true,
             message: 'User berhasil dibuat',

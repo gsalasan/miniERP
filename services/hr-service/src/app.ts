@@ -1,15 +1,23 @@
+
+import dotenv from 'dotenv';
+import path from 'path';
+// Load environment variables from hr-service directory specifically
+dotenv.config({ path: path.join(__dirname, '..', '.env') });
+
 import express from 'express';
 import cors from 'cors';
-import dotenv from 'dotenv';
-import { PrismaClient } from '@prisma/client';
+import employeeRoutes from './routes/employee.routes';
+import attendanceRoutes from './routes/attendance.routes';
+import hrRoutes from './routes/hr.routes';
+import { getPrisma } from './utils/prisma';
+import { startAutoCheckoutJob } from './jobs/auto-checkout.job';
 
-// Load environment variables
-dotenv.config();
-
-// Initialize Prisma client
-const prisma = new PrismaClient();
+// Initialize express app only; defer Prisma until used
 
 const app = express();
+
+// Start auto check-out cron job
+startAutoCheckoutJob();
 
 // Middleware
 app.use(cors());
@@ -29,6 +37,7 @@ app.get('/health', (req, res) => {
 // Test HR models endpoint
 app.get('/api/v1/test-hr-models', async (req, res) => {
   try {
+    const prisma = getPrisma();
     // Test HR models are accessible
     const employeeCount = await prisma.hr_employees.count();
     const attendanceCount = await prisma.hr_attendances.count();
@@ -52,9 +61,13 @@ app.get('/api/v1/test-hr-models', async (req, res) => {
   }
 });
 
+// API routes
+app.use('/api/v1', employeeRoutes);
+app.use('/api/v1/attendances', attendanceRoutes);
+app.use('/api/v1/hr', hrRoutes);
 // API routes will be added here
 // app.use('/api/v1/employees', employeeRoutes);
-// app.use('/api/v1/attendance', attendanceRoutes);
+
 // app.use('/api/v1/leaves', leaveRoutes);
 // app.use('/api/v1/performance', performanceRoutes);
 

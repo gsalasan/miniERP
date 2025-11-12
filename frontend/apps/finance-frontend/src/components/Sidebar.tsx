@@ -9,10 +9,6 @@ import {
   Bars3Icon,
   XMarkIcon,
   ChevronDownIcon,
-<<<<<<< HEAD
-  RectangleGroupIcon,
-=======
->>>>>>> origin/main
 } from '@heroicons/react/24/outline';
 
 interface SidebarProps {
@@ -44,22 +40,13 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, setIsOpen }) => {
       icon: BanknotesIcon,
       children: [
         {
-<<<<<<< HEAD
-          name: 'Akuntansi',
-=======
           name: 'Chart of Accounts',
->>>>>>> origin/main
           path: '/coa',
           icon: DocumentTextIcon,
         },
         {
-<<<<<<< HEAD
-          name: 'Kokpit Kebijakan',
-          path: '/policy-cockpit',
-=======
           name: 'Kokpit Finansial',
           path: '/financial-cockpit',
->>>>>>> origin/main
           icon: ChartBarIcon,
         },
       ],

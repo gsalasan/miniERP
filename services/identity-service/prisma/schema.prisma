@@ -238,6 +238,103 @@ model hr_employee_documents {
   @@map("hr_employee_documents")
 }
 
+model customer_contacts {
+  id             String    @id
+  customer_id    String
+  name           String
+  position       String?
+  email          String?
+  phone          String?
+  contact_person String?
+  customers      customers @relation(fields: [customer_id], references: [id], onDelete: Cascade)
+}
+
+model customers {
+  id                String              @id
+  customer_name     String
+  channel           String
+  city              String
+  status            CustomerStatus
+  top_days          Int
+  assigned_sales_id String?
+  credit_limit      Float?
+  no_npwp           String?
+  sppkp             String?
+  createdAt         DateTime            @default(now())
+  updatedAt         DateTime
+  customer_contacts customer_contacts[]
+}
+
+model ChartOfAccounts {
+  id           Int         @id @default(autoincrement())
+  account_code String      @unique
+  account_name String
+  account_type AccountType
+  description  String?
+  created_at   DateTime    @default(now())
+  updated_at   DateTime    @updatedAt
+}
+
+model exchange_rates {
+  id             Int      @id @default(autoincrement())
+  currency_from  String   @db.VarChar(3)
+  currency_to    String   @db.VarChar(3)
+  rate           Decimal  @db.Decimal(18, 6)
+  effective_date DateTime @db.Date
+  is_active      Boolean  @default(true)
+  created_at     DateTime @default(now())
+  updated_at     DateTime @default(now())
+
+  @@unique([currency_from, currency_to, effective_date])
+}
+
+model invoices {
+  id               String        @id
+  invoice_number   String        @unique
+  invoice_date     DateTime      @db.Date
+  due_date         DateTime      @db.Date
+  customer_id      String?
+  customer_name    String
+  customer_address String?
+  customer_phone   String?
+  customer_email   String?
+  subtotal         Decimal       @db.Decimal(15, 2)
+  tax_amount       Decimal       @default(0) @db.Decimal(15, 2)
+  discount_amount  Decimal       @default(0) @db.Decimal(15, 2)
+  total_amount     Decimal       @db.Decimal(15, 2)
+  currency         String        @default("IDR") @db.VarChar(3)
+  status           InvoiceStatus @default(DRAFT)
+  notes            String?
+  payment_terms    String?
+  created_by       String?
+  updated_by       String?
+  created_at       DateTime      @default(now())
+  updated_at       DateTime
+}
+
+model tax_rates {
+  id          Int      @id @default(autoincrement())
+  tax_name    String   @unique
+  tax_code    String   @unique
+  rate        Decimal  @db.Decimal(5, 2)
+  description String?
+  is_active   Boolean  @default(true)
+  created_at  DateTime @default(now())
+  updated_at  DateTime @default(now())
+}
+
+model vendors {
+  id             String              @id @default(uuid())
+  vendor_name    String
+  category       String?
+  classification VendorClassification
+  is_preferred   Boolean             @default(false)
+  created_at     DateTime            @default(now())
+  updated_at     DateTime            @updatedAt
+
+  @@map("vendors")
+}
+
 enum UserRole {
   CEO
   FINANCE_ADMIN
@@ -271,6 +368,7 @@ enum ServiceUnit {
 enum Gender {
   MALE
   FEMALE
+  OTHER
 }
 
 enum MaritalStatus {
@@ -281,17 +379,21 @@ enum MaritalStatus {
 }
 
 enum BloodType {
-  A
-  B
-  AB
-  O
+  A_POSITIVE
+  A_NEGATIVE
+  B_POSITIVE
+  B_NEGATIVE
+  AB_POSITIVE
+  AB_NEGATIVE
+  O_POSITIVE
+  O_NEGATIVE
 }
 
 enum EmploymentType {
   FULL_TIME
   PART_TIME
   CONTRACT
-  INTERNSHIP
+  INTERN
   FREELANCE
 }
 
@@ -336,47 +438,10 @@ enum LeaveStatus {
   CANCELLED
 }
 
-model customer_contacts {
-  id             String    @id
-  customer_id    String
-  name           String
-  position       String?
-  email          String?
-  phone          String?
-  contact_person String?
-  customers      customers @relation(fields: [customer_id], references: [id], onDelete: Cascade)
-}
-
-model customers {
-  id                String              @id
-  customer_name     String
-  channel           String
-  city              String
-  status            CustomerStatus
-  top_days          Int
-  assigned_sales_id String?
-  credit_limit      Float?
-  no_npwp           String?
-  sppkp             String?
-  createdAt         DateTime            @default(now())
-  updatedAt         DateTime
-  customer_contacts customer_contacts[]
-}
-
 enum CustomerStatus {
   ACTIVE
   INACTIVE
   PROSPECT
-}
-
-model ChartOfAccounts {
-  id            Int          @id @default(autoincrement())
-  account_code  String       @unique
-  account_name  String
-  account_type  AccountType
-  description   String?
-  created_at    DateTime     @default(now())
-  updated_at    DateTime     @updatedAt
 }
 
 enum AccountType {
@@ -385,4 +450,20 @@ enum AccountType {
   Equity
   Revenue
   Expense
+}
+
+enum InvoiceStatus {
+  DRAFT
+  SENT
+  PAID
+  OVERDUE
+  CANCELLED
+}
+
+enum VendorClassification {
+  SMALL
+  MEDIUM
+  LARGE
+  ENTERPRISE
+  GOVERNMENT
 }

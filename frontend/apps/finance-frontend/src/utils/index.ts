@@ -33,4 +33,3 @@ export const formatDateTime = (date: string | Date): string => {
 // Finance utility functions
 export * from './formatters';
 export * from './exportUtils';
->>>>>>> origin/main

@@ -1,11 +1,13 @@
+
 import { Request, Response } from 'express';
 import bcrypt from 'bcryptjs';
 import { generateToken } from '../services/auth.service';
 import { findUserByEmail, createUser } from '../services/auth.service';
 
+
 // REGISTER
 export const register = async (req: Request, res: Response) => {
-  const { email, password, roles, employee_id } = req.body;
+  const { email, password, roles } = req.body;
 
   if (!email || !password || !roles) {
     return res.status(400).json({
@@ -24,7 +26,7 @@ export const register = async (req: Request, res: Response) => {
 
     // Pastikan roles adalah array
     const rolesArray = Array.isArray(roles) ? roles : [roles];
-    const user = await createUser(email, password, rolesArray, employee_id);
+    const user = await createUser(email, password, rolesArray);
 
     return res.status(201).json({
       success: true,

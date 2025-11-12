@@ -1,7 +1,11 @@
-import app from "./app";
+import dotenv from 'dotenv';
+import app from './app';
 
-// Use explicit port for CRM service to avoid conflicts
-const PORT = Number(process.env.CRM_PORT) || 3002;
+// Load environment variables
+dotenv.config();
+
+// Use PORT environment variable for Cloud Run compatibility
+const PORT = process.env.PORT || 4002;
 
 app.listen(PORT, () => {
   // eslint-disable-next-line no-console
