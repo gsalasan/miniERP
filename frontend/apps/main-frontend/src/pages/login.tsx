@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import {
   Box,
   Container,
@@ -14,6 +15,7 @@ import { Email, Lock } from "@mui/icons-material";
 import { login as loginApi } from "../api";
 
 const Login: React.FC = () => {
+  const navigate = useNavigate();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
@@ -32,16 +34,21 @@ const Login: React.FC = () => {
       // Debug response
       console.log("Login response:", result);
 
-      if (result && result.success && result.token) {
+      if (result?.success === true && result.token) {
         setSuccess(true);
         localStorage.setItem("token", result.token);
+        // Also store user data if available
+        if (result.data) {
+          localStorage.setItem("user", JSON.stringify(result.data));
+        }
         setTimeout(() => {
-          window.location.href = "/dashboard";
+          navigate("/dashboard");
         }, 1000);
       } else {
         setError(result?.message || "Login gagal. Periksa email dan password Anda.");
       }
     } catch (err: any) {
+      console.error("Login exception:", err);
       setError(
         err?.message ||
           "Terjadi kesalahan saat login. Pastikan backend berjalan dan endpoint benar.",

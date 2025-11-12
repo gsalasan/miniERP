@@ -1,6 +1,11 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { journalEntriesAPI, JournalEntry, chartOfAccountsAPI, ChartOfAccount } from '../../api';
+<<<<<<< HEAD
 import { Modal, ConfirmDialog } from '../../components';
+=======
+import Modal from '../../components/Modal';
+import ConfirmDialog from '../../components/ConfirmDialog';
+>>>>>>> origin/main
 import {
   MagnifyingGlassIcon,
   PlusIcon,
@@ -81,16 +86,30 @@ const JournalEntriesTab: React.FC<JournalEntriesTabProps> = ({ onSuccess, onErro
   const fetchData = async () => {
     setLoading(true);
     try {
+<<<<<<< HEAD
       const [accounts, entries] = await Promise.all([
+=======
+      const [accountsResponse, entriesResponse] = await Promise.all([
+>>>>>>> origin/main
         chartOfAccountsAPI.getAll(),
         journalEntriesAPI.getAll(),
       ]);
 
+<<<<<<< HEAD
       console.log('🔍 Accounts loaded:', accounts.length, 'items', accounts);
       console.log('🔍 Entries loaded:', entries.length, 'items');
       
       setAccounts(accounts);
       setEntries(entries);
+=======
+      if (accountsResponse.success && accountsResponse.data) {
+        setAccounts(accountsResponse.data);
+      }
+
+      if (entriesResponse.success && entriesResponse.data) {
+        setEntries(entriesResponse.data);
+      }
+>>>>>>> origin/main
     } catch (err: any) {
       onError(err.message || 'Gagal mengambil data');
       console.error('Error fetching data:', err);

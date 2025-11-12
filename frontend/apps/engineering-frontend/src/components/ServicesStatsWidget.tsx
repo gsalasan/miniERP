@@ -4,7 +4,6 @@ import {
   Build as BuildIcon,
   CheckCircle as CheckCircleIcon,
   Warning as WarningIcon,
-  Cancel as CancelIcon,
 } from "@mui/icons-material";
 import { servicesService } from "../api/servicesApi";
 import { ServicesStats } from "../types/service";
@@ -60,7 +59,7 @@ const ServicesStatsWidget: React.FC = () => {
         const response = await servicesService.getServicesStats();
         // Backend returns { success: boolean, message: string, data: ServicesStats }
         setStats(response.data);
-      } catch (error) {
+      } catch {
         showError("Gagal memuat statistik services");
       } finally {
         setLoading(false);

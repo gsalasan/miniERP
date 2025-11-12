@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 
 interface User {
   id: number;
@@ -17,6 +18,7 @@ interface Module {
 }
 
 const Dashboard: React.FC = () => {
+  const navigate = useNavigate();
   const [user, setUser] = useState<User | null>(null);
 
   // Available modules
@@ -48,7 +50,7 @@ const Dashboard: React.FC = () => {
           />
         </svg>
       ),
-      url: "http://localhost:3010", // CRM frontend URL (placeholder)
+      url: "http://localhost:3010", // CRM frontend URL
       color: "#3B82F6",
     },
     {
@@ -63,7 +65,7 @@ const Dashboard: React.FC = () => {
           />
         </svg>
       ),
-      url: "http://localhost:5175", // HR frontend URL (placeholder)
+      url: "http://localhost:3013", // HR frontend URL
       color: "#F59E0B",
     },
     {
@@ -78,7 +80,7 @@ const Dashboard: React.FC = () => {
           />
         </svg>
       ),
-      url: "http://localhost:5172", // Finance frontend URL (placeholder)
+      url: "http://localhost:3012", // Finance frontend URL
       color: "#8B5CF6",
     },
     {
@@ -93,7 +95,7 @@ const Dashboard: React.FC = () => {
           />
         </svg>
       ),
-      url: "http://localhost:5176", // Procurement frontend URL (placeholder)
+      url: "http://localhost:3015", // Procurement frontend URL (placeholder)
       color: "#EF4444",
     },
     {
@@ -108,34 +110,35 @@ const Dashboard: React.FC = () => {
           />
         </svg>
       ),
-      url: "http://localhost:5177", // Project frontend URL (placeholder)
+      url: "http://localhost:3016", // Project frontend URL (placeholder)
       color: "#6B7280",
     },
   ];
+
 
   useEffect(() => {
     // Ambil token dari localStorage
     const token = localStorage.getItem("token");
     if (!token) {
-      window.location.href = "/"; // redirect ke login jika tidak ada token
+      navigate("/"); // redirect ke login jika tidak ada token
       return;
     }
 
     // Decode token (jika JWT, bisa pakai jwt-decode)
     // Atau fetch profile dari backend
-    fetch("http://localhost:3001/api/v1/auth/me", {
+    fetch("http://localhost:4000/api/v1/auth/me", {
       headers: { Authorization: `Bearer ${token}` },
     })
       .then((res) => res.json())
-      .then((data) => {
+      .then((data: any) => {
         if (data.success) {
           setUser(data.data);
         } else {
-          window.location.href = "/";
+          navigate("/");
         }
       })
       .catch(() => {
-        window.location.href = "/";
+        navigate("/");
       });
   }, []);
 
@@ -150,7 +153,7 @@ const Dashboard: React.FC = () => {
       localStorage.setItem("cross_app_timestamp", Date.now().toString());
 
       // Navigate to the module
-      window.open(module.url, "_blank");
+      window.open(module.url, '_blank');
 
       // Clean up cross-app data after a short delay
       setTimeout(() => {
@@ -159,14 +162,13 @@ const Dashboard: React.FC = () => {
         localStorage.removeItem("cross_app_timestamp");
       }, 5000); // 5 seconds cleanup
     } else {
-      alert("Token atau data user tidak ditemukan. Silakan login ulang.");
+      console.error("No token or user data available");
     }
   };
 
   const logout = () => {
     localStorage.removeItem("token");
-    sessionStorage.clear();
-    window.location.href = "/";
+    navigate("/");
   };
 
   return (
@@ -298,12 +300,6 @@ const Dashboard: React.FC = () => {
                 transition: "all 0.2s ease",
               }}
               onMouseEnter={(e) => {
-                e.currentTarget.style.backgroundColor = "#DC2626";
-                e.currentTarget.style.transform = "translateY(-1px)";
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.backgroundColor = "#EF4444";
-                e.currentTarget.style.transform = "translateY(0)";
               }}
             >
               Logout
@@ -366,16 +362,6 @@ const Dashboard: React.FC = () => {
                     overflow: "hidden",
                   }}
                   onMouseEnter={(e) => {
-                    e.currentTarget.style.transform = "translateY(-8px) scale(1.02)";
-                    e.currentTarget.style.boxShadow =
-                      "0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)";
-                    e.currentTarget.style.borderColor = module.color;
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.transform = "translateY(0) scale(1)";
-                    e.currentTarget.style.boxShadow =
-                      "0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)";
-                    e.currentTarget.style.borderColor = "#E5E7EB";
                   }}
                 >
                   {/* Gradient overlay */}

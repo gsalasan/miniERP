@@ -10,10 +10,13 @@ import { Layout, Modal, ConfirmDialog, Toast } from '../components';
 import { useToast } from '../hooks/useToast';
 import { exportToCSV, exportToJSON } from '../utils/exportUtils';
 import JournalEntriesTab from './COA/JournalEntriesTab';
+<<<<<<< HEAD
 import GeneralLedgerTab from '../components/COA/GeneralLedgerTab';
 import TrialBalanceTab from '../components/COA/TrialBalanceTab';
 import BalanceSheetTab from '../components/COA/BalanceSheetTab';
 import IncomeStatementTab from '../components/COA/IncomeStatementTab';
+=======
+>>>>>>> origin/main
 import {
   MagnifyingGlassIcon,
   PlusIcon,
@@ -27,7 +30,11 @@ import {
 } from '@heroicons/react/24/outline';
 
 const COA: React.FC = () => {
+<<<<<<< HEAD
   const [activeTab, setActiveTab] = useState<'accounts' | 'journal-entries' | 'general-ledger' | 'trial-balance' | 'balance-sheet' | 'income-statement'>('accounts');
+=======
+  const [activeTab, setActiveTab] = useState<'accounts' | 'journal-entries'>('accounts');
+>>>>>>> origin/main
   const [accounts, setAccounts] = useState<ChartOfAccount[]>([]);
   const [loading, setLoading] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -64,7 +71,13 @@ const COA: React.FC = () => {
     setLoading(true);
     try {
       const response = await chartOfAccountsAPI.getAll();
+<<<<<<< HEAD
       setAccounts(response);
+=======
+      if (response.success && response.data) {
+        setAccounts(response.data);
+      }
+>>>>>>> origin/main
     } catch (err: any) {
       error(err.message || 'Gagal mengambil data');
       console.error('Error fetching accounts:', err);
@@ -270,6 +283,7 @@ const COA: React.FC = () => {
         <Toast key={toast.id} message={toast.message} type={toast.type} onClose={() => hideToast(toast.id)} />
       ))}
 
+<<<<<<< HEAD
       {/* Modern Header with Gradient - TSD Style */}
       <div className="space-y-6 mb-6">
         <div className="bg-[#C9A86A] rounded-lg shadow-md p-8 border border-[#B89858]">
@@ -367,11 +381,76 @@ const COA: React.FC = () => {
             </button>
           </div>
         )}
+=======
+      {/* Page Header */}
+      <div className="mb-6">
+        <div className="bg-surface-card rounded-xl shadow-md border border-gray-100 p-6">
+          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+            <div>
+              <h2 className="text-2xl font-bold text-primary-dark">Chart of Accounts</h2>
+              <p className="text-text-secondary mt-1">Kelola daftar akun keuangan dan journal entries perusahaan</p>
+              <div className="mt-4 flex items-center gap-4 text-sm text-text-primary">
+                <div className="flex items-center gap-2">
+                  <div className="w-2 h-2 bg-accent-gold rounded-full animate-pulse"></div>
+                  <span>{accounts.length} Total Accounts</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="w-2 h-2 bg-primary-light rounded-full"></div>
+                  <span>{filteredAccounts.length} Filtered</span>
+                </div>
+              </div>
+            </div>
+            {activeTab === 'accounts' && (
+              <div className="flex gap-3">
+                <div className="relative">
+                  <button
+                    onClick={() => setShowFilters(!showFilters)}
+                    className="flex items-center gap-2 px-4 py-2 bg-surface-card text-primary-dark border border-gray-300 rounded-lg hover:bg-surface-bg transition-colors shadow-sm"
+                  >
+                    <ArrowDownTrayIcon className="h-5 w-5" />
+                    Export
+                  </button>
+                  {showFilters && (
+                    <div className="absolute right-0 mt-2 w-40 bg-surface-card rounded-lg shadow-lg border border-gray-200 py-1 z-10">
+                      <button
+                        onClick={() => {
+                          handleExport('csv');
+                          setShowFilters(false);
+                        }}
+                        className="w-full text-left px-4 py-2 hover:bg-surface-bg text-sm text-text-primary"
+                      >
+                        Export CSV
+                      </button>
+                      <button
+                        onClick={() => {
+                          handleExport('json');
+                          setShowFilters(false);
+                        }}
+                        className="w-full text-left px-4 py-2 hover:bg-surface-bg text-sm text-text-primary"
+                      >
+                        Export JSON
+                      </button>
+                    </div>
+                  )}
+                </div>
+                <button
+                  onClick={openCreateModal}
+                  className="flex items-center gap-2 px-6 py-3 bg-accent-gold text-primary-dark rounded-lg hover:bg-accent-gold-alt transition-colors shadow-md font-semibold"
+                >
+                  <PlusIcon className="h-5 w-5" />
+                  Tambah Akun Baru
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+>>>>>>> origin/main
       </div>
 
       {/* Tab Navigation */}
       <div className="mb-6">
         <div className="bg-surface-card rounded-xl shadow-sm border border-gray-200 p-1">
+<<<<<<< HEAD
           <div className="flex gap-2 overflow-x-auto">
             <button
               onClick={() => setActiveTab('accounts')}
@@ -379,6 +458,15 @@ const COA: React.FC = () => {
                 activeTab === 'accounts'
                   ? 'bg-gradient-to-br from-amber-100 to-yellow-50 text-amber-900 shadow-md border border-amber-300'
                   : 'text-stone-600 hover:text-stone-900 hover:bg-stone-50'
+=======
+          <div className="flex gap-2">
+            <button
+              onClick={() => setActiveTab('accounts')}
+              className={`flex items-center gap-2 px-6 py-3 rounded-lg font-medium transition-all ${
+                activeTab === 'accounts'
+                  ? 'bg-accent-gold text-primary-dark shadow-md'
+                  : 'text-text-secondary hover:text-text-primary hover:bg-surface-bg'
+>>>>>>> origin/main
               }`}
             >
               <ChartBarIcon className="h-5 w-5" />
@@ -386,15 +474,23 @@ const COA: React.FC = () => {
             </button>
             <button
               onClick={() => setActiveTab('journal-entries')}
+<<<<<<< HEAD
               className={`flex items-center gap-2 px-4 py-3 rounded-lg font-medium transition-all whitespace-nowrap ${
                 activeTab === 'journal-entries'
                   ? 'bg-gradient-to-br from-amber-100 to-yellow-50 text-amber-900 shadow-md border border-amber-300'
                   : 'text-stone-600 hover:text-stone-900 hover:bg-stone-50'
+=======
+              className={`flex items-center gap-2 px-6 py-3 rounded-lg font-medium transition-all ${
+                activeTab === 'journal-entries'
+                  ? 'bg-accent-gold text-primary-dark shadow-md'
+                  : 'text-text-secondary hover:text-text-primary hover:bg-surface-bg'
+>>>>>>> origin/main
               }`}
             >
               <DocumentTextIcon className="h-5 w-5" />
               Journal Entries
             </button>
+<<<<<<< HEAD
             <button
               onClick={() => setActiveTab('general-ledger')}
               className={`flex items-center gap-2 px-4 py-3 rounded-lg font-medium transition-all whitespace-nowrap ${
@@ -439,6 +535,8 @@ const COA: React.FC = () => {
               <ChartBarIcon className="h-5 w-5" />
               Laba Rugi
             </button>
+=======
+>>>>>>> origin/main
           </div>
         </div>
       </div>
@@ -446,6 +544,7 @@ const COA: React.FC = () => {
       {/* Tab Content */}
       {activeTab === 'journal-entries' ? (
         <JournalEntriesTab onSuccess={success} onError={error} />
+<<<<<<< HEAD
       ) : activeTab === 'general-ledger' ? (
         <GeneralLedgerTab />
       ) : activeTab === 'trial-balance' ? (
@@ -454,6 +553,8 @@ const COA: React.FC = () => {
         <BalanceSheetTab />
       ) : activeTab === 'income-statement' ? (
         <IncomeStatementTab />
+=======
+>>>>>>> origin/main
       ) : (
         <>
           {/* Filters & Search */}

@@ -10,9 +10,10 @@ import {
   Chip,
   Box,
   Divider,
+  IconButton,
 } from "@mui/material";
-import { Close as CloseIcon } from "@mui/icons-material";
-import { Service, ServiceStatus, ServiceType } from "../types/service";
+import { Close as CloseIcon, Info as InfoIcon } from "@mui/icons-material";
+import { Service } from "../types/service";
 
 interface ServiceDetailModalProps {
   open: boolean;
@@ -75,16 +76,36 @@ const ServiceDetailModal: React.FC<ServiceDetailModalProps> = ({ open, onClose, 
 
   return (
     <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth>
-      <DialogTitle>
-        <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-          <Typography variant="h6">Service Details</Typography>
-          <Button
-            onClick={onClose}
-            sx={{ minWidth: "auto", p: 1 }}
-            color="inherit"
-          >
+      <DialogTitle sx={{ pb: 1, px: 2, pt: 2, background: "transparent" }}>
+        <Box display="flex" justifyContent="space-between" alignItems="center">
+          <Box display="flex" alignItems="center" sx={{ gap: 1 }}>
+            <Box
+              sx={{
+                width: 44,
+                height: 44,
+                borderRadius: 2,
+                bgcolor: (theme) => `${theme.palette.primary.main}22`,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+              }}
+            >
+              <InfoIcon sx={{ fontSize: 24, color: (theme) => theme.palette.primary.main }} />
+            </Box>
+
+            <Box>
+              <Typography variant="h6" component="div" sx={{ fontWeight: 700 }}>
+                Service Details
+              </Typography>
+              <Typography variant="body2" sx={{ opacity: 0.85 }}>
+                {service?.service_name}
+              </Typography>
+            </Box>
+          </Box>
+
+          <IconButton onClick={onClose} sx={{ color: (theme) => theme.palette.text.primary }}>
             <CloseIcon />
-          </Button>
+          </IconButton>
         </Box>
       </DialogTitle>
 
@@ -99,16 +120,9 @@ const ServiceDetailModal: React.FC<ServiceDetailModalProps> = ({ open, onClose, 
             <DetailRow label="Service Name" value={service.service_name} />
             <DetailRow label="Service Code" value={service.service_code} />
             <DetailRow label="Item Type" value={service.item_type || "-"} />
-            <DetailRow label="Category" value={service.category || "-"} />
             <DetailRow
               label="Unit"
-              value={
-                <Chip
-                  label={service.unit}
-                  color={getUnitColor(service.unit)}
-                  size="small"
-                />
-              }
+              value={<Chip label={service.unit} color={getUnitColor(service.unit)} size="small" />}
             />
             <DetailRow
               label="Status"
@@ -129,20 +143,21 @@ const ServiceDetailModal: React.FC<ServiceDetailModalProps> = ({ open, onClose, 
           {/* Cost Information */}
           <Grid item xs={12}>
             <Typography variant="h6" sx={{ mb: 2, color: "primary.main" }}>
-              Cost Information
+              Additional Information
             </Typography>
+            <DetailRow label="SBU" value={service.sbu_name || service.sbu || "-"} />
+            <DetailRow label="Kategori Sistem" value={service.kategori_sistem_name || service.kategori_sistem || "-"} />
+            <DetailRow label="Sub Sistem" value={service.sub_sistem_name || service.sub_sistem || "-"} />
+            <DetailRow label="Fase Proyek" value={service.fase_proyek_name || service.fase_proyek || "-"} />
+            <DetailRow label="Kategori Jasa" value={service.kategori_jasa_name || service.kategori_jasa || "-"} />
+            <DetailRow label="Jenis Jasa Spesifik" value={service.jenis_jasa_spesifik_name || service.jenis_jasa_spesifik || "-"} />
+            <DetailRow label="Deskripsi" value={service.deskripsi_text || service.deskripsi || "-"} />
+            <DetailRow label="Rekomendasi Tim" value={service.rekomendasi_tim_name || service.rekomendasi_tim || "-"} />
             <DetailRow
-              label="Internal Cost per Hour"
-              value={formatCurrency(service.internal_cost_per_hour)}
+              label="Default Duration"
+              value={service.default_duration ? `${service.default_duration} ${service.unit}` : "-"}
             />
-            <DetailRow
-              label="Freelance Cost per Hour"
-              value={formatCurrency(service.freelance_cost_per_hour)}
-            />
-            <DetailRow label="Default Duration" value={service.default_duration ? `${service.default_duration} ${service.unit}` : "-"} />
           </Grid>
-
-
 
           <Grid item xs={12}>
             <Divider />
@@ -153,14 +168,8 @@ const ServiceDetailModal: React.FC<ServiceDetailModalProps> = ({ open, onClose, 
             <Typography variant="h6" sx={{ mb: 2, color: "primary.main" }}>
               Timestamps
             </Typography>
-            <DetailRow
-              label="Created At"
-              value={formatDate(service.created_at)}
-            />
-            <DetailRow
-              label="Updated At"
-              value={formatDate(service.updated_at)}
-            />
+            <DetailRow label="Created At" value={formatDate(service.created_at)} />
+            <DetailRow label="Updated At" value={formatDate(service.updated_at)} />
           </Grid>
         </Grid>
       </DialogContent>

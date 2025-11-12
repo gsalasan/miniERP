@@ -1,0 +1,406 @@
+name: Seed Database
+
+on:
+  workflow_dispatch:
+    inputs:
+      force_seed:
+        description: 'Force re-seed even if data exists'
+        required: false
+        default: false
+        type: boolean
+
+env:
+  PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
+  REGION: us-central1
+  DATABASE_NAME: minierp
+  INSTANCE_NAME: minierp-db
+
+jobs:
+  seed-database:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Google Auth
+        id: auth
+        uses: 'google-github-actions/auth@v2'
+        with:
+          credentials_json: '${{ secrets.GCP_SA_KEY }}'
+
+      - name: Set up Cloud SDK
+        uses: 'google-github-actions/setup-gcloud@v2'
+
+      - name: Install Cloud SQL Proxy
+        run: |
+          curl -o cloud-sql-proxy https://storage.googleapis.com/cloud-sql-connectors/cloud-sql-proxy/v2.8.0/cloud-sql-proxy.linux.amd64
+          chmod +x cloud-sql-proxy
+          sudo mv cloud-sql-proxy /usr/local/bin/
+
+      - name: Start Cloud SQL Proxy in background
+        run: |
+          cloud-sql-proxy ${{ env.PROJECT_ID }}:${{ env.REGION }}:${{ env.INSTANCE_NAME }} --port 5432 &
+          echo "Waiting for Cloud SQL Proxy to initialize..."
+          sleep 10
+          echo "Cloud SQL Proxy started"
+
+      - name: Install dependencies
+        run: |
+          npm install
+
+      - name: Generate Prisma clients for all schemas
+        run: |
+          export DATABASE_URL="postgresql://root:${{ secrets.DB_ROOT_PASSWORD }}@127.0.0.1:5432/${{ env.DATABASE_NAME }}"
+          echo "🔧 Generating Prisma clients for all schemas..."
+          echo ""
+          
+          # Generate root schema
+          if [ -f "prisma/schema.prisma" ]; then
+            echo "📦 Generating Prisma client for root schema (prisma/schema.prisma)..."
+            npx prisma generate --schema=prisma/schema.prisma
+            echo "✅ Root schema client generated"
+          else
+            echo "⚠️  Root schema not found at prisma/schema.prisma"
+          fi
+          
+          # Generate identity-service schema
+          if [ -f "services/identity-service/prisma/schema.prisma" ]; then
+            echo "📦 Generating Prisma client for identity-service schema..."
+            (cd services/identity-service && npx prisma generate --schema=prisma/schema.prisma || npx prisma generate)
+            echo "✅ Identity-service schema client generated"
+          else
+            echo "⚠️  Identity-service schema not found"
+          fi
+          
+          # Generate crm-service schema
+          if [ -f "services/crm-service/prisma/schema.prisma" ]; then
+            echo "📦 Generating Prisma client for crm-service schema..."
+            (cd services/crm-service && npx prisma generate --schema=prisma/schema.prisma || npx prisma generate)
+            echo "✅ CRM-service schema client generated"
+          else
+            echo "⚠️  CRM-service schema not found"
+          fi
+          
+          echo ""
+          echo "✅ All Prisma clients generated successfully!"
+
+      - name: Create check-database script
+        run: |
+          cat > check-database.mjs << 'EOF'
+          import { PrismaClient } from '@prisma/client';
+          const prisma = new PrismaClient();
+          
+          try {
+            // Check if database schema exists by checking for users table
+            const result = await prisma.$queryRaw`
+              SELECT table_name 
+              FROM information_schema.tables 
+              WHERE table_schema = 'public' AND table_name = 'users'
+            `;
+            
+            if (result.length === 0) {
+              console.log('SCHEMA_EXISTS=false');
+              console.log('SEEDED=false');
+              process.exit(0);
+            }
+            
+            // Schema exists, now check if data exists
+            const taxCount = await prisma.taxRates.count();
+            const exchangeCount = await prisma.exchangeRates.count();
+            const userCount = await prisma.users.count();
+            
+            if (taxCount > 0 || exchangeCount > 0 || userCount > 0) {
+              console.log('SCHEMA_EXISTS=true');
+              console.log('SEEDED=true');
+              process.exit(0);
+            } else {
+              console.log('SCHEMA_EXISTS=true');
+              console.log('SEEDED=false');
+              process.exit(0);
+            }
+          } catch (error) {
+            // If error is about table not existing, schema doesn't exist
+            if (error.message && error.message.includes('does not exist')) {
+              console.log('SCHEMA_EXISTS=false');
+              console.log('SEEDED=false');
+            } else {
+              console.error('Error checking database:', error.message);
+              console.log('SCHEMA_EXISTS=false');
+              console.log('SEEDED=false');
+            }
+            process.exit(0);
+          } finally {
+            await prisma.$disconnect();
+          }
+          EOF
+
+      - name: Check database status
+        id: check-database
+        if: github.event.inputs.force_seed == 'false'
+        run: |
+          export DATABASE_URL="postgresql://root:${{ secrets.DB_ROOT_PASSWORD }}@127.0.0.1:5432/${{ env.DATABASE_NAME }}"
+          RESULT=$(node check-database.mjs 2>&1 || echo "SCHEMA_EXISTS=false SEEDED=false")
+          echo "$RESULT"
+          
+          if echo "$RESULT" | grep -q "SCHEMA_EXISTS=true"; then
+            echo "schema_exists=true" >> $GITHUB_OUTPUT
+            echo "✅ Database schema exists"
+          else
+            echo "schema_exists=false" >> $GITHUB_OUTPUT
+            echo "⚠️  Database schema does not exist - migrations will run"
+          fi
+          
+          if echo "$RESULT" | grep -q "SEEDED=true"; then
+            echo "already_seeded=true" >> $GITHUB_OUTPUT
+            echo "⚠️  Database already contains seed data"
+          else
+            echo "already_seeded=false" >> $GITHUB_OUTPUT
+            echo "✅ Database is empty or schema missing - will proceed with migrations and seeding"
+          fi
+
+      - name: Check for failed migrations
+        id: check-failed-migrations
+        run: |
+          export DATABASE_URL="postgresql://root:${{ secrets.DB_ROOT_PASSWORD }}@127.0.0.1:5432/${{ env.DATABASE_NAME }}"
+          echo "🔍 Checking for failed migrations..."
+          
+          # Check migration status - this will fail if there are failed migrations
+          MIGRATION_STATUS=$(npx prisma migrate status 2>&1 || echo "FAILED_CHECK")
+          
+          if echo "$MIGRATION_STATUS" | grep -qi "failed\|P3009"; then
+            echo "has_failed_migrations=true" >> $GITHUB_OUTPUT
+            echo "⚠️  Found failed migrations"
+            echo "Migration status output:"
+            echo "$MIGRATION_STATUS"
+          else
+            echo "has_failed_migrations=false" >> $GITHUB_OUTPUT
+            echo "✅ No failed migrations found"
+          fi
+
+      - name: Resolve failed migrations
+        if: steps.check-failed-migrations.outputs.has_failed_migrations == 'true'
+        run: |
+          export DATABASE_URL="postgresql://root:${{ secrets.DB_ROOT_PASSWORD }}@127.0.0.1:5432/${{ env.DATABASE_NAME }}"
+          echo "🔧 Resolving failed migrations..."
+          echo "This will check if the migration was partially applied and mark it accordingly."
+          
+          # Get migration status again to extract failed migration name
+          MIGRATION_STATUS=$(npx prisma migrate status 2>&1 || echo "")
+          echo ""
+          echo "📋 Migration Status:"
+          echo "$MIGRATION_STATUS"
+          echo ""
+          
+          # Extract failed migration name - try multiple patterns
+          FAILED_MIGRATION=""
+          
+          # Pattern 1: "The `20251020064941_add_hr_models` migration started at..."
+          FAILED_MIGRATION=$(echo "$MIGRATION_STATUS" | grep -oP '`\K[^`]+' | head -1 || echo "")
+          
+          # Pattern 2: Look for timestamp_pattern_name format
+          if [ -z "$FAILED_MIGRATION" ]; then
+            FAILED_MIGRATION=$(echo "$MIGRATION_STATUS" | grep -oE '[0-9]{14}_[a-zA-Z_]+' | head -1 || echo "")
+          fi
+          
+          # Pattern 3: Known migration name from error message
+          if [ -z "$FAILED_MIGRATION" ]; then
+            if echo "$MIGRATION_STATUS" | grep -qi "20251020064941_add_hr_models"; then
+              FAILED_MIGRATION="20251020064941_add_hr_models"
+            fi
+          fi
+          
+          if [ -n "$FAILED_MIGRATION" ]; then
+            echo "✅ Found failed migration: $FAILED_MIGRATION"
+            echo ""
+            
+            # Check if migration objects exist (maybe it partially applied)
+            echo "🔍 Checking if migration objects exist..."
+            TABLE_EXISTS=$(node -e "
+              import('@prisma/client').then(({ PrismaClient }) => {
+                const prisma = new PrismaClient();
+                prisma.\$queryRaw\`SELECT table_name FROM information_schema.tables WHERE table_schema = 'public' AND table_name IN ('hr_employees', 'hr_attendances', 'hr_leave_requests')\`
+                  .then((result) => {
+                    if (result.length > 0) {
+                      console.log('EXISTS=true');
+                    } else {
+                      console.log('EXISTS=false');
+                    }
+                    return prisma.\$disconnect();
+                  })
+                  .catch(() => {
+                    console.log('EXISTS=false');
+                    prisma.\$disconnect();
+                  });
+              });
+            " 2>&1 || echo "EXISTS=false")
+            
+            if echo "$TABLE_EXISTS" | grep -q "EXISTS=true"; then
+              echo "✅ Migration tables exist - marking as applied (migration likely succeeded)"
+              if npx prisma migrate resolve --applied "$FAILED_MIGRATION" 2>&1; then
+                echo "✅ Migration $FAILED_MIGRATION resolved as applied"
+              else
+                echo "⚠️  Could not mark as applied, trying rolled-back..."
+                npx prisma migrate resolve --rolled-back "$FAILED_MIGRATION" 2>&1 || {
+                  echo "❌ Failed to resolve migration. Trying migrate repair..."
+                  npx prisma migrate repair 2>&1 || exit 1
+                }
+              fi
+            else
+              echo "⚠️  Migration tables don't exist - marking as rolled-back (will re-apply)"
+              if npx prisma migrate resolve --rolled-back "$FAILED_MIGRATION" 2>&1; then
+                echo "✅ Migration $FAILED_MIGRATION resolved as rolled-back"
+              else
+                echo "⚠️  Could not mark as rolled-back, trying migrate repair..."
+                npx prisma migrate repair 2>&1 || {
+                  echo "❌ Failed to resolve migration $FAILED_MIGRATION"
+                  echo "Migration may need manual intervention"
+                  exit 1
+                }
+              fi
+            fi
+          else
+            echo "⚠️  Could not identify specific failed migration"
+            echo "Attempting to repair migration state..."
+            if npx prisma migrate repair 2>&1; then
+              echo "✅ Migration state repaired"
+            else
+              echo "❌ Could not repair migration state"
+              echo "Listing all migrations to help debug:"
+              ls -la prisma/migrations/ || true
+              exit 1
+            fi
+          fi
+          echo ""
+          echo "✅ Failed migrations resolved successfully"
+
+      - name: Run Prisma migrations
+        if: |
+          github.event.inputs.force_seed == 'true' ||
+          steps.check-database.outputs.schema_exists != 'true' ||
+          steps.check-database.outputs.already_seeded != 'true'
+        run: |
+          export DATABASE_URL="postgresql://root:${{ secrets.DB_ROOT_PASSWORD }}@127.0.0.1:5432/${{ env.DATABASE_NAME }}"
+          echo "🔄 Running Prisma migrations to create database schema..."
+          echo "This will create all tables defined in the Prisma schema."
+          echo ""
+          echo "📋 Migration files found:"
+          ls -la prisma/migrations/ || echo "No migrations directory found"
+          echo ""
+          npx prisma migrate deploy
+          echo ""
+          echo "✅ Migrations completed successfully - database schema created!"
+
+      - name: Verify database schema exists
+        if: steps.check-database.outputs.schema_exists != 'true' || steps.check-database.outputs.already_seeded != 'true' || github.event.inputs.force_seed == 'true'
+        run: |
+          export DATABASE_URL="postgresql://root:${{ secrets.DB_ROOT_PASSWORD }}@127.0.0.1:5432/${{ env.DATABASE_NAME }}"
+          echo "🔍 Verifying database schema..."
+          node -e "
+            import('@prisma/client').then(({ PrismaClient }) => {
+              const prisma = new PrismaClient();
+              prisma.\$queryRaw\`SELECT table_name FROM information_schema.tables WHERE table_schema = 'public' AND table_name = 'users'\`
+                .then((result) => {
+                  if (result.length > 0) {
+                    console.log('✅ Database schema verified - users table exists');
+                    return prisma.\$disconnect();
+                  } else {
+                    console.error('❌ Error: users table does not exist!');
+                    console.error('Please ensure migrations have run successfully.');
+                    prisma.\$disconnect();
+                    process.exit(1);
+                  }
+                })
+                .catch((err) => {
+                  console.error('❌ Error verifying schema:', err.message);
+                  prisma.\$disconnect();
+                  process.exit(1);
+                });
+            });
+          "
+
+      - name: Seed database - Users
+        if: steps.check-database.outputs.already_seeded != 'true' || github.event.inputs.force_seed == 'true'
+        run: |
+          export DATABASE_URL="postgresql://root:${{ secrets.DB_ROOT_PASSWORD }}@127.0.0.1:5432/${{ env.DATABASE_NAME }}"
+          echo "🌱 Running seed-users.mjs..."
+          if [ -f "seed-users.mjs" ]; then
+            node seed-users.mjs
+          else
+            echo "⚠️  seed-users.mjs not found"
+          fi
+
+      - name: Seed database - Tax Rates and Exchange Rates
+        if: steps.check-database.outputs.already_seeded != 'true' || github.event.inputs.force_seed == 'true'
+        run: |
+          export DATABASE_URL="postgresql://root:${{ secrets.DB_ROOT_PASSWORD }}@127.0.0.1:5432/${{ env.DATABASE_NAME }}"
+          echo "🌱 Running seed-data.mjs..."
+          if [ -f "seed-data.mjs" ]; then
+            node seed-data.mjs
+          else
+            echo "⚠️  seed-data.mjs not found"
+          fi
+
+      - name: Seed database - Journal Entries
+        if: steps.check-database.outputs.already_seeded != 'true' || github.event.inputs.force_seed == 'true'
+        run: |
+          export DATABASE_URL="postgresql://root:${{ secrets.DB_ROOT_PASSWORD }}@127.0.0.1:5432/${{ env.DATABASE_NAME }}"
+          echo "🌱 Running seed-journal-entries.mjs..."
+          if [ -f "seed-journal-entries.mjs" ]; then
+            node seed-journal-entries.mjs
+          else
+            echo "⚠️  seed-journal-entries.mjs not found"
+          fi
+
+      - name: Seed database - Invoices
+        if: steps.check-database.outputs.already_seeded != 'true' || github.event.inputs.force_seed == 'true'
+        run: |
+          export DATABASE_URL="postgresql://root:${{ secrets.DB_ROOT_PASSWORD }}@127.0.0.1:5432/${{ env.DATABASE_NAME }}"
+          echo "🌱 Running seed-invoices.mjs..."
+          if [ -f "seed-invoices.mjs" ]; then
+            node seed-invoices.mjs
+          else
+            echo "⚠️  seed-invoices.mjs not found"
+          fi
+
+      - name: Skip seeding message
+        if: steps.check-database.outputs.already_seeded == 'true' && github.event.inputs.force_seed == 'false'
+        run: |
+          echo "⏭️  Skipping seeding - database already contains data"
+          echo ""
+          echo "💡 To force re-seed, check the 'Force re-seed even if data exists' option"
+          echo "   when triggering this workflow manually"
+
+      - name: Verify seeding results
+        if: steps.check-database.outputs.already_seeded != 'true' || github.event.inputs.force_seed == 'true'
+        run: |
+          export DATABASE_URL="postgresql://root:${{ secrets.DB_ROOT_PASSWORD }}@127.0.0.1:5432/${{ env.DATABASE_NAME }}"
+          cat > verify-seed.mjs << 'EOF'
+          import { PrismaClient } from '@prisma/client';
+          const prisma = new PrismaClient();
+          
+          try {
+            const userCount = await prisma.users.count();
+            const taxCount = await prisma.taxRates.count();
+            const exchangeCount = await prisma.exchangeRates.count();
+            const invoiceCount = await prisma.invoices.count();
+            const coaCount = await prisma.chartOfAccounts.count();
+            
+            console.log('✅ Seeding verification:');
+            console.log(`   Users: ${userCount}`);
+            console.log(`   Tax Rates: ${taxCount}`);
+            console.log(`   Exchange Rates: ${exchangeCount}`);
+            console.log(`   Invoices: ${invoiceCount}`);
+            console.log(`   Chart of Accounts: ${coaCount}`);
+          } catch (error) {
+            console.error('Error verifying seed:', error);
+          } finally {
+            await prisma.$disconnect();
+          }
+          EOF
+          node verify-seed.mjs
+

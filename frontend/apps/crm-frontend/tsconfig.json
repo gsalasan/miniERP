@@ -17,17 +17,15 @@
     "jsx": "react-jsx",
     "baseUrl": ".",
     "paths": {
-      "@/*": ["./src/*"],
-      "@shared/*": ["../../shared/*"]
+      "@/*": ["./src/*"]
     }
   },
   "include": [
-    "src/**/*",
-    "vite.config.ts"
+    "src"
   ],
-  "exclude": [
-    "node_modules",
-    "dist",
-    "build"
+  "references": [
+    {
+      "path": "./tsconfig.node.json"
+    }
   ]
 }
