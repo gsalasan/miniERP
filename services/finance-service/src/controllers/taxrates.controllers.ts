@@ -1,7 +1,5 @@
 import { Request, Response } from "express";
-import { PrismaClient } from '@prisma/client';
-
-const prisma = new PrismaClient();
+import { prisma } from '../lib/prisma';
 
 // Controller untuk ambil daftar tax rates
 export const getTaxRates = async (req: Request, res: Response): Promise<void> => {
@@ -10,7 +8,10 @@ export const getTaxRates = async (req: Request, res: Response): Promise<void> =>
       select: {
         id: true,
         tax_name: true,
-        rate_percentage: true,
+        tax_code: true,
+        rate: true,
+        description: true,
+        is_active: true,
         created_at: true,
         updated_at: true,
       },
@@ -53,7 +54,7 @@ export const getTaxRateById = async (req: Request, res: Response): Promise<void>
       select: {
         id: true,
         tax_name: true,
-        rate_percentage: true,
+        rate: true,
         created_at: true,
         updated_at: true,
       },
@@ -87,10 +88,10 @@ export const getTaxRateById = async (req: Request, res: Response): Promise<void>
 // Controller untuk membuat tax rate baru
 export const createTaxRate = async (req: Request, res: Response): Promise<void> => {
   try {
-    const { tax_name, rate_percentage } = req.body;
+    const { tax_name, rate } = req.body;
 
     // Validasi input
-    if (!tax_name || rate_percentage === undefined || rate_percentage === null) {
+    if (!tax_name || rate === undefined || rate === null) {
       res.status(400).json({
         success: false,
         message: "Tax name dan rate percentage harus diisi",
@@ -98,7 +99,7 @@ export const createTaxRate = async (req: Request, res: Response): Promise<void> 
       return;
     }
 
-    if (typeof rate_percentage !== 'number' || rate_percentage < 0 || rate_percentage > 100) {
+    if (typeof rate !== 'number' || rate < 0 || rate > 100) {
       res.status(400).json({
         success: false,
         message: "Rate percentage harus berupa angka antara 0-100",
@@ -109,12 +110,12 @@ export const createTaxRate = async (req: Request, res: Response): Promise<void> 
     const newTaxRate = await prisma.tax_rates.create({
       data: {
         tax_name,
-        rate_percentage,
+        rate,
       },
       select: {
         id: true,
         tax_name: true,
-        rate_percentage: true,
+        rate: true,
         created_at: true,
         updated_at: true,
       },
@@ -150,7 +151,7 @@ export const createTaxRate = async (req: Request, res: Response): Promise<void> 
 export const updateTaxRate = async (req: Request, res: Response): Promise<void> => {
   try {
     const { id } = req.params;
-    const { tax_name, rate_percentage } = req.body;
+    const { tax_name, rate } = req.body;
     const taxRateId = Number.parseInt(id);
 
     if (Number.isNaN(taxRateId)) {
@@ -162,7 +163,7 @@ export const updateTaxRate = async (req: Request, res: Response): Promise<void> 
     }
 
     // Validasi input
-    if (rate_percentage !== undefined && (typeof rate_percentage !== 'number' || rate_percentage < 0 || rate_percentage > 100)) {
+    if (rate !== undefined && (typeof rate !== 'number' || rate < 0 || rate > 100)) {
       res.status(400).json({
         success: false,
         message: "Rate percentage harus berupa angka antara 0-100",
@@ -172,7 +173,7 @@ export const updateTaxRate = async (req: Request, res: Response): Promise<void> 
 
     const updateData: any = {};
     if (tax_name !== undefined) updateData.tax_name = tax_name;
-    if (rate_percentage !== undefined) updateData.rate_percentage = rate_percentage;
+    if (rate !== undefined) updateData.rate = rate;
 
     const updatedTaxRate = await prisma.tax_rates.update({
       where: { id: taxRateId },
@@ -180,7 +181,7 @@ export const updateTaxRate = async (req: Request, res: Response): Promise<void> 
       select: {
         id: true,
         tax_name: true,
-        rate_percentage: true,
+        rate: true,
         created_at: true,
         updated_at: true,
       },

@@ -7,6 +7,14 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+enum UserRole {
+  ADMIN
+  EMPLOYEE
+  MANAGER
+  HR
+  FINANCE
+}
+
 model users {
   id            String     @id @default(uuid())
   email         String     @unique
@@ -560,6 +568,7 @@ enum AccountType {
   Equity
   Revenue
   Expense
+  CostOfService
 }
 
 enum InvoiceStatus {

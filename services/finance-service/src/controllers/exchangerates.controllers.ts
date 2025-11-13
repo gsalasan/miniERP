@@ -1,18 +1,28 @@
 import { Request, Response } from "express";
-import { PrismaClient } from '@prisma/client';
-
-const prisma = new PrismaClient();
+import { prisma } from '../lib/prisma';
 
 // Controller untuk ambil daftar exchange rates
 export const getExchangeRates = async (req: Request, res: Response): Promise<void> => {
   try {
+    const { is_active } = req.query;
+    
+    const whereClause = is_active !== undefined 
+      ? { is_active: is_active === 'true' }
+      : {};
+
     const exchangeRates = await prisma.exchange_rates.findMany({
+      where: whereClause,
       select: {
-        currency_code: true,
-        rate_to_idr: true,
+        id: true,
+        currency_from: true,
+        currency_to: true,
+        rate: true,
+        effective_date: true,
+        is_active: true,
+        created_at: true,
         updated_at: true,
       },
-      orderBy: { currency_code: "asc" },
+      orderBy: { currency_from: "asc" },
     });
 
     res.status(200).json({
@@ -32,24 +42,30 @@ export const getExchangeRates = async (req: Request, res: Response): Promise<voi
   }
 };
 
-// Controller untuk ambil exchange rate berdasarkan currency code
-export const getExchangeRateByCode = async (req: Request, res: Response): Promise<void> => {
+// Controller untuk ambil exchange rate berdasarkan ID
+export const getExchangeRateById = async (req: Request, res: Response): Promise<void> => {
   try {
-    const { currency_code } = req.params;
+    const { id } = req.params;
+    const rateId = Number.parseInt(id);
 
-    if (!currency_code || currency_code.length !== 3) {
+    if (Number.isNaN(rateId)) {
       res.status(400).json({
         success: false,
-        message: "Currency code harus berupa 3 karakter",
+        message: "ID harus berupa angka",
       });
       return;
     }
 
     const exchangeRate = await prisma.exchange_rates.findUnique({
-      where: { currency_code: currency_code.toUpperCase() },
+      where: { id: rateId },
       select: {
-        currency_code: true,
-        rate_to_idr: true,
+        id: true,
+        currency_from: true,
+        currency_to: true,
+        rate: true,
+        effective_date: true,
+        is_active: true,
+        created_at: true,
         updated_at: true,
       },
     });
@@ -82,18 +98,18 @@ export const getExchangeRateByCode = async (req: Request, res: Response): Promis
 // Controller untuk membuat exchange rate baru
 export const createExchangeRate = async (req: Request, res: Response): Promise<void> => {
   try {
-    const { currency_code, rate_to_idr } = req.body;
+    const { currency_from, currency_to, rate, effective_date, is_active } = req.body;
 
     // Validasi input
-    if (!currency_code || rate_to_idr === undefined || rate_to_idr === null) {
+    if (!currency_from || !currency_to || rate === undefined || rate === null || !effective_date) {
       res.status(400).json({
         success: false,
-        message: "Currency code dan rate to IDR harus diisi",
+        message: "Currency from, currency to, rate, dan effective date harus diisi",
       });
       return;
     }
 
-    if (currency_code.length !== 3) {
+    if (currency_from.length !== 3 || currency_to.length !== 3) {
       res.status(400).json({
         success: false,
         message: "Currency code harus berupa 3 karakter",
@@ -101,22 +117,30 @@ export const createExchangeRate = async (req: Request, res: Response): Promise<v
       return;
     }
 
-    if (typeof rate_to_idr !== 'number' || rate_to_idr <= 0) {
+    if (typeof rate !== 'number' || rate <= 0) {
       res.status(400).json({
         success: false,
-        message: "Rate to IDR harus berupa angka positif",
+        message: "Rate harus berupa angka positif",
       });
       return;
     }
 
     const newExchangeRate = await prisma.exchange_rates.create({
       data: {
-        currency_code: currency_code.toUpperCase(),
-        rate_to_idr,
+        currency_from: currency_from.toUpperCase(),
+        currency_to: currency_to.toUpperCase(),
+        rate,
+        effective_date: new Date(effective_date),
+        is_active: is_active !== undefined ? is_active : true,
       },
       select: {
-        currency_code: true,
-        rate_to_idr: true,
+        id: true,
+        currency_from: true,
+        currency_to: true,
+        rate: true,
+        effective_date: true,
+        is_active: true,
+        created_at: true,
         updated_at: true,
       },
     });
@@ -150,35 +174,59 @@ export const createExchangeRate = async (req: Request, res: Response): Promise<v
 // Controller untuk update exchange rate
 export const updateExchangeRate = async (req: Request, res: Response): Promise<void> => {
   try {
-    const { currency_code } = req.params;
-    const { rate_to_idr } = req.body;
+    const { id } = req.params;
+    const { currency_from, currency_to, rate, effective_date, is_active } = req.body;
+    
+    const rateId = Number.parseInt(id);
 
-    if (!currency_code || currency_code.length !== 3) {
+    if (Number.isNaN(rateId)) {
       res.status(400).json({
         success: false,
-        message: "Currency code harus berupa 3 karakter",
+        message: "ID harus berupa angka",
+      });
+      return;
+    }
+
+    // Cek apakah exchange rate ada
+    const existing = await prisma.exchange_rates.findUnique({
+      where: { id: rateId },
+    });
+
+    if (!existing) {
+      res.status(404).json({
+        success: false,
+        message: "Exchange Rate tidak ditemukan",
       });
       return;
     }
 
     // Validasi input
-    if (rate_to_idr !== undefined && (typeof rate_to_idr !== 'number' || rate_to_idr <= 0)) {
+    if (rate !== undefined && (typeof rate !== 'number' || rate <= 0)) {
       res.status(400).json({
         success: false,
-        message: "Rate to IDR harus berupa angka positif",
+        message: "Rate harus berupa angka positif",
       });
       return;
     }
 
     const updateData: any = {};
-    if (rate_to_idr !== undefined) updateData.rate_to_idr = rate_to_idr;
+    if (currency_from !== undefined) updateData.currency_from = currency_from.toUpperCase();
+    if (currency_to !== undefined) updateData.currency_to = currency_to.toUpperCase();
+    if (rate !== undefined) updateData.rate = rate;
+    if (effective_date !== undefined) updateData.effective_date = new Date(effective_date);
+    if (is_active !== undefined) updateData.is_active = is_active;
 
     const updatedExchangeRate = await prisma.exchange_rates.update({
-      where: { currency_code: currency_code.toUpperCase() },
+      where: { id: rateId },
       data: updateData,
       select: {
-        currency_code: true,
-        rate_to_idr: true,
+        id: true,
+        currency_from: true,
+        currency_to: true,
+        rate: true,
+        effective_date: true,
+        is_active: true,
+        created_at: true,
         updated_at: true,
       },
     });
@@ -212,18 +260,32 @@ export const updateExchangeRate = async (req: Request, res: Response): Promise<v
 // Controller untuk delete exchange rate
 export const deleteExchangeRate = async (req: Request, res: Response): Promise<void> => {
   try {
-    const { currency_code } = req.params;
+    const { id } = req.params;
+    const rateId = Number.parseInt(id);
 
-    if (!currency_code || currency_code.length !== 3) {
+    if (Number.isNaN(rateId)) {
       res.status(400).json({
         success: false,
-        message: "Currency code harus berupa 3 karakter",
+        message: "ID harus berupa angka",
+      });
+      return;
+    }
+
+    // Cek apakah exchange rate ada
+    const existing = await prisma.exchange_rates.findUnique({
+      where: { id: rateId },
+    });
+
+    if (!existing) {
+      res.status(404).json({
+        success: false,
+        message: "Exchange Rate tidak ditemukan",
       });
       return;
     }
 
     await prisma.exchange_rates.delete({
-      where: { currency_code: currency_code.toUpperCase() },
+      where: { id: rateId },
     });
 
     res.status(200).json({
@@ -233,15 +295,6 @@ export const deleteExchangeRate = async (req: Request, res: Response): Promise<v
   } catch (error) {
     console.error("Error delete Exchange Rate:", error);
     const errMsg = error instanceof Error ? error.message : "Unknown error";
-
-    // Handle record not found
-    if (errMsg.includes('Record to delete does not exist')) {
-      res.status(404).json({
-        success: false,
-        message: "Exchange Rate tidak ditemukan",
-      });
-      return;
-    }
 
     res.status(500).json({
       success: false,
@@ -286,15 +339,29 @@ export const bulkUpdateExchangeRates = async (req: Request, res: Response): Prom
     const results = [];
     for (const rate of rates) {
       const result = await prisma.exchange_rates.upsert({
-        where: { currency_code: rate.currency_code.toUpperCase() },
-        update: { rate_to_idr: rate.rate_to_idr },
+        where: { 
+          currency_from_currency_to_effective_date: {
+            currency_from: rate.currency_code.toUpperCase(),
+            currency_to: 'IDR',
+            effective_date: new Date()
+          }
+        },
+        update: { 
+          rate: rate.rate_to_idr,
+          is_active: true
+        },
         create: {
-          currency_code: rate.currency_code.toUpperCase(),
-          rate_to_idr: rate.rate_to_idr,
+          currency_from: rate.currency_code.toUpperCase(),
+          currency_to: 'IDR',
+          rate: rate.rate_to_idr,
+          effective_date: new Date(),
+          is_active: true,
         },
         select: {
-          currency_code: true,
-          rate_to_idr: true,
+          currency_from: true,
+          currency_to: true,
+          rate: true,
+          effective_date: true,
           updated_at: true,
         },
       });
