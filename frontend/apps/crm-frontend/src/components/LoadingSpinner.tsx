@@ -1,5 +1,5 @@
-import React from "react";
-import { Box, CircularProgress, Typography } from "@mui/material";
+import React from 'react';
+import { Box, CircularProgress, Typography } from '@mui/material';
 
 interface LoadingSpinnerProps {
   message?: string;
@@ -8,17 +8,17 @@ interface LoadingSpinnerProps {
 }
 
 const LoadingSpinner: React.FC<LoadingSpinnerProps> = ({
-  message = "Loading...",
+  message = 'Loading...',
   size = 40,
-  minHeight = "400px",
+  minHeight = '400px',
 }) => {
   return (
     <Box
       sx={{
-        display: "flex",
-        flexDirection: "column",
-        justifyContent: "center",
-        alignItems: "center",
+        display: 'flex',
+        flexDirection: 'column',
+        justifyContent: 'center',
+        alignItems: 'center',
         minHeight,
         gap: 2,
       }}
@@ -27,16 +27,16 @@ const LoadingSpinner: React.FC<LoadingSpinnerProps> = ({
         size={size}
         thickness={4}
         sx={{
-          color: "primary.main",
-          "& .MuiCircularProgress-circle": {
-            strokeLinecap: "round",
+          color: 'primary.main',
+          '& .MuiCircularProgress-circle': {
+            strokeLinecap: 'round',
           },
         }}
       />
       <Typography
-        variant="body2"
-        color="text.secondary"
-        sx={{ fontSize: "0.875rem", fontWeight: 500 }}
+        variant='body2'
+        color='text.secondary'
+        sx={{ fontSize: '0.875rem', fontWeight: 500 }}
       >
         {message}
       </Typography>
