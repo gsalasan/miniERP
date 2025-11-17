@@ -160,6 +160,11 @@ const ProjectDetailModal: React.FC<ProjectDetailModalProps> = ({
   const [estimationRequestModalOpen, setEstimationRequestModalOpen] =
     useState(false);
   const [estimationError, setEstimationError] = useState('');
+  // Preview state for attachments/documents
+  const [previewOpen, setPreviewOpen] = useState(false);
+  const [previewSrc, setPreviewSrc] = useState<string | null>(null);
+  const [previewTitle, setPreviewTitle] = useState<string | null>(null);
+  const [previewMime, setPreviewMime] = useState<string | null>(null);
 
   // Format currency
   const formatCurrency = (amount: number | undefined | null): string => {
@@ -617,6 +622,110 @@ const ProjectDetailModal: React.FC<ProjectDetailModalProps> = ({
       color: 'default' as const,
     };
     return <Chip label={config.label} color={config.color} size='small' />;
+  };
+
+  // Open preview for an attachment url which may be:
+  // - data:<mime>;base64,... (data URL)
+  // - localStorage://some_key (we store attachments as JSON in localStorage)
+  // - regular http(s) URL
+  const openPreview = async (attachmentUrl: string, suggestedName?: string) => {
+    try {
+      // localStorage stored attachment reference
+      if (attachmentUrl.startsWith('localStorage://')) {
+        const storageKey = attachmentUrl.replace('localStorage://', '');
+        let raw = localStorage.getItem(storageKey);
+        
+        // If exact key not found, try to find similar key (fallback for old data)
+        if (!raw) {
+          console.warn('Exact key not found:', storageKey);
+          const allKeys = Object.keys(localStorage);
+          const estimationKeys = allKeys.filter(k => k.includes('estimation_attachment'));
+          console.log('Available estimation keys:', estimationKeys);
+          
+          // Try to find a partial match based on the attachment ID
+          const attachIdMatch = storageKey.match(/attach_\d+/);
+          if (attachIdMatch) {
+            const attachId = attachIdMatch[0];
+            const matchingKey = estimationKeys.find(k => k.includes(attachId));
+            if (matchingKey) {
+              console.log('Found matching key:', matchingKey);
+              raw = localStorage.getItem(matchingKey);
+            }
+          }
+        }
+        
+        if (!raw) {
+          console.error('localStorage key not found:', storageKey);
+          setPreviewSrc(null);
+          setPreviewMime(null);
+          setPreviewTitle('File Tidak Tersedia');
+          setPreviewOpen(true);
+          return;
+        }
+        
+        let parsed;
+        try {
+          parsed = JSON.parse(raw);
+        } catch (parseErr) {
+          console.error('Failed to parse localStorage data:', parseErr);
+          setPreviewSrc(null);
+          setPreviewMime(null);
+          setPreviewTitle('File Rusak');
+          setPreviewOpen(true);
+          return;
+        }
+        
+        // EstimationAttachment has: id, name, size, type (mime), fileData
+        // ProjectDocument has: id, name, type (category), size, uploadedAt, fileData, mimeType
+        const fileData = parsed.fileData || parsed.data;
+        if (!fileData) {
+          console.error('No fileData in stored object:', parsed);
+          setPreviewSrc(null);
+          setPreviewMime(null);
+          setPreviewTitle('File Data Kosong');
+          setPreviewOpen(true);
+          return;
+        }
+        
+        const name = parsed.name || suggestedName || storageKey;
+        const mime = parsed.mimeType || parsed.type || null;
+        
+        setPreviewSrc(fileData);
+        setPreviewMime(mime || null);
+        setPreviewTitle(name);
+        setPreviewOpen(true);
+        return;
+      }
+
+      // data URL -> preview directly
+      if (attachmentUrl.startsWith('data:')) {
+        setPreviewSrc(attachmentUrl);
+        // try to extract mime
+        const mimeMatch = attachmentUrl.match(/^data:([^;]+);/);
+        setPreviewMime(mimeMatch ? mimeMatch[1] : null);
+        setPreviewTitle(suggestedName || attachmentUrl.split('/').pop() || 'Preview');
+        setPreviewOpen(true);
+        return;
+      }
+
+      // regular URL (http/https) -> try to preview in iframe (may be blocked by CORS)
+      if (/^https?:\/\//i.test(attachmentUrl)) {
+        setPreviewSrc(attachmentUrl);
+        setPreviewMime(null);
+        setPreviewTitle(suggestedName || attachmentUrl.split('/').pop() || 'Preview');
+        setPreviewOpen(true);
+        return;
+      }
+
+      // fallback: open in new tab
+      window.open(attachmentUrl, '_blank');
+    } catch (err) {
+      console.error('openPreview error', err);
+      setPreviewSrc(null);
+      setPreviewMime(null);
+      setPreviewTitle('Error');
+      setPreviewOpen(true);
+    }
   };
 
   return (
@@ -1237,7 +1346,7 @@ const ProjectDetailModal: React.FC<ProjectDetailModalProps> = ({
 
         {/* Tab 3: Dokumen */}
         <TabPanel value={tabValue} index={2}>
-          <DocumentTab projectId={project.id} projectName={project.project_name} />
+          <DocumentTab projectId={project.id} projectName={project.project_name} onPreview={(url, name, mime) => openPreview(url, name)} />
         </TabPanel>
 
         {/* Tab 4: Estimasi */}
@@ -1351,8 +1460,8 @@ const ProjectDetailModal: React.FC<ProjectDetailModalProps> = ({
                           {est.attachments.map((url: string, idx: number) => (
                             <Box
                               key={idx}
-                              component="button"
-                              sx={{ 
+                              component='button'
+                              sx={{
                                 cursor: 'pointer',
                                 textDecoration: 'underline',
                                 color: 'primary.main',
@@ -1368,72 +1477,9 @@ const ProjectDetailModal: React.FC<ProjectDetailModalProps> = ({
                                 '&:hover': {
                                   backgroundColor: 'primary.light',
                                   color: 'white',
-                                }
+                                },
                               }}
-                              onClick={() => {
-                                const url = est.attachments[idx];
-                                console.log('=== INLINE DOWNLOAD DEBUG ===');
-                                console.log('Attempting to download:', url);
-                                
-                                try {
-                                  if (url.startsWith('localStorage://')) {
-                                    const storageKey = url.replace('localStorage://', '');
-                                    console.log('Looking for key:', storageKey);
-                                    
-                                    const allKeys = Object.keys(localStorage);
-                                    const estimationKeys = allKeys.filter(k => k.includes('estimation'));
-                                    console.log('Estimation keys:', estimationKeys);
-                                    
-                                    const storedData = localStorage.getItem(storageKey);
-                                    if (!storedData) {
-                                      // Fallback 1: cari kandidat berdasarkan prefix umum "estimation_attachment_attach_"
-                                      const parts = storageKey.split('_');
-                                      const commonPrefix = parts.slice(0, 3).join('_') + '_'; // estimation_attachment_attach_
-                                      const candidates = allKeys.filter(k => k.startsWith(commonPrefix));
-                                      if (candidates.length > 0) {
-                                        // pilih yang timestamp-nya paling baru
-                                        const pick = [...candidates].sort((a,b) => {
-                                          const ta = Number(a.split('_')[3]) || 0;
-                                          const tb = Number(b.split('_')[3]) || 0;
-                                          return ta - tb;
-                                        }).pop() as string;
-                                        const recovered = localStorage.getItem(pick);
-                                        if (recovered) {
-                                          const attachment = JSON.parse(recovered);
-                                          const link = document.createElement('a');
-                                          link.href = attachment.fileData;
-                                          link.download = attachment.name || 'download';
-                                          document.body.appendChild(link);
-                                          link.click();
-                                          document.body.removeChild(link);
-                                          alert(`(Fallback) File ${attachment.name} didownload dari key: ${pick}`);
-                                          return;
-                                        }
-                                      }
-                                      // Fallback terakhir: informasikan ketersediaan
-                                      alert(`File tidak ditemukan!\n\nKey: ${storageKey}\nKeys tersedia: ${estimationKeys.join(', ') || 'tidak ada'}`);
-                                      return;
-                                    }
-                                    
-                                    const attachment = JSON.parse(storedData);
-                                    console.log('Found attachment:', attachment.name);
-                                    
-                                    const link = document.createElement('a');
-                                    link.href = attachment.fileData;
-                                    link.download = attachment.name;
-                                    document.body.appendChild(link);
-                                    link.click();
-                                    document.body.removeChild(link);
-                                    
-                                    alert(`File ${attachment.name} berhasil didownload!`);
-                                  } else {
-                                    window.open(url, '_blank');
-                                  }
-                                } catch (err) {
-                                  console.error('Download error:', err);
-                                  alert('Error: ' + (err as Error).message);
-                                }
-                              }}
+                              onClick={() => openPreview(url)}
                             >
                               📎 {url.includes('unais.jpg') ? 'unais.jpg' : url.split('/').pop() || `File ${idx + 1}`}
                             </Box>
@@ -1552,6 +1598,121 @@ const ProjectDetailModal: React.FC<ProjectDetailModalProps> = ({
         }
         onSubmit={handleCreateEstimationRequest}
       />
+
+      {/* Attachment Preview Dialog */}
+      <Dialog open={previewOpen} onClose={() => setPreviewOpen(false)} maxWidth='lg' fullWidth>
+        <DialogTitle sx={{ pr: 2 }}>{previewTitle || 'Preview'}</DialogTitle>
+        <DialogContent dividers sx={{ minHeight: 360, display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+          {!previewSrc ? (
+            <Box sx={{ textAlign: 'center', p: 4 }}>
+              <Typography variant='h6' color='error' gutterBottom>
+                File Tidak Tersedia
+              </Typography>
+              <Typography variant='body2' color='text.secondary' sx={{ mb: 2 }}>
+                {previewTitle === 'File Tidak Tersedia' 
+                  ? 'File tidak ditemukan di penyimpanan lokal. File mungkin sudah dihapus atau belum tersimpan dengan benar.'
+                  : previewTitle === 'File Rusak'
+                  ? 'Data file rusak dan tidak dapat dibaca.'
+                  : previewTitle === 'File Data Kosong'
+                  ? 'File tidak memiliki data yang valid.'
+                  : 'File tidak dapat ditampilkan.'}
+              </Typography>
+              <Typography variant='caption' color='text.secondary'>
+                Tip: Upload ulang file di estimasi baru untuk menyimpan lampiran dengan benar.
+              </Typography>
+            </Box>
+          ) : previewMime && previewMime.startsWith('image/') ? (
+            <Box component='img' src={previewSrc} alt={previewTitle || 'preview'} sx={{ maxWidth: '100%', maxHeight: '70vh', borderRadius: 1 }} />
+          ) : (/(\.pdf$)|(^data:application\/pdf;)/i.test(previewSrc) || previewMime === 'application/pdf') ? (
+            <Box sx={{ width: '100%', height: '70vh' }}>
+              <iframe title={previewTitle || 'pdf-preview'} src={previewSrc} style={{ width: '100%', height: '100%', border: 'none' }} />
+            </Box>
+          ) : /^https?:\/\//i.test(previewSrc) ? (
+            <Box sx={{ width: '100%', height: '70vh' }}>
+              <iframe title={previewTitle || 'url-preview'} src={previewSrc} style={{ width: '100%', height: '100%', border: 'none' }} />
+            </Box>
+          ) : (
+            (() => {
+              // For Office documents, try to use Google Docs Viewer or Office Online
+              const isOfficeDoc = previewTitle && (
+                /\.(docx?|xlsx?|pptx?)$/i.test(previewTitle) ||
+                previewMime && /application\/(vnd\.openxmlformats-officedocument|msword|vnd\.ms-excel|vnd\.ms-powerpoint)/.test(previewMime)
+              );
+              
+              if (isOfficeDoc && previewSrc.startsWith('data:')) {
+                // For base64 data URLs of Office docs, we need to download first as viewers need actual URLs
+                return (
+                  <Box sx={{ textAlign: 'center', p: 3 }}>
+                    <Typography variant='h6' gutterBottom>
+                      {previewTitle}
+                    </Typography>
+                    <Typography variant='body2' color='text.secondary' sx={{ mb: 3 }}>
+                      File dokumen Office tidak dapat di-preview langsung dari penyimpanan lokal.
+                      Silakan download file untuk membukanya.
+                    </Typography>
+                    <Button variant='contained' size='large' onClick={() => {
+                      try {
+                        const link = document.createElement('a');
+                        link.href = previewSrc as string;
+                        link.download = previewTitle || 'download';
+                        document.body.appendChild(link);
+                        link.click();
+                        document.body.removeChild(link);
+                      } catch (err) {
+                        console.error('download error', err);
+                        alert('Gagal mendownload file');
+                      }
+                    }}>Download untuk Membuka</Button>
+                  </Box>
+                );
+              }
+              
+              // For other file types, show download option
+              return (
+                <Box sx={{ textAlign: 'center', p: 2 }}>
+                  <Typography variant='body2' sx={{ mb: 2 }}>Preview tidak tersedia untuk tipe file ini.</Typography>
+                  <Button variant='contained' onClick={() => {
+                    try {
+                      const link = document.createElement('a');
+                      link.href = previewSrc as string;
+                      link.download = previewTitle || 'download';
+                      document.body.appendChild(link);
+                      link.click();
+                      document.body.removeChild(link);
+                    } catch (err) {
+                      console.error('download from preview error', err);
+                      alert('Gagal mendownload file');
+                    }
+                  }}>Download</Button>
+                </Box>
+              );
+            })()
+          )}
+        </DialogContent>
+        <DialogActions>
+          {previewSrc && (
+            <Button 
+              variant='contained' 
+              onClick={() => {
+                try {
+                  const link = document.createElement('a');
+                  link.href = previewSrc as string;
+                  link.download = previewTitle || 'download';
+                  document.body.appendChild(link);
+                  link.click();
+                  document.body.removeChild(link);
+                } catch (err) {
+                  console.error('download from preview error', err);
+                  alert('Gagal mendownload file');
+                }
+              }}
+            >
+              Download
+            </Button>
+          )}
+          <Button onClick={() => setPreviewOpen(false)}>Close</Button>
+        </DialogActions>
+      </Dialog>
     </Dialog>
   );
 };
@@ -1653,6 +1814,8 @@ const AddressMap: React.FC<{ address?: string | null; height?: number | string }
     return null;
   }
 
+  const apiKey = getApiKey();
+  
   return (
     <Box sx={{ mt: 1 }}>
       {loading && (
@@ -1666,10 +1829,23 @@ const AddressMap: React.FC<{ address?: string | null; height?: number | string }
           {error}
         </Typography>
       )}
-      <div
-        ref={mapRef}
-        style={{ width: '100%', height, borderRadius: 6, overflow: 'hidden' }}
-      />
+      {apiKey ? (
+        <div
+          ref={mapRef}
+          style={{ width: '100%', height, borderRadius: 6, overflow: 'hidden' }}
+        />
+      ) : (
+        <iframe
+          src={`https://www.google.com/maps/embed/v1/place?key=AIzaSyBFw0Qbyq9zTFTd-tUY6dZWTgaQzuU17R8&q=${encodeURIComponent(address)}`}
+          width='100%'
+          height={height}
+          style={{ border: 0, borderRadius: 6 }}
+          allowFullScreen
+          loading='lazy'
+          referrerPolicy='no-referrer-when-downgrade'
+          title='Customer Location'
+        />
+      )}
     </Box>
   );
 };
@@ -1688,12 +1864,12 @@ interface ProjectDocument {
 interface DocumentTabProps {
   projectId: string;
   projectName: string;
+  onPreview?: (attachmentUrl: string, name?: string, mime?: string) => void;
 }
 
-const DocumentTab: React.FC<DocumentTabProps> = ({ projectId, projectName }) => {
+const DocumentTab: React.FC<DocumentTabProps> = ({ projectId, projectName, onPreview }) => {
   const [documents, setDocuments] = useState<ProjectDocument[]>([]);
   const [uploading, setUploading] = useState(false);
-  const [selectedType, setSelectedType] = useState<ProjectDocument['type']>('OTHER');
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Load documents from localStorage on mount
@@ -1746,7 +1922,7 @@ const DocumentTab: React.FC<DocumentTabProps> = ({ projectId, projectName }) => 
         const newDocument: ProjectDocument = {
           id: `doc_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
           name: file.name,
-          type: selectedType,
+          type: 'OTHER',
           size: file.size,
           uploadedAt: new Date().toISOString(),
           fileData,
@@ -1778,9 +1954,13 @@ const DocumentTab: React.FC<DocumentTabProps> = ({ projectId, projectName }) => 
     }
   };
 
-  // Handle file download
+  // Handle file download (or preview via parent handler)
   const handleDownload = (doc: ProjectDocument) => {
     try {
+      if (onPreview) {
+        onPreview(doc.fileData, doc.name, doc.mimeType);
+        return;
+      }
       const link = document.createElement('a');
       link.href = doc.fileData;
       link.download = doc.name;
@@ -1889,29 +2069,7 @@ const DocumentTab: React.FC<DocumentTabProps> = ({ projectId, projectName }) => 
     return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
   };
 
-  // Get document type label
-  const getTypeLabel = (type: ProjectDocument['type']): string => {
-    const labels = {
-      PROPOSAL: 'Proposal',
-      PO: 'Purchase Order',
-      INVOICE: 'Invoice',
-      CONTRACT: 'Kontrak',
-      OTHER: 'Lainnya',
-    };
-    return labels[type];
-  };
-
-  // Get document type color
-  const getTypeColor = (type: ProjectDocument['type']): 'primary' | 'secondary' | 'success' | 'warning' | 'error' => {
-    const colors = {
-      PROPOSAL: 'primary' as const,
-      PO: 'secondary' as const,
-      INVOICE: 'success' as const,
-      CONTRACT: 'warning' as const,
-      OTHER: 'error' as const,
-    };
-    return colors[type];
-  };
+  // Document type helpers removed — types are no longer selectable/displayed
 
   return (
     <Box>
@@ -1927,23 +2085,7 @@ const DocumentTab: React.FC<DocumentTabProps> = ({ projectId, projectName }) => 
           </Typography>
           
           <Grid container spacing={2} alignItems='center'>
-            <Grid item xs={12} md={4}>
-              <FormControl fullWidth size='small'>
-                <InputLabel>Tipe Dokumen</InputLabel>
-                <Select
-                  value={selectedType}
-                  label='Tipe Dokumen'
-                  onChange={(e) => setSelectedType(e.target.value as ProjectDocument['type'])}
-                >
-                  <MenuItem value='PROPOSAL'>Proposal</MenuItem>
-                  <MenuItem value='PO'>Purchase Order</MenuItem>
-                  <MenuItem value='INVOICE'>Invoice</MenuItem>
-                  <MenuItem value='CONTRACT'>Kontrak</MenuItem>
-                  <MenuItem value='OTHER'>Lainnya</MenuItem>
-                </Select>
-              </FormControl>
-            </Grid>
-            
+            {/* Document type selection removed */}
             <Grid item xs={12} md={8}>
               <Box display='flex' alignItems='center' gap={2}>
                 <input
@@ -1996,12 +2138,6 @@ const DocumentTab: React.FC<DocumentTabProps> = ({ projectId, projectName }) => 
                           {doc.name}
                         </Typography>
                         <Box display='flex' alignItems='center' gap={1} mt={0.5}>
-                          <Chip 
-                            label={getTypeLabel(doc.type)} 
-                            size='small' 
-                            color={getTypeColor(doc.type)}
-                            variant='outlined'
-                          />
                           <Typography variant='caption' color='text.secondary'>
                             {formatFileSize(doc.size)}
                           </Typography>
@@ -2012,16 +2148,16 @@ const DocumentTab: React.FC<DocumentTabProps> = ({ projectId, projectName }) => 
                       </Box>
                     </Box>
                     
-                    <Box display='flex' gap={1}>
-                      <Tooltip title='Download'>
-                        <IconButton 
-                          size='small' 
-                          onClick={() => handleDownload(doc)}
-                          color='primary'
-                        >
-                          <DownloadIcon />
-                        </IconButton>
-                      </Tooltip>
+                        <Box display='flex' gap={1}>
+                          <Tooltip title='Preview'>
+                            <IconButton
+                              size='small'
+                              onClick={() => handleDownload(doc)}
+                              color='primary'
+                            >
+                              <DownloadIcon />
+                            </IconButton>
+                          </Tooltip>
                       <Tooltip title='Hapus'>
                         <IconButton 
                           size='small' 

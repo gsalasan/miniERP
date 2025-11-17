@@ -556,7 +556,7 @@ const PipelinePage: React.FC = () => {
         {/* Add-board control removed per UI polish request */}
 
         {/* Filter & Summary Section */}
-        <Paper elevation={1} sx={{ p: 1.25, mb: 1.25 }}>
+        <Paper elevation={0} sx={{ p: 1.25, mb: 1.25, bgcolor: 'transparent', boxShadow: 'none' }}>
           <Grid container spacing={{ xs: 1, sm: 3 }} alignItems='center'>
             {/* Filter (only visible to manager roles, not plain SALES users) */}
             {canSeeSalesFilter && (
@@ -610,59 +610,78 @@ const PipelinePage: React.FC = () => {
                 <Grid item xs={12} sm={4}>
                   <Card
                     variant='outlined'
-                    sx={{ textAlign: 'center', minWidth: { xs: 140, sm: 0 } }}
+                    sx={{
+                      textAlign: 'center',
+                      minWidth: { xs: 140, sm: 0 },
+                      borderRadius: 2,
+                      boxShadow: 1,
+                    }}
                   >
-                    <CardContent sx={{ py: { xs: 0.75, sm: 1 } }}>
-                      <Box display='flex' alignItems='center' justifyContent='center' mb={0.25}>
-                        <AssessmentIcon color='primary' sx={{ mr: 0.5 }} />
-                        <Typography variant={window.innerWidth < 600 ? 'body2' : 'subtitle1'} fontWeight='bold'>
+                    <CardContent sx={{ py: { xs: 1, sm: 1.25 } }}>
+                      <Box display='flex' flexDirection='column' alignItems='center' justifyContent='center'>
+                        <Box sx={{ width: 44, height: 44, borderRadius: '50%', bgcolor: 'primary.main', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'common.white', mb: 1 }}>
+                          <AssessmentIcon sx={{ fontSize: 20 }} />
+                        </Box>
+                        <Typography variant={window.innerWidth < 600 ? 'h6' : 'h5'} fontWeight={700} sx={{ lineHeight: 1 }}>
                           {totalOpportunities}
                         </Typography>
-                      </Box>
-                      <Typography variant='caption' color='text.secondary'>
-                        Total Opportunities
-                      </Typography>
-                    </CardContent>
-                  </Card>
-                </Grid>
-                <Grid item xs={12} sm={4}>
-                  <Card variant='outlined' sx={{ textAlign: 'center', minWidth: { xs: 140, sm: 0 } }}>
-                    <CardContent sx={{ py: { xs: 0.75, sm: 1 } }}>
-                      <Box display='flex' alignItems='center' justifyContent='center' mb={0.25}>
-                        <TrendingUpIcon color='success' sx={{ mr: 0.5 }} />
-                        <Typography variant={window.innerWidth < 600 ? 'body2' : 'subtitle1'} fontWeight='bold' color='success.main'>
-                          {formatCurrency(totalValue)}
+                        <Typography variant='caption' color='text.secondary' display='block' mt={0.5}>
+                          Total Opportunities
                         </Typography>
                       </Box>
-                      <Typography variant='caption' color='text.secondary'>
-                        Total Pipeline Value
-                      </Typography>
                     </CardContent>
                   </Card>
                 </Grid>
                 <Grid item xs={12} sm={4}>
                   <Card
                     variant='outlined'
-                    sx={{ textAlign: 'center', minWidth: { xs: 180, sm: 0 } }}
+                    sx={{
+                      textAlign: 'center',
+                      minWidth: { xs: 140, sm: 0 },
+                      borderRadius: 2,
+                      boxShadow: 1,
+                    }}
                   >
-                    <CardContent sx={{ py: { xs: 1, sm: 1.5 } }}>
-                      <Chip
-                        label={`${selectedSalesUser === 'all' ? 'All Sales' : salesUsers.find(u => u.id === selectedSalesUser)?.name || 'Sales'}`}
-                        color='primary'
-                        variant='outlined'
-                        size='small'
-                      />
-                      <Typography
-                        variant='caption'
-                        color='text.secondary'
-                        display='block'
-                        mt={0.5}
-                      >
-                        Current Filter
-                      </Typography>
+                    <CardContent sx={{ py: { xs: 1, sm: 1.25 } }}>
+                      <Box display='flex' flexDirection='column' alignItems='center' justifyContent='center'>
+                        <Box sx={{ width: 44, height: 44, borderRadius: '50%', bgcolor: 'success.main', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'common.white', mb: 1 }}>
+                          <TrendingUpIcon sx={{ fontSize: 20 }} />
+                        </Box>
+                        <Typography variant={window.innerWidth < 600 ? 'h6' : 'h5'} fontWeight={700} sx={{ lineHeight: 1, color: 'success.main' }}>
+                          {formatCurrency(totalValue)}
+                        </Typography>
+                        <Typography variant='caption' color='text.secondary' display='block' mt={0.5}>
+                          Total Pipeline Value
+                        </Typography>
+                      </Box>
                     </CardContent>
                   </Card>
                 </Grid>
+                {canSeeSalesFilter && (
+                  <Grid item xs={12} sm={4}>
+                    <Card
+                      variant='outlined'
+                      sx={{ textAlign: 'center', minWidth: { xs: 180, sm: 0 } }}
+                    >
+                      <CardContent sx={{ py: { xs: 1, sm: 1.5 } }}>
+                        <Chip
+                          label={`${selectedSalesUser === 'all' ? 'All Sales' : salesUsers.find(u => u.id === selectedSalesUser)?.name || 'Sales'}`}
+                          color='primary'
+                          variant='outlined'
+                          size='small'
+                        />
+                        <Typography
+                          variant='caption'
+                          color='text.secondary'
+                          display='block'
+                          mt={0.5}
+                        >
+                          Current Filter
+                        </Typography>
+                      </CardContent>
+                    </Card>
+                  </Grid>
+                )}
               </Grid>
             </Grid>
           </Grid>

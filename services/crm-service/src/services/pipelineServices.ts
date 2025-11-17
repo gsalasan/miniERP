@@ -692,16 +692,50 @@ export class PipelineService {
       throw new Error('You can only delete your own projects');
     }
 
-    // Remove related activities first to avoid FK constraint issues
+    // Delete all related records first to avoid FK constraint issues
+    // Use Promise.all for parallel deletion where safe
     try {
-      await prisma.project_activities.deleteMany({ where: { project_id: projectId } });
+      await Promise.all([
+        // Delete project activities (has onDelete: Cascade but we delete explicitly for safety)
+        prisma.project_activities.deleteMany({ where: { project_id: projectId } }),
+        // Delete project BOMs
+        prisma.project_boms.deleteMany({ where: { project_id: projectId } }),
+        // Delete project milestones
+        prisma.project_milestones.deleteMany({ where: { project_id: projectId } }),
+      ]);
+      
+      // Delete estimations separately as they may have their own child records
+      // First get all estimation IDs for this project
+      const estimations = await prisma.estimations.findMany({
+        where: { project_id: projectId },
+        select: { id: true }
+      });
+      
+      if (estimations.length > 0) {
+        const estimationIds = estimations.map(e => e.id);
+        
+        // Delete estimation items first
+        await prisma.estimation_items.deleteMany({
+          where: { estimation_id: { in: estimationIds } }
+        });
+        
+        // Then delete estimations
+        await prisma.estimations.deleteMany({
+          where: { project_id: projectId }
+        });
+      }
     } catch (err) {
-      // Log but continue to attempt project deletion
-      console.warn('Failed to delete project activities before project delete', err);
+      console.error('Failed to delete project related records:', err);
+      throw new Error('Gagal menghapus data terkait project: ' + (err as Error).message);
     }
 
-    // Delete the project row
-    await prisma.projects.delete({ where: { id: projectId } });
+    // Finally, delete the project row itself
+    try {
+      await prisma.projects.delete({ where: { id: projectId } });
+    } catch (err) {
+      console.error('Failed to delete project:', err);
+      throw new Error('Gagal menghapus project: ' + (err as Error).message);
+    }
   }
 }
 
