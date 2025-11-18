@@ -2,8 +2,14 @@
 import express from "express";
 import cors from "cors";
 import chartOfAccountsRoutes from "../routes/chartofaccounts.route";
+import journalEntriesRoutes from "../routes/journalentries.route";
 import taxRatesRoutes from "../routes/taxrates.route";
 import exchangeRatesRoutes from "../routes/exchangerates.route";
+import pricingRulesRoutes from "../routes/pricingrules.routes";
+import overheadAllocationsRoutes from "../routes/overheadallocations.routes";
+import discountPoliciesRoutes from "../routes/discountpolicies.routes";
+import invoicesRoutes from "../routes/invoices.route";
+import reportsRoutes from "../routes/reports.route";
 
 const app = express();
 
@@ -38,10 +44,18 @@ app.use(cors({
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// Routes utama (finance)
-app.use("/api", chartOfAccountsRoutes);
-app.use("/api", taxRatesRoutes);
-app.use("/api", exchangeRatesRoutes);
+// Routes utama (finance) - FULL KOKPIT FINANSIAL
+console.log("📍 Loading ALL finance routes for Kokpit Finansial...");
+app.use("/api", chartOfAccountsRoutes);                      // Chart of Accounts
+app.use("/api/journal-entries", journalEntriesRoutes);       // Journal Entries (FITUR 3.4.C)
+app.use("/api", taxRatesRoutes);                             // Tax Rates (FITUR 3.4.F - Kokpit) ✅
+app.use("/api", exchangeRatesRoutes);                        // Exchange Rates (FITUR 3.4.F - Kokpit) ✅
+app.use("/api/pricing-rules", pricingRulesRoutes);           // Pricing Rules (FITUR 3.4.F - Kokpit)
+app.use("/api/overhead-allocations", overheadAllocationsRoutes); // Overhead (FITUR 3.4.F - Kokpit)
+app.use("/api/discount-policies", discountPoliciesRoutes);   // Discount Policies (FITUR 3.4.F - Kokpit)
+app.use("/api/invoices", invoicesRoutes);                    // Invoices (FITUR 3.4.A & B)
+app.use("/api/reports", reportsRoutes);                      // Financial Reports (FITUR 3.4.D - Automation) ⭐
+console.log("✅ FULL Kokpit Finansial ACTIVE! Tax Rates ✅ Exchange Rates ✅");
 
 // Health check endpoint for Cloud Run
 app.get("/health", (req: express.Request, res: express.Response) => {

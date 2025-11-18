@@ -279,8 +279,7 @@ export const getEstimationById = async (req: Request, res: Response) => {
         },
       },
     });
-    if (!estimation)
-      return res.status(404).json({ error: 'Estimation not found' });
+    if (!estimation) return res.status(404).json({ error: 'Estimation not found' });
     res.json(estimation);
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
