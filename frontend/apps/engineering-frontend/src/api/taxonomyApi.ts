@@ -92,7 +92,10 @@ export class TaxonomyService {
   }
 
   async createSubSystem(name: string, system_category_id: string): Promise<TaxonomyItem> {
-    const response = await apiClient.post(`${this.baseUrl}/sub-systems`, { name, system_category_id });
+    const response = await apiClient.post(`${this.baseUrl}/sub-systems`, {
+      name,
+      system_category_id,
+    });
     return response.data.data;
   }
 
@@ -136,16 +139,45 @@ export class TaxonomyService {
   }
 
   // Team Recommendations (Rekomendasi Tim)
-  async getTeamRecommendations(search?: string): Promise<TaxonomyItem[]> {
+  async getTeamRecommendations(
+    search?: string,
+    type?: "INTERNAL" | "FREELANCE",
+  ): Promise<TaxonomyItem[]> {
     const response = await apiClient.get<TaxonomyResponse>(`${this.baseUrl}/team-recommendations`, {
-      params: { search, limit: 1000 },
+      params: { search, limit: 1000, type },
     });
     return response.data.data.data;
   }
 
-  async createTeamRecommendation(name: string): Promise<TaxonomyItem> {
-    const response = await apiClient.post(`${this.baseUrl}/team-recommendations`, { name });
+  async createTeamRecommendation(
+    name: string,
+    type: "INTERNAL" | "FREELANCE" = "INTERNAL",
+  ): Promise<TaxonomyItem> {
+    const response = await apiClient.post(`${this.baseUrl}/team-recommendations`, { name, type });
     return response.data.data;
+  }
+
+  // HR employees helper: fetch employees and map to TaxonomyItem
+  async getEmployees(search?: string): Promise<TaxonomyItem[]> {
+    // Allow overriding HR API base from Vite env; fallback to localhost:4004
+    const HR_BASE = (import.meta.env as any).VITE_HR_API_BASE || "http://localhost:4004";
+    const url = `${HR_BASE}/api/v1/employees/list/all`;
+    try {
+      const resp = await apiClient.get(url, { params: { search, limit: 500 } });
+      // HR may return { success, data: [...] } or just data array
+      const list = resp.data?.data || resp.data || [];
+      return (list as any[]).map((e) => ({
+        id: e.id,
+        name: e.full_name || e.name || `${e.first_name || ""} ${e.last_name || ""}`.trim(),
+      }));
+    } catch (err: any) {
+      console.error(`Failed to fetch employees from ${url}`, {
+        message: err.message,
+        status: err.response?.status,
+        body: err.response?.data,
+      });
+      return [];
+    }
   }
 
   // Fase Proyek

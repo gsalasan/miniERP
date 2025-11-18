@@ -1,5 +1,5 @@
 import { Request, Response } from 'express';
-import { PrismaClient } from '@prisma/client';
+import prisma from '../prisma/client';
 import materialsService from '../services/materialsService';
 
 // Enum definitions to match database schema
@@ -7,20 +7,12 @@ enum MaterialStatus {
   Active = 'Active',
   EndOfLife = 'EndOfLife',
   Discontinue = 'Discontinue',
-} 
+}
 
 enum MaterialLocation {
   Local = 'Local',
   Import = 'Import',
 }
-
-const prisma = new PrismaClient({
-  datasources: {
-    db: {
-      url: process.env.DATABASE_URL,
-    },
-  },
-});
 
 // Get all materials with filtering, pagination, and search
 const getMaterials = async (req: Request, res: Response) => {
@@ -382,10 +374,94 @@ const healthCheck = async (req: Request, res: Response) => {
   }
 };
 
+// FITUR 3.2.C: Create material with vendor and initial price (seamless from calculator)
+const createMaterialWithVendor = async (req: Request, res: Response) => {
+  try {
+    const { item_name, owner_pn, category, brand, satuan, status, location, initialPrice } =
+      req.body;
+
+    // Validate required fields
+    if (!item_name) {
+      return res.status(400).json({
+        success: false,
+        message: 'Item name is required',
+      });
+    }
+
+    if (!satuan) {
+      return res.status(400).json({
+        success: false,
+        message: 'Unit (satuan) is required',
+      });
+    }
+
+    if (!initialPrice || !initialPrice.vendor || !initialPrice.price || !initialPrice.currency) {
+      return res.status(400).json({
+        success: false,
+        message: 'Initial price with vendor, price, and currency is required',
+      });
+    }
+
+    // Call service layer
+    const result = await materialsService.createMaterialWithVendor({
+      item_name,
+      owner_pn,
+      category,
+      brand,
+      satuan,
+      status,
+      location,
+      initialPrice,
+    });
+
+    return res.status(201).json({
+      success: true,
+      message: 'Material created successfully',
+      data: result,
+    });
+  } catch (error) {
+    console.error('Failed to create material with vendor:', error);
+
+    // Handle duplicate error
+    if (error instanceof Error && error.message.includes('sudah ada di database')) {
+      return res.status(409).json({
+        success: false,
+        message: error.message,
+      });
+    }
+
+    return res.status(500).json({
+      success: false,
+      message: 'Failed to create material',
+      error: error instanceof Error ? error.message : 'Unknown error',
+    });
+  }
+};
+
+// Search materials (for autocomplete)
+const searchMaterials = async (req: Request, res: Response) => {
+  try {
+    const query = (req.query.q as string) || '';
+    const limit = parseInt(req.query.limit as string) || 20;
+
+    const materials = await materialsService.searchMaterials(query, limit);
+    return res.json(materials);
+  } catch (error) {
+    console.error('Failed to search materials:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Failed to search materials',
+      error: error instanceof Error ? error.message : 'Unknown error',
+    });
+  }
+};
+
 export default {
   getMaterials,
   getMaterialById,
   createMaterial,
+  createMaterialWithVendor, // FITUR 3.2.C
+  searchMaterials, // For autocomplete
   updateMaterial,
   deleteMaterial,
   getMaterialsStats,

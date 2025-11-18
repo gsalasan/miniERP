@@ -20,7 +20,8 @@ const createService = async (req: Request, res: Response) => {
       kategori_jasa_id,
       jenis_jasa_spesifik_id,
       deskripsi_id,
-      rekomendasi_tim_id,
+      deskripsi_text,
+      rekomendasi_tim_ids,
       fase_proyek_id,
       sbu_id,
       unit,
@@ -62,7 +63,8 @@ const createService = async (req: Request, res: Response) => {
       kategori_jasa_id,
       jenis_jasa_spesifik_id,
       deskripsi_id,
-      rekomendasi_tim_id,
+      deskripsi_text,
+      rekomendasi_tim_ids,
       fase_proyek_id,
       sbu_id,
       unit,
@@ -151,6 +153,15 @@ const getServiceById = async (req: Request, res: Response) => {
       });
     }
 
+    // Validate UUID format
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    if (!uuidRegex.test(id)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid service ID format. Expected UUID.',
+      });
+    }
+
     const service = await serviceService.getServiceById(id);
 
     if (!service) {
@@ -227,7 +238,8 @@ const updateService = async (req: Request, res: Response) => {
       kategori_jasa_id,
       jenis_jasa_spesifik_id,
       deskripsi_id,
-      rekomendasi_tim_id,
+      deskripsi_text,
+      rekomendasi_tim_ids,
       unit,
       default_duration,
       is_active,
@@ -260,7 +272,10 @@ const updateService = async (req: Request, res: Response) => {
     if (jenis_jasa_spesifik_id !== undefined)
       updateData.jenis_jasa_spesifik_id = jenis_jasa_spesifik_id;
     if (deskripsi_id !== undefined) updateData.deskripsi_id = deskripsi_id;
-  if (rekomendasi_tim_id !== undefined) updateData.rekomendasi_tim_id = rekomendasi_tim_id;
+    if (deskripsi_text !== undefined) {
+      updateData.deskripsi_text = deskripsi_text;
+    }
+    if (rekomendasi_tim_ids !== undefined) updateData.rekomendasi_tim_ids = rekomendasi_tim_ids;
     if (unit !== undefined) updateData.unit = unit;
     if (default_duration !== undefined) updateData.default_duration = parseFloat(default_duration);
     if (is_active !== undefined) updateData.is_active = is_active;
@@ -388,6 +403,28 @@ const getServiceStats = async (req: Request, res: Response) => {
   }
 };
 
+// FITUR 3.2.B: Search services for autocomplete
+const searchServices = async (req: Request, res: Response) => {
+  try {
+    const query = (req.query.q as string) || '';
+    const limit = parseInt(req.query.limit as string) || 20;
+
+    if (!query || query.length < 2) {
+      return res.json([]);
+    }
+
+    const services = await serviceService.searchServices(query, limit);
+    return res.json(services);
+  } catch (error) {
+    // eslint-disable-next-line no-console
+    console.error('Error searching services:', error);
+    res.status(500).json({
+      success: false,
+      message: error instanceof Error ? error.message : 'Failed to search services',
+    });
+  }
+};
+
 export {
   createService,
   getServices,
@@ -398,4 +435,5 @@ export {
   hardDeleteService,
   restoreService,
   getServiceStats,
+  searchServices,
 };

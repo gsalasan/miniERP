@@ -21,6 +21,8 @@ import {
   Home as HomeIcon,
   Logout as LogoutIcon,
   Build as BuildIcon,
+  Calculate as CalculateIcon,
+  Queue as QueueIcon,
 } from "@mui/icons-material";
 import { useNavigate, useLocation } from "react-router-dom";
 
@@ -36,8 +38,24 @@ const LogoContainer: React.FC = () => {
   const theme = useTheme();
 
   return (
-    <Box sx={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center" }}>
-      <Box sx={{ py: 2, px: 2, bgcolor: "transparent", width: "100%", display: "flex", justifyContent: "center" }}>
+    <Box
+      sx={{
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "center",
+        justifyContent: "center",
+      }}
+    >
+      <Box
+        sx={{
+          py: 2,
+          px: 2,
+          bgcolor: "transparent",
+          width: "100%",
+          display: "flex",
+          justifyContent: "center",
+        }}
+      >
         {!imageError ? (
           <img
             src="/unais.png"
@@ -71,9 +89,9 @@ const menuItems: MenuItem[] = [
     path: "/items",
   },
   {
-    text: "Engineering",
-    icon: <EngineeringIcon />,
-    path: "/engineering",
+    text: "Antrian Estimasi",
+    icon: <QueueIcon />,
+    path: "/estimations/queue",
   },
 ];
 
@@ -102,6 +120,10 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
     if (item.path === "/items") {
       return location.pathname.startsWith("/items");
     }
+    if (item.path === "/estimations/queue") {
+      return location.pathname === "/estimations/queue";
+    }
+
     return location.pathname === item.path;
   };
 
@@ -120,7 +142,7 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
       </Box>
 
       {/* Navigation Menu */}
-  <Box sx={{ flexGrow: 1, px: 2, mt: 2 }}>
+      <Box sx={{ flexGrow: 1, px: 2, mt: 2 }}>
         <List sx={{ p: 0 }}>
           {menuItems.map((item) => (
             <ListItem key={item.text} disablePadding sx={{ mb: 1 }}>

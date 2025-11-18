@@ -55,7 +55,11 @@ const DeleteConfirmationModal: React.FC<DeleteConfirmationModalProps> = ({
               <WarningIcon sx={{ fontSize: 20, color: (theme) => theme.palette.error.main }} />
             </Box>
             <Box>
-              <Typography variant="h6" component="div" sx={{ fontWeight: 700, color: "error.main" }}>
+              <Typography
+                variant="h6"
+                component="div"
+                sx={{ fontWeight: 700, color: "error.main" }}
+              >
                 {title}
               </Typography>
             </Box>

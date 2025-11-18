@@ -1,15 +1,15 @@
 import React, { useState, useCallback, useEffect } from "react";
-import { 
-  Box, 
-  Container, 
-  Typography, 
-  Tabs, 
-  Tab, 
+import {
+  Box,
+  Container,
+  Typography,
+  Tabs,
+  Tab,
   Paper,
   TextField,
   InputAdornment,
   Card,
-  CardContent
+  CardContent,
 } from "@mui/material";
 import { Search as SearchIcon } from "@mui/icons-material";
 import { MaterialsPage } from "../materials";
@@ -55,24 +55,27 @@ export const ItemsPage: React.FC = () => {
   };
 
   // Handle global search with debounce
-  const handleSearchChange = useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
-    const value = event.target.value;
-    setGlobalSearch(value);
+  const handleSearchChange = useCallback(
+    (event: React.ChangeEvent<HTMLInputElement>) => {
+      const value = event.target.value;
+      setGlobalSearch(value);
 
-    // Clear existing timeout
-    if (searchDebounce) {
-      clearTimeout(searchDebounce);
-    }
+      // Clear existing timeout
+      if (searchDebounce) {
+        clearTimeout(searchDebounce);
+      }
 
-    // Set new timeout for search
-    const timeout = setTimeout(() => {
-      // Global search is passed to child components via props
-      // They will handle their own filtering based on globalSearch
-      console.log('Global search updated:', value);
-    }, 300);
+      // Set new timeout for search
+      const timeout = setTimeout(() => {
+        // Global search is passed to child components via props
+        // They will handle their own filtering based on globalSearch
+        console.log("Global search updated:", value);
+      }, 300);
 
-    setSearchDebounce(timeout);
-  }, [searchDebounce]);
+      setSearchDebounce(timeout);
+    },
+    [searchDebounce],
+  );
 
   // Cleanup timeout on unmount
   useEffect(() => {
@@ -145,16 +148,8 @@ export const ItemsPage: React.FC = () => {
               },
             }}
           >
-            <Tab 
-              label="Materials" 
-              {...a11yProps(0)}
-              sx={{ minWidth: 120 }}
-            />
-            <Tab 
-              label="Services" 
-              {...a11yProps(1)}
-              sx={{ minWidth: 120 }}
-            />
+            <Tab label="Materials" {...a11yProps(0)} sx={{ minWidth: 120 }} />
+            <Tab label="Services" {...a11yProps(1)} sx={{ minWidth: 120 }} />
           </Tabs>
         </Box>
 

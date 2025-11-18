@@ -1,4 +1,4 @@
-import { PrismaClient } from '@prisma/client';
+import prisma from '../prisma/client';
 
 // Interface untuk hasil pencarian gabungan
 export interface SearchResult {
@@ -33,13 +33,7 @@ export interface SearchResponse {
   };
 }
 
-const prisma = new PrismaClient({
-  datasources: {
-    db: {
-      url: process.env.DATABASE_URL,
-    },
-  },
-});
+ 
 
 class SearchService {
   // Fungsi utama untuk pencarian gabungan materials dan services
