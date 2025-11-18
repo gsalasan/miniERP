@@ -30,8 +30,7 @@ export const getEstimationById = async (req: Request, res: Response) => {
     const estimation = await prisma.estimations.findUnique({
       where: { id },
     });
-    if (!estimation)
-      return res.status(404).json({ error: 'Estimation not found' });
+    if (!estimation) return res.status(404).json({ error: 'Estimation not found' });
     res.json(estimation);
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
@@ -175,5 +174,42 @@ export const getEstimationsByProject = async (req: Request, res: Response) => {
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
     res.status(400).json({ message: msg });
+  }
+};
+
+export const calculateEstimation = async (req: Request, res: Response) => {
+  try {
+    const {
+      project_id,
+      items,
+      overhead_percentage,
+      profit_margin_percentage,
+      save_to_db,
+      version,
+      status,
+    } = req.body;
+
+    // Validasi input
+    if (!project_id || !items || !Array.isArray(items) || items.length === 0) {
+      return res.status(400).json({
+        error: 'project_id and items array are required',
+      });
+    }
+
+    // Hitung estimasi menggunakan service
+    const calculation = await estimationService.calculateEstimation({
+      project_id,
+      items,
+      overhead_percentage: overhead_percentage || 0,
+      profit_margin_percentage: profit_margin_percentage || 0,
+      save_to_db: save_to_db || false,
+      version: version || 1,
+      status: status || 'DRAFT',
+    });
+
+    res.status(200).json(calculation);
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    res.status(500).json({ error: msg });
   }
 };

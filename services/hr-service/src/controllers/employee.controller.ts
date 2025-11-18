@@ -12,16 +12,67 @@ import {
 // POST /employees - Create employee with user account
 export const createEmployee = async (req: Request, res: Response) => {
   try {
-    // Validate request body structure
-    if (!req.body.employee || !req.body.user || !req.body.email) {
+    // Support TWO body shapes:
+    // A) Service-native: { employee: {...}, user: {...}, email: string }
+    // B) TSD v1.0: { personalInfo, jobInfo, compensation, accountInfo, systemInfo }
+    const body = req.body as any;
+
+    let normalized: any = null;
+    const isServiceShape = body?.employee && body?.user && body?.email;
+    const isTsdShape = body?.personalInfo || body?.jobInfo || body?.compensation || body?.accountInfo || body?.systemInfo;
+
+    if (isServiceShape) {
+      normalized = body;
+    } else if (isTsdShape) {
+      // Map TSD sections to service-native shape
+      const personal = body.personalInfo || {};
+      const job = body.jobInfo || {};
+      const comp = body.compensation || {};
+      const acct = body.accountInfo || {};
+      const sys = body.systemInfo || {};
+
+      normalized = {
+        employee: {
+          full_name: personal.fullName || personal.full_name,
+          position: job.position,
+          department: job.department,
+          hire_date: job.hireDate || job.hire_date,
+          basic_salary: comp.basicSalary || comp.basic_salary,
+          allowances: Array.isArray(comp.allowances)
+            ? (comp.allowances as any[]).reduce((acc: any, it: any) => {
+                if (it?.name && (typeof it.value === 'number' || typeof it.value === 'string')) {
+                  const n = typeof it.value === 'number' ? it.value : Number(String(it.value).replace(/\./g, '').replace(/,/g, '.'));
+                  if (!Number.isNaN(n)) acc[it.name] = n;
+                }
+                return acc;
+              }, {})
+            : comp.allowances || {},
+          // optional extended fields
+          bank_name: acct.bankName || acct.bank_name,
+          bank_account_number: acct.bankAccountNumber || acct.bank_account_number,
+          npwp: acct.npwp,
+          ptkp: acct.ptkp,
+        },
+        user: {
+          email: sys.email,
+          password: sys.password || sys.temporaryPassword || 'Temp#12345',
+          roles: sys.role ? [sys.role] : Array.isArray(sys.roles) ? sys.roles : ['EMPLOYEE'],
+        },
+        email: sys.email,
+      };
+    }
+
+    // Validate presence after normalization
+    if (!normalized?.employee || !normalized?.user || !normalized?.email) {
       return res.status(400).json({
         success: false,
-        message: 'Request body must contain "employee", "user", and "email" fields'
+        message:
+          'Invalid request shape. Expected {employee,user,email} or TSD shape {personalInfo,jobInfo,compensation,accountInfo,systemInfo}',
       });
     }
 
     // Validate required fields
-    const validationErrors = validateEmployeeUserData(req.body);
+    const validationErrors = validateEmployeeUserData(normalized);
     if (validationErrors.length > 0) {
       return res.status(400).json({
         success: false,
@@ -31,7 +82,7 @@ export const createEmployee = async (req: Request, res: Response) => {
     }
 
     // Create employee and user in transaction
-    const result = await createEmployeeWithUser(req.body);
+    const result = await createEmployeeWithUser(normalized);
 
     return res.status(201).json({
       success: true,
@@ -77,11 +128,11 @@ export const createEmployee = async (req: Request, res: Response) => {
 // GET /employees - List employees (optional, for testing)
 export const getEmployees = async (req: Request, res: Response) => {
   try {
-    // This is a simple endpoint for testing purposes
+    const employees = await getAllEmployees();
     return res.status(200).json({
       success: true,
-      message: 'Employee endpoint is working',
-      note: 'This would return employee list in full implementation'
+      message: 'Employee list retrieved successfully',
+      data: employees,
     });
   } catch (error: any) {
     console.error('Error in getEmployees:', error);
@@ -152,7 +203,7 @@ export const getEmployeeByIdCtrl = async (req: Request, res: Response) => {
 export const updateEmployeeCtrl = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
-    const { full_name, position, hire_date, basic_salary, allowances } = req.body;
+    const { full_name, position, department, hire_date, basic_salary, allowances, gender, marital_status, blood_type, phone, employment_type, status, education_level, bank_name, bank_account_number, npwp, ptkp } = req.body;
 
     if (!id) {
       return res.status(400).json({
@@ -161,7 +212,7 @@ export const updateEmployeeCtrl = async (req: Request, res: Response) => {
       });
     }
 
-    if (!full_name && !position && !hire_date && !basic_salary && !allowances) {
+    if (!full_name && !position && !department && !hire_date && !basic_salary && !allowances && !gender && !marital_status && !blood_type && !phone && !employment_type && !status && !education_level && !bank_name && !bank_account_number && !npwp && !ptkp) {
       return res.status(400).json({
         success: false,
         message: 'At least one field must be provided for update'
@@ -171,9 +222,21 @@ export const updateEmployeeCtrl = async (req: Request, res: Response) => {
     const updatedEmployee = await updateEmployee(id, {
       full_name,
       position,
+      department,
       hire_date,
       basic_salary,
-      allowances
+      allowances,
+      gender,
+      marital_status,
+      blood_type,
+      phone,
+      employment_type,
+      status,
+      education_level,
+      bank_name,
+      bank_account_number,
+      npwp,
+      ptkp
     });
 
     return res.status(200).json({
@@ -288,5 +351,34 @@ export const deleteEmployeeCtrl = async (req: Request, res: Response) => {
       message: 'Internal server error',
       error: process.env.NODE_ENV === 'development' ? error.message : undefined
     });
+  }
+};
+
+// Debug endpoint: return counts and sample rows from legacy and hr tables
+export const listDebugEmployees = async (req: Request, res: Response) => {
+  try {
+    // Lazy import prisma util to avoid circular imports
+    const { getPrisma } = await import('../utils/prisma');
+    const prisma = getPrisma();
+
+    const [employeesCount, hrEmployeesCount] = await Promise.all([
+      prisma.employees.count().catch(() => 0),
+      prisma.hr_employees.count().catch(() => 0),
+    ]);
+
+    const [employeesSample, hrEmployeesSample] = await Promise.all([
+      prisma.employees.findMany({ take: 10 }).catch(() => []),
+      prisma.hr_employees.findMany({ take: 10 }).catch(() => []),
+    ]);
+
+    return res.status(200).json({
+      success: true,
+      message: 'Debug employees data',
+      counts: { employees: employeesCount, hr_employees: hrEmployeesCount },
+      samples: { employees: employeesSample, hr_employees: hrEmployeesSample }
+    });
+  } catch (err: any) {
+    console.error('Error in listDebugEmployees:', err);
+    return res.status(500).json({ success: false, message: 'Debug failed', error: err?.message });
   }
 };

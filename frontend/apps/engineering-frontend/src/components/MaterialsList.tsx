@@ -39,7 +39,8 @@ import {
   Visibility as VisibilityIcon,
 } from "@mui/icons-material";
 import { materialsService } from "../api/materialsApi";
-import { Material, MaterialsQueryParams, MaterialStatus, FilterOptions } from "../types/material";
+import { Material, MaterialsQueryParams, FilterOptions } from "../types/material";
+import { MaterialStatus } from "../types/enums";
 import MaterialFormModal from "./MaterialFormModal";
 import MaterialDetailModal from "./MaterialDetailModal";
 import DeleteConfirmationModal from "./DeleteConfirmationModal";
@@ -49,6 +50,12 @@ import { useNotification } from "../contexts/NotificationContext";
 interface MaterialsListProps {
   globalSearch?: string;
 }
+
+// Helper function to format component names
+const formatComponentName = (component: string | undefined): string => {
+  if (!component) return "-";
+  return component.replace(/_/g, " ");
+};
 
 const MaterialsList: React.FC<MaterialsListProps> = ({ globalSearch }) => {
   const [materials, setMaterials] = useState<Material[]>([]);
@@ -129,7 +136,8 @@ const MaterialsList: React.FC<MaterialsListProps> = ({ globalSearch }) => {
 
   useEffect(() => {
     fetchMaterials();
-  }, [page, rowsPerPage, filters]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [page, rowsPerPage, JSON.stringify(filters)]);
 
   // Handle global search from parent component
   useEffect(() => {
@@ -174,10 +182,18 @@ const MaterialsList: React.FC<MaterialsListProps> = ({ globalSearch }) => {
 
   // Handle filter changes
   const handleFilterChange = (field: string, value: string) => {
-    setFilters((prev: MaterialsQueryParams) => ({
-      ...prev,
+    const newFilters = {
+      ...filters,
       [field]: value || undefined,
-    }));
+    };
+    // Remove undefined values
+    Object.keys(newFilters).forEach(key => {
+      if (newFilters[key as keyof MaterialsQueryParams] === undefined || newFilters[key as keyof MaterialsQueryParams] === '') {
+        delete newFilters[key as keyof MaterialsQueryParams];
+      }
+    });
+    console.log('Filter changed:', field, value, 'New filters:', newFilters);
+    setFilters(newFilters);
     setPage(0); // Reset to first page when filtering
   };
 
@@ -453,15 +469,7 @@ const MaterialsList: React.FC<MaterialsListProps> = ({ globalSearch }) => {
                 startIcon={<AddIcon />}
                 onClick={handleAddMaterial}
                 size="medium"
-                sx={{
-                  minWidth: 100,
-                  background: "linear-gradient(135deg, #2563eb 0%, #3b82f6 100%)",
-                  boxShadow: "0 4px 14px 0 rgba(37, 99, 235, 0.3)",
-                  "&:hover": {
-                    background: "linear-gradient(135deg, #1d4ed8 0%, #2563eb 100%)",
-                    boxShadow: "0 6px 20px 0 rgba(37, 99, 235, 0.4)",
-                  },
-                }}
+                sx={{ minWidth: 100 }}
               >
                 Add
               </Button>
@@ -739,14 +747,14 @@ const MaterialsList: React.FC<MaterialsListProps> = ({ globalSearch }) => {
                           </Box>
                         </TableCell>
                         <TableCell>
-                          <Tooltip title={material.components || "No components specified"}>
+                          <Tooltip title={formatComponentName(material.components) || "No components specified"}>
                             <Typography
                               variant="caption"
                               color="textSecondary"
                               noWrap
                               sx={{ maxWidth: 150, display: "block" }}
                             >
-                              {material.components || "-"}
+                              {formatComponentName(material.components)}
                             </Typography>
                           </Tooltip>
                         </TableCell>
@@ -827,7 +835,6 @@ const MaterialsList: React.FC<MaterialsListProps> = ({ globalSearch }) => {
         open={isDeleteModalOpen}
         onClose={handleCloseDeleteModal}
         onConfirm={handleConfirmDelete}
-        material={deletingMaterial}
         loading={deleteLoading}
         error={deleteError}
       />

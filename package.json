@@ -10,6 +10,9 @@
   ],
   "scripts": {
     "dev:identity": "npm --prefix services/identity-service run dev",
+<<<<<<< HEAD
+    "dev:frontend": "npm --prefix frontend run dev",
+=======
     "dev:crm": "npm --prefix services/crm-service run dev",
     "dev:procurement": "npm --prefix services/procurement-service run dev",
     "dev:hr": "npm --prefix services/hr-service run dev",
@@ -19,6 +22,7 @@
     "dev:frontend/procurement": "npm --prefix frontend/apps/procurement-frontend run dev",
     "dev:frontend": "npm --prefix frontend run dev",
     "dev:all": "concurrently \"npm run dev:identity\" \"npm run dev:crm\" \"npm run dev:frontend/crm\"",
+>>>>>>> main
     "build:frontend": "npm --prefix frontend run build",
     "build:services": "npm run build --workspaces --if-present",
     "lint": "npm run lint --workspaces --if-present",

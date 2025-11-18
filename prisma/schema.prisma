@@ -7,6 +7,14 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+enum UserRole {
+  ADMIN
+  EMPLOYEE
+  MANAGER
+  HR
+  FINANCE
+}
+
 model users {
   id            String     @id @default(uuid())
   email         String     @unique
@@ -44,7 +52,6 @@ model employees {
   education_level     EducationLevel?
   users               users?
 }
-
 model Material {
   id              String            @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   sbu             String?
@@ -165,7 +172,6 @@ model hr_employees {
   updated_at                 DateTime                 @updatedAt
   created_by                 String?
   updated_by                 String?
-  attendances                hr_attendances[]
   documents                  hr_employee_documents[]
   manager                    hr_employees?            @relation("EmployeeManager", fields: [manager_id], references: [id])
   subordinates               hr_employees[]           @relation("EmployeeManager")
@@ -177,22 +183,29 @@ model hr_employees {
 }
 
 model hr_attendances {
-  id             String           @id @default(uuid())
-  employee_id    String
-  date           DateTime         @db.Date
-  check_in_time  DateTime?
-  check_out_time DateTime?
-  break_start    DateTime?
-  break_end      DateTime?
-  status         AttendanceStatus @default(PRESENT)
-  total_hours    Decimal?         @db.Decimal(5, 2)
-  overtime_hours Decimal?         @db.Decimal(5, 2)
-  notes          String?
-  location       String?
-  ip_address     String?
-  created_at     DateTime         @default(now())
-  updated_at     DateTime         @updatedAt
-  employee       hr_employees     @relation(fields: [employee_id], references: [id], onDelete: Cascade)
+  id                    String           @id @default(uuid())
+  employee_id           String
+  date                  DateTime         @db.Date
+  check_in_time         DateTime?
+  check_in_latitude     Decimal?         @db.Decimal(10, 8)
+  check_in_longitude    Decimal?         @db.Decimal(11, 8)
+  check_in_location     String?
+  check_out_time        DateTime?
+  check_out_latitude    Decimal?         @db.Decimal(10, 8)
+  check_out_longitude   Decimal?         @db.Decimal(11, 8)
+  check_out_location    String?
+  work_duration_minutes Int?
+  break_start           DateTime?
+  break_end             DateTime?
+  status                AttendanceStatus @default(PRESENT)
+  total_hours           Decimal?         @db.Decimal(5, 2)
+  overtime_hours        Decimal?         @db.Decimal(5, 2)
+  notes                 String?
+  location              String?
+  ip_address            String?
+  created_at            DateTime         @default(now())
+  updated_at            DateTime         @updatedAt
+  employee              employees        @relation(fields: [employee_id], references: [id], onDelete: Cascade)
 
   @@unique([employee_id, date])
   @@map("hr_attendances")
@@ -653,6 +666,13 @@ enum MaterialLocation {
   Import
 }
 
+enum Components {
+  Main_Equipment
+  Supporting_Equipment
+  Installation_Material
+  Consumables
+}
+
 enum ServiceUnit {
   Jam
   Hari
@@ -706,6 +726,15 @@ enum EducationLevel {
   DOCTORATE
 }
 
+enum AllowanceCategory {
+  ATTENDANCE
+  COMMUNICATION
+  TRANSPORTATION
+  MEALS
+  HOUSING
+  POSITION
+}
+
 enum AttendanceStatus {
   PRESENT
   ABSENT
@@ -743,6 +772,7 @@ enum AccountType {
   Equity
   Revenue
   Expense
+  CostOfService
 }
 
 enum InvoiceStatus {
