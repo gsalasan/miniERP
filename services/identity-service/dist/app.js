@@ -11,28 +11,10 @@ const employee_routes_1 = __importDefault(require("./routes/employee.routes"));
 // Load environment variables
 dotenv_1.default.config();
 const app = (0, express_1.default)();
-// CORS configuration: support multiple allowed origins (comma-separated)
-const defaultOrigins = [
-    'http://localhost:3000', // main-frontend
-    'http://localhost:3010', // crm-frontend
-    'http://localhost:3011', // engineering
-    'http://localhost:3012', // finance
-    'http://localhost:3013', // hr
-];
-const allowedOrigins = (process.env.CORS_ORIGIN
-    ? process.env.CORS_ORIGIN.split(',').map((o) => o.trim()).filter(Boolean)
-    : defaultOrigins);
+// Middleware
 app.use((0, cors_1.default)({
-    origin: (origin, callback) => {
-        // allow non-browser requests (like Postman) where origin may be undefined
-        if (!origin || allowedOrigins.includes(origin)) {
-            return callback(null, true);
-        }
-        return callback(new Error(`CORS blocked for origin: ${origin}`));
-    },
-    credentials: true,
-    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization']
+    origin: process.env.CORS_ORIGIN || 'http://localhost:3000',
+    credentials: true
 }));
 app.use(express_1.default.json());
 app.use(express_1.default.urlencoded({ extended: true }));

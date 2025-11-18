@@ -14,12 +14,7 @@
     "dev:frontend": "npm --prefix frontend run dev",
 =======
     "dev:crm": "npm --prefix services/crm-service run dev",
-    "dev:procurement": "npm --prefix services/procurement-service run dev",
-    "dev:hr": "npm --prefix services/hr-service run dev",
-    "dev:engineering": "npm --prefix services/engineering-service run dev",
-    "dev:frontend/main": "npm --prefix frontend/apps/main-frontend run dev",
     "dev:frontend/crm": "npm --prefix frontend/apps/crm-frontend run dev",
-    "dev:frontend/procurement": "npm --prefix frontend/apps/procurement-frontend run dev",
     "dev:frontend": "npm --prefix frontend run dev",
     "dev:all": "concurrently \"npm run dev:identity\" \"npm run dev:crm\" \"npm run dev:frontend/crm\"",
 >>>>>>> main
@@ -46,7 +41,6 @@
   },
   "dependencies": {
     "@prisma/client": "^6.18.0",
-    "axios": "^1.13.1",
     "bcryptjs": "^2.4.3"
   }
 }
