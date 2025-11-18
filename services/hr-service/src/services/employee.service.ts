@@ -15,13 +15,14 @@ interface CreateEmployeeData {
   hire_date: Date | string;
   basic_salary: number | string;
   allowances?: any;
-  gender?: Gender | string;
-  marital_status?: MaritalStatus | string;
-  blood_type?: BloodType | string;
-  employment_type?: EmploymentType | string;
-  status?: EmployeeStatus | string;
-  education_level?: EducationLevel | string;
-  // Account & Tax (optional, persisted if columns exist)
+  // Optional extended fields
+  department?: string;
+  gender?: string;
+  marital_status?: string;
+  blood_type?: string;
+  employment_type?: string;
+  status?: string;
+  education_level?: string;
   bank_name?: string;
   bank_account_number?: string;
   npwp?: string;
@@ -59,69 +60,32 @@ export const createEmployeeWithUser = async (data: CreateEmployeeWithUserRequest
       const password_hash = await bcrypt.hash(user.password, 10);
 
       // 3. Create employee record (using simple employees table)
-      // Normalize basic_salary into a string suitable for Prisma Decimal
-      let normalizedSalary: any = employee.basic_salary;
-      if (typeof normalizedSalary === 'string') {
-        // remove thousands separator (.) and convert comma decimals to dot
-        normalizedSalary = normalizedSalary.replace(/\./g, '').replace(/,/g, '.');
-      }
-      // Ensure string to preserve Decimal precision when passed to Prisma
-      if (typeof normalizedSalary === 'number') normalizedSalary = String(normalizedSalary);
-
-      // Build base payload (always-safe columns)
-      const basePayload: any = {
+      const employeeCreateData: any = {
         full_name: employee.full_name,
         position: employee.position,
         hire_date: new Date(employee.hire_date),
-        basic_salary: normalizedSalary as any,
+        basic_salary: typeof employee.basic_salary === 'string' 
+          ? parseFloat(employee.basic_salary) 
+          : employee.basic_salary,
         allowances: employee.allowances || {},
       };
 
-      // Build extended payload (optional columns, if DB already has them)
-      const extendedPayload: any = { ...basePayload };
-      if (employee.department !== undefined) extendedPayload.department = employee.department;
-      if (employee.gender !== undefined) extendedPayload.gender = employee.gender as any;
-      if (employee.marital_status !== undefined) extendedPayload.marital_status = employee.marital_status as any;
-      if (employee.blood_type !== undefined) extendedPayload.blood_type = employee.blood_type as any;
-      if (employee.employment_type !== undefined) extendedPayload.employment_type = employee.employment_type as any;
-      if (employee.status !== undefined) extendedPayload.status = employee.status as any;
-      if (employee.education_level !== undefined) extendedPayload.education_level = employee.education_level as any;
-  if (employee.bank_name !== undefined) extendedPayload.bank_name = employee.bank_name;
-  if (employee.bank_account_number !== undefined) extendedPayload.bank_account_number = employee.bank_account_number;
-  if (employee.npwp !== undefined) extendedPayload.npwp = employee.npwp;
-  if (employee.ptkp !== undefined) extendedPayload.ptkp = employee.ptkp;
+      // Add optional fields if provided
+      if (employee.department) employeeCreateData.department = employee.department;
+      if (employee.gender) employeeCreateData.gender = employee.gender;
+      if (employee.marital_status) employeeCreateData.marital_status = employee.marital_status;
+      if (employee.blood_type) employeeCreateData.blood_type = employee.blood_type;
+      if (employee.employment_type) employeeCreateData.employment_type = employee.employment_type;
+      if (employee.status) employeeCreateData.status = employee.status;
+      if (employee.education_level) employeeCreateData.education_level = employee.education_level;
+      if (employee.bank_name) employeeCreateData.bank_name = employee.bank_name;
+      if (employee.bank_account_number) employeeCreateData.bank_account_number = employee.bank_account_number;
+      if (employee.npwp) employeeCreateData.npwp = employee.npwp;
+      if (employee.ptkp) employeeCreateData.ptkp = employee.ptkp;
 
-      // Try with extended payload first; if column missing or enum mismatch for blood_type, fallback
-      let createdEmployee: any;
-      try {
-        createdEmployee = await tx.employees.create({ data: extendedPayload });
-      } catch (err: any) {
-        const msg = String(err?.message || '');
-        // Handle BloodType enum mismatch (22P02)
-        if (msg.includes('22P02') && msg.includes('BloodType') && extendedPayload.blood_type) {
-          const { blood_type, ...withoutBlood } = extendedPayload;
-          console.warn('employees.create retry without blood_type due to enum mismatch (22P02). Value was:', blood_type);
-          try {
-            createdEmployee = await tx.employees.create({ data: withoutBlood });
-          } catch (err2: any) {
-            // If still failing due to missing columns, fallback to base payload
-            const msg2 = String(err2?.message || '');
-            if (msg2.includes('does not exist')) {
-              createdEmployee = await tx.employees.create({ data: basePayload });
-            } else {
-              throw err2;
-            }
-          }
-        } else if (msg.includes('does not exist')) {
-          // Some optional columns are not present in legacy DB, fallback to base payload
-          createdEmployee = await tx.employees.create({ data: basePayload });
-        } else if (msg.includes('Unknown arg') || msg.includes('Unknown field')) {
-          // Older Prisma client version doesn't know new fields like bank_name, npwp, ptkp
-          createdEmployee = await tx.employees.create({ data: basePayload });
-        } else {
-          throw err;
-        }
-      }
+      const createdEmployee = await tx.employees.create({
+        data: employeeCreateData
+      });
 
       // 4. Create user record linked to employee
       const createdUser = await tx.users.create({
@@ -483,12 +447,13 @@ interface UpdateEmployeeData {
   hire_date?: Date | string;
   basic_salary?: number | string;
   allowances?: any;
-  gender?: Gender | string;
-  marital_status?: MaritalStatus | string;
-  blood_type?: BloodType | string;
-  employment_type?: EmploymentType | string;
-  status?: EmployeeStatus | string;
-  education_level?: EducationLevel | string;
+  gender?: string;
+  marital_status?: string;
+  blood_type?: string;
+  phone?: string;
+  employment_type?: string;
+  status?: string;
+  education_level?: string;
   bank_name?: string;
   bank_account_number?: string;
   npwp?: string;
@@ -533,22 +498,25 @@ export const updateEmployee = async (employeeId: string, updateData: UpdateEmplo
       dataToUpdate.allowances = updateData.allowances;
     }
     if (updateData.gender !== undefined) {
-      dataToUpdate.gender = updateData.gender as any;
+      dataToUpdate.gender = updateData.gender;
     }
     if (updateData.marital_status !== undefined) {
-      dataToUpdate.marital_status = updateData.marital_status as any;
+      dataToUpdate.marital_status = updateData.marital_status;
     }
     if (updateData.blood_type !== undefined) {
-      dataToUpdate.blood_type = updateData.blood_type as any;
+      dataToUpdate.blood_type = updateData.blood_type;
+    }
+    if (updateData.phone !== undefined) {
+      dataToUpdate.phone = updateData.phone;
     }
     if (updateData.employment_type !== undefined) {
-      dataToUpdate.employment_type = updateData.employment_type as any;
+      dataToUpdate.employment_type = updateData.employment_type;
     }
     if (updateData.status !== undefined) {
-      dataToUpdate.status = updateData.status as any;
+      dataToUpdate.status = updateData.status;
     }
     if (updateData.education_level !== undefined) {
-      dataToUpdate.education_level = updateData.education_level as any;
+      dataToUpdate.education_level = updateData.education_level;
     }
     if (updateData.bank_name !== undefined) {
       dataToUpdate.bank_name = updateData.bank_name;

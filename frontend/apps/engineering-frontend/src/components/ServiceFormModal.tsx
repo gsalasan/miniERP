@@ -209,6 +209,52 @@ const ServiceFormModal: React.FC<ServiceFormModalProps> = ({
     }
   }, [formData.kategori_jasa_id]);
 
+  const fetchTaxonomyData = async () => {
+    try {
+      const [sysCategories, svcCategories, descs, teams, fases, sbuList] = await Promise.all([
+        taxonomyService.getSystemCategories(),
+        taxonomyService.getServiceCategories(),
+        taxonomyService.getDescriptions(),
+        taxonomyService.getTeamRecommendations(),
+        taxonomyService.getFaseProyeks(),
+        taxonomyService.getSBUs(),
+      ]);
+      // Filter out items with undefined id to prevent React key errors
+      setSystemCategories(sysCategories.filter((item) => item.id));
+      setServiceCategories(svcCategories.filter((item) => item.id));
+      setDescriptions(descs.filter((item) => item.id));
+      setTeamRecommendations(teams.filter((item) => item.id));
+      setFaseProyeks(fases.filter((item) => item.id));
+      setSBUs(sbuList.filter((item) => item.id));
+    } catch {
+      showError("Gagal memuat data taxonomy");
+    }
+  };
+
+  // Load sub-systems when system category changes
+  useEffect(() => {
+    if (formData.kategori_sistem_id) {
+      taxonomyService
+        .getSubSystems(formData.kategori_sistem_id)
+        .then((data) => setSubSystems(data.filter((item) => item.id)));
+    } else {
+      setSubSystems([]);
+      setFormData((prev) => ({ ...prev, sub_sistem_id: "" }));
+    }
+  }, [formData.kategori_sistem_id]);
+
+  // Load specific types when service category changes
+  useEffect(() => {
+    if (formData.kategori_jasa_id) {
+      taxonomyService
+        .getSpecificTypes(formData.kategori_jasa_id)
+        .then((data) => setSpecificTypes(data.filter((item) => item.id)));
+    } else {
+      setSpecificTypes([]);
+      setFormData((prev) => ({ ...prev, jenis_jasa_spesifik_id: "" }));
+    }
+  }, [formData.kategori_jasa_id]);
+
   const fetchFilterOptions = async () => {
     try {
       const options = await servicesService.getFilterOptions();

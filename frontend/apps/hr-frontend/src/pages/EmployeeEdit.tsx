@@ -3,8 +3,11 @@ import { Trash2, ArrowLeft } from 'lucide-react';
 import {
   GenderLabels,
   MaritalStatusLabels,
+  BloodTypeLabels,
+  EducationLevelLabels,
   EmploymentTypeLabels,
-  EmployeeStatusLabels
+  EmployeeStatusLabels,
+  AllowanceCategoryLabels
 } from '../enums/employeeEnums';
 import { PTKP_OPTIONS, normalizeNpwp, isValidNpwp } from '../utils/tax';
 
@@ -22,6 +25,9 @@ function EmployeeEdit({ id, onClose }: EmployeeEditProps) {
     basic_salary: '',
     gender: '',
     marital_status: '',
+    blood_type: '',
+    phone: '',
+    education_level: '',
     employment_type: '',
     status: '',
     bank_name: '',
@@ -50,6 +56,9 @@ function EmployeeEdit({ id, onClose }: EmployeeEditProps) {
           basic_salary: emp.basic_salary !== undefined && emp.basic_salary !== null ? String(emp.basic_salary) : '',
           gender: emp.gender || '',
           marital_status: emp.marital_status || '',
+          blood_type: emp.blood_type || '',
+          phone: emp.phone || '',
+          education_level: emp.education_level || '',
           employment_type: emp.employment_type || '',
           status: emp.status || '',
           bank_name: emp.bank_name || '',
@@ -208,6 +217,30 @@ function EmployeeEdit({ id, onClose }: EmployeeEditProps) {
                 </select>
               </div>
               <div className="flex flex-col gap-2 mb-2">
+                <label className="block font-semibold text-gray-800">Blood Type</label>
+                <select name="blood_type" value={form.blood_type} onChange={handleChange} className="w-full border border-gray-300 rounded-lg px-4 py-2 bg-white focus:border-blue-400 focus:ring-2 focus:ring-blue-100 text-gray-900 transition">
+                  <option value="">Select Blood Type</option>
+                  {Object.entries(BloodTypeLabels).map(([key, label]) => (
+                    <option key={key} value={key}>{label}</option>
+                  ))}
+                </select>
+              </div>
+              {/* Row 5 */}
+              <div className="flex flex-col gap-2 mb-2">
+                <label className="block font-semibold text-gray-800">Phone</label>
+                <input name="phone" type="tel" value={form.phone} onChange={handleChange} className="w-full border border-gray-300 rounded-lg px-4 py-2 bg-white focus:border-blue-400 focus:ring-2 focus:ring-blue-100 text-gray-900 placeholder:text-gray-400 transition" placeholder="+62..." />
+              </div>
+              <div className="flex flex-col gap-2 mb-2">
+                <label className="block font-semibold text-gray-800">Education Level</label>
+                <select name="education_level" value={form.education_level} onChange={handleChange} className="w-full border border-gray-300 rounded-lg px-4 py-2 bg-white focus:border-blue-400 focus:ring-2 focus:ring-blue-100 text-gray-900 transition">
+                  <option value="">Select Education Level</option>
+                  {Object.entries(EducationLevelLabels).map(([key, label]) => (
+                    <option key={key} value={key}>{label}</option>
+                  ))}
+                </select>
+              </div>
+              {/* Row 6 */}
+              <div className="flex flex-col gap-2 mb-2">
                 <label className="block font-semibold text-gray-800">Employment Type</label>
                 <select name="employment_type" value={form.employment_type} onChange={handleChange} className="w-full border border-gray-300 rounded-lg px-4 py-2 bg-white focus:border-blue-400 focus:ring-2 focus:ring-blue-100 text-gray-900 transition">
                   <option value="">Select Employment Type</option>
@@ -287,13 +320,16 @@ function EmployeeEdit({ id, onClose }: EmployeeEditProps) {
               <div className="space-y-2">
                 {allowances.map((a, idx) => (
                   <div key={idx} className="flex gap-2 items-center">
-                    <input
-                      type="text"
-                      placeholder="Allowance name"
+                    <select
                       value={a.name}
                       onChange={e => handleAllowanceChange(idx, 'name', e.target.value)}
-                      className="border border-gray-300 rounded-lg px-3 py-2 bg-white focus:border-blue-400 focus:ring-2 focus:ring-blue-100 text-gray-900 placeholder:text-gray-400 transition flex-1"
-                    />
+                      className="border border-gray-300 rounded-lg px-3 py-2 bg-white focus:border-blue-400 focus:ring-2 focus:ring-blue-100 text-gray-900 transition flex-1"
+                    >
+                      <option value="">Select allowance type</option>
+                      {Object.entries(AllowanceCategoryLabels).map(([key, label]) => (
+                        <option key={key} value={key}>{label}</option>
+                      ))}
+                    </select>
                     <input
                       type="number"
                       placeholder="Amount"

@@ -1,11 +1,11 @@
 import { Request, Response } from "express";
-import { PrismaClient } from '@prisma/client';
+import { prisma } from '../lib/prisma';
 
-const prisma = new PrismaClient();
-
-// Controller untuk ambil daftar akun (Chart of Accounts)
+// GET - Ambil semua Chart of Accounts
 export const getChartOfAccounts = async (req: Request, res: Response): Promise<void> => {
+  console.log("🔍 getChartOfAccounts called");
   try {
+    console.log("🔍 Calling prisma.chartOfAccounts.findMany...");
     const chartOfAccounts = await prisma.chartOfAccounts.findMany({
       select: {
         id: true,
@@ -16,8 +16,9 @@ export const getChartOfAccounts = async (req: Request, res: Response): Promise<v
         created_at: true,
         updated_at: true,
       },
-      orderBy: { id: "asc" },
+      orderBy: { account_code: "asc" },
     });
+    console.log(`🔍 Found ${chartOfAccounts.length} accounts`);
 
     res.status(200).json({
       success: true,
@@ -25,7 +26,7 @@ export const getChartOfAccounts = async (req: Request, res: Response): Promise<v
       data: chartOfAccounts,
     });
   } catch (error) {
-    console.error("Error mengambil Chart of Accounts:", error);
+    console.error("❌ CONTROLLER ERROR:", error);
     const errMsg = error instanceof Error ? error.message : "Unknown error";
 
     res.status(500).json({
