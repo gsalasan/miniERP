@@ -1,4 +1,6 @@
 import { Router } from 'express';
+import { verifyToken } from '../middlewares/auth.middleware';
+import { requireProjectManager, requireEngineeringAccess } from '../middlewares/role.middleware';
 import {
   listSystemCategories,
   getSystemCategory,
@@ -46,19 +48,19 @@ const router = Router();
 
 // Base: /api/v1/taxonomy
 
-// System Categories
-router.get('/api/v1/taxonomy/system-categories', listSystemCategories);
-router.post('/api/v1/taxonomy/system-categories', createSystemCategory);
-router.get('/api/v1/taxonomy/system-categories/:id', getSystemCategory);
-router.put('/api/v1/taxonomy/system-categories/:id', updateSystemCategory);
-router.delete('/api/v1/taxonomy/system-categories/:id', deleteSystemCategory);
+// System Categories - READ: PM + PE, CUD: PM only
+router.get('/api/v1/taxonomy/system-categories', verifyToken, requireEngineeringAccess, listSystemCategories);
+router.get('/api/v1/taxonomy/system-categories/:id', verifyToken, requireEngineeringAccess, getSystemCategory);
+router.post('/api/v1/taxonomy/system-categories', verifyToken, requireProjectManager, createSystemCategory);
+router.put('/api/v1/taxonomy/system-categories/:id', verifyToken, requireProjectManager, updateSystemCategory);
+router.delete('/api/v1/taxonomy/system-categories/:id', verifyToken, requireProjectManager, deleteSystemCategory);
 
-// Sub Systems
-router.get('/api/v1/taxonomy/sub-systems', listSubSystems);
-router.post('/api/v1/taxonomy/sub-systems', createSubSystem);
-router.get('/api/v1/taxonomy/sub-systems/:id', getSubSystem);
-router.put('/api/v1/taxonomy/sub-systems/:id', updateSubSystem);
-router.delete('/api/v1/taxonomy/sub-systems/:id', deleteSubSystem);
+// Sub Systems - READ: PM + PE, CUD: PM only
+router.get('/api/v1/taxonomy/sub-systems', verifyToken, requireEngineeringAccess, listSubSystems);
+router.get('/api/v1/taxonomy/sub-systems/:id', verifyToken, requireEngineeringAccess, getSubSystem);
+router.post('/api/v1/taxonomy/sub-systems', verifyToken, requireProjectManager, createSubSystem);
+router.put('/api/v1/taxonomy/sub-systems/:id', verifyToken, requireProjectManager, updateSubSystem);
+router.delete('/api/v1/taxonomy/sub-systems/:id', verifyToken, requireProjectManager, deleteSubSystem);
 
 // Nested: list/create sub-systems under a system-category
 router.get('/api/v1/taxonomy/system-categories/:id/sub-systems', (req, res) => {
@@ -70,19 +72,19 @@ router.post('/api/v1/taxonomy/system-categories/:id/sub-systems', (req, res) => 
   return createSubSystem(req, res);
 });
 
-// Service Categories
-router.get('/api/v1/taxonomy/service-categories', listServiceCategories);
-router.post('/api/v1/taxonomy/service-categories', createServiceCategory);
-router.get('/api/v1/taxonomy/service-categories/:id', getServiceCategory);
-router.put('/api/v1/taxonomy/service-categories/:id', updateServiceCategory);
-router.delete('/api/v1/taxonomy/service-categories/:id', deleteServiceCategory);
+// Service Categories - READ: PM + PE, CUD: PM only
+router.get('/api/v1/taxonomy/service-categories', verifyToken, requireEngineeringAccess, listServiceCategories);
+router.get('/api/v1/taxonomy/service-categories/:id', verifyToken, requireEngineeringAccess, getServiceCategory);
+router.post('/api/v1/taxonomy/service-categories', verifyToken, requireProjectManager, createServiceCategory);
+router.put('/api/v1/taxonomy/service-categories/:id', verifyToken, requireProjectManager, updateServiceCategory);
+router.delete('/api/v1/taxonomy/service-categories/:id', verifyToken, requireProjectManager, deleteServiceCategory);
 
-// Specific Types
-router.get('/api/v1/taxonomy/specific-types', listSpecificTypes);
-router.post('/api/v1/taxonomy/specific-types', createSpecificType);
-router.get('/api/v1/taxonomy/specific-types/:id', getSpecificType);
-router.put('/api/v1/taxonomy/specific-types/:id', updateSpecificType);
-router.delete('/api/v1/taxonomy/specific-types/:id', deleteSpecificType);
+// Specific Types - READ: PM + PE, CUD: PM only
+router.get('/api/v1/taxonomy/specific-types', verifyToken, requireEngineeringAccess, listSpecificTypes);
+router.get('/api/v1/taxonomy/specific-types/:id', verifyToken, requireEngineeringAccess, getSpecificType);
+router.post('/api/v1/taxonomy/specific-types', verifyToken, requireProjectManager, createSpecificType);
+router.put('/api/v1/taxonomy/specific-types/:id', verifyToken, requireProjectManager, updateSpecificType);
+router.delete('/api/v1/taxonomy/specific-types/:id', verifyToken, requireProjectManager, deleteSpecificType);
 
 // Nested: list/create specific-types under a service-category
 router.get('/api/v1/taxonomy/service-categories/:id/specific-types', (req, res) => {
@@ -94,32 +96,32 @@ router.post('/api/v1/taxonomy/service-categories/:id/specific-types', (req, res)
   return createSpecificType(req, res);
 });
 
-// Descriptions
-router.get('/api/v1/taxonomy/descriptions', listDescriptions);
-router.post('/api/v1/taxonomy/descriptions', createDescription);
-router.get('/api/v1/taxonomy/descriptions/:id', getDescription);
-router.put('/api/v1/taxonomy/descriptions/:id', updateDescription);
-router.delete('/api/v1/taxonomy/descriptions/:id', deleteDescription);
+// Descriptions - READ: PM + PE, CUD: PM only
+router.get('/api/v1/taxonomy/descriptions', verifyToken, requireEngineeringAccess, listDescriptions);
+router.get('/api/v1/taxonomy/descriptions/:id', verifyToken, requireEngineeringAccess, getDescription);
+router.post('/api/v1/taxonomy/descriptions', verifyToken, requireProjectManager, createDescription);
+router.put('/api/v1/taxonomy/descriptions/:id', verifyToken, requireProjectManager, updateDescription);
+router.delete('/api/v1/taxonomy/descriptions/:id', verifyToken, requireProjectManager, deleteDescription);
 
-// Team Recommendations
-router.get('/api/v1/taxonomy/team-recommendations', listTeamRecs);
-router.post('/api/v1/taxonomy/team-recommendations', createTeamRec);
-router.get('/api/v1/taxonomy/team-recommendations/:id', getTeamRec);
-router.put('/api/v1/taxonomy/team-recommendations/:id', updateTeamRec);
-router.delete('/api/v1/taxonomy/team-recommendations/:id', deleteTeamRec);
+// Team Recommendations - READ: PM + PE, CUD: PM only
+router.get('/api/v1/taxonomy/team-recommendations', verifyToken, requireEngineeringAccess, listTeamRecs);
+router.get('/api/v1/taxonomy/team-recommendations/:id', verifyToken, requireEngineeringAccess, getTeamRec);
+router.post('/api/v1/taxonomy/team-recommendations', verifyToken, requireProjectManager, createTeamRec);
+router.put('/api/v1/taxonomy/team-recommendations/:id', verifyToken, requireProjectManager, updateTeamRec);
+router.delete('/api/v1/taxonomy/team-recommendations/:id', verifyToken, requireProjectManager, deleteTeamRec);
 
-// Fase Proyek
-router.get('/api/v1/taxonomy/fase-proyeks', listFaseProyeks);
-router.post('/api/v1/taxonomy/fase-proyeks', createFaseProyek);
-router.get('/api/v1/taxonomy/fase-proyeks/:id', getFaseProyek);
-router.put('/api/v1/taxonomy/fase-proyeks/:id', updateFaseProyek);
-router.delete('/api/v1/taxonomy/fase-proyeks/:id', deleteFaseProyek);
+// Fase Proyek - READ: PM + PE, CUD: PM only
+router.get('/api/v1/taxonomy/fase-proyeks', verifyToken, requireEngineeringAccess, listFaseProyeks);
+router.get('/api/v1/taxonomy/fase-proyeks/:id', verifyToken, requireEngineeringAccess, getFaseProyek);
+router.post('/api/v1/taxonomy/fase-proyeks', verifyToken, requireProjectManager, createFaseProyek);
+router.put('/api/v1/taxonomy/fase-proyeks/:id', verifyToken, requireProjectManager, updateFaseProyek);
+router.delete('/api/v1/taxonomy/fase-proyeks/:id', verifyToken, requireProjectManager, deleteFaseProyek);
 
-// SBU
-router.get('/api/v1/taxonomy/sbus', listSBUs);
-router.post('/api/v1/taxonomy/sbus', createSBU);
-router.get('/api/v1/taxonomy/sbus/:id', getSBU);
-router.put('/api/v1/taxonomy/sbus/:id', updateSBU);
-router.delete('/api/v1/taxonomy/sbus/:id', deleteSBU);
+// SBU - READ: PM + PE, CUD: PM only
+router.get('/api/v1/taxonomy/sbus', verifyToken, requireEngineeringAccess, listSBUs);
+router.get('/api/v1/taxonomy/sbus/:id', verifyToken, requireEngineeringAccess, getSBU);
+router.post('/api/v1/taxonomy/sbus', verifyToken, requireProjectManager, createSBU);
+router.put('/api/v1/taxonomy/sbus/:id', verifyToken, requireProjectManager, updateSBU);
+router.delete('/api/v1/taxonomy/sbus/:id', verifyToken, requireProjectManager, deleteSBU);
 
 export default router;

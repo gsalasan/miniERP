@@ -262,7 +262,7 @@ const MaterialFormModal: React.FC<MaterialFormModalProps> = ({
         satuan: formData.satuan || undefined,
         cost_rp: formData.cost_rp ? parseFloat(formData.cost_rp) : undefined,
         cost_validity: formData.cost_validity || undefined,
-      };
+      } as const;
 
       if (isEditMode && material) {
         await materialsService.updateMaterial(material.id, submitData);

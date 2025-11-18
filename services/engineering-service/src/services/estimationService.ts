@@ -1,31 +1,33 @@
-import { PrismaClient, Estimation } from '@prisma/client';
-
-const prisma = new PrismaClient({
-  datasources: {
-    db: {
-      url: process.env.DATABASE_URL,
-    },
-  },
-});
+import prisma from '../prisma/client';
+import { Prisma, ItemType, SourceType, EstimationStatus } from '@prisma/client';
 
 export const getEstimations = async () => {
   return prisma.estimation.findMany({
-    include: { project: true, items: true },
+    include: { 
+      items: true 
+    },
   });
 };
 
 export const getEstimationById = async (id: string) => {
   return prisma.estimation.findUnique({
     where: { id },
-    include: { project: true, items: true },
+    include: { 
+      items: true 
+    },
   });
 };
 
-export const createEstimation = async (data: Estimation) => {
+export const createEstimation = async (
+  data: Prisma.EstimationCreateInput | Prisma.EstimationUncheckedCreateInput,
+) => {
   return prisma.estimation.create({ data });
 };
 
-export const updateEstimation = async (id: string, data: Partial<Estimation>) => {
+export const updateEstimation = async (
+  id: string,
+  data: Prisma.EstimationUpdateInput | Prisma.EstimationUncheckedUpdateInput,
+) => {
   return prisma.estimation.update({ where: { id }, data });
 };
 
@@ -35,31 +37,31 @@ export const deleteEstimation = async (id: string) => {
 
 interface CalculationItem {
   item_id: string;
-  item_type: 'MATERIAL' | 'SERVICE';
+  item_type: ItemType;
   quantity: number;
-  source?: 'INTERNAL' | 'EXTERNAL';
+  source?: SourceType;
 }
 
 interface CalculationInput {
-  project_id: string;
+  project_id?: string;
   items: CalculationItem[];
   overhead_percentage?: number;
   profit_margin_percentage?: number;
   save_to_db?: boolean;
   version?: number;
-  status?: string;
+  status?: EstimationStatus;
 }
 
 interface CalculationResult {
-  project_id: string;
+  project_id?: string;
   estimation_id?: string;
   saved?: boolean;
   items: Array<{
     item_id: string;
-    item_type: string;
+    item_type: ItemType;
     item_name: string;
     quantity: number;
-    source: string;
+    source: SourceType;
     hpp_per_unit: number;
     total_hpp: number;
     sell_price_per_unit: number;
@@ -83,12 +85,12 @@ export const calculateEstimation = async (input: CalculationInput): Promise<Calc
 
   // Proses setiap item
   for (const item of items) {
-    const { item_id, item_type, quantity, source = 'INTERNAL' } = item;
+    const { item_id, item_type, quantity, source = SourceType.INTERNAL } = item;
 
     let itemName = '';
     let hppPerUnit = 0;
 
-    if (item_type === 'MATERIAL') {
+    if (item_type === ItemType.MATERIAL) {
       // Ambil data material
       const material = await prisma.material.findUnique({
         where: { id: item_id },
@@ -101,7 +103,7 @@ export const calculateEstimation = async (input: CalculationInput): Promise<Calc
       itemName = material.item_name;
       // Gunakan cost_rp sebagai HPP
       hppPerUnit = material.cost_rp ? Number(material.cost_rp) : 0;
-    } else if (item_type === 'SERVICE') {
+    } else if (item_type === ItemType.SERVICE) {
       // Ambil data service
       const service = await prisma.service.findUnique({
         where: { id: item_id },
@@ -165,9 +167,9 @@ export const calculateEstimation = async (input: CalculationInput): Promise<Calc
   if (input.save_to_db) {
     const savedEstimation = await prisma.estimation.create({
       data: {
-        project_id,
+        project_id: project_id,
         version: input.version || 1,
-        status: input.status as any,
+        status: input.status,
         total_direct_hpp,
         total_overhead_allocation,
         total_hpp,
@@ -175,9 +177,9 @@ export const calculateEstimation = async (input: CalculationInput): Promise<Calc
         items: {
           create: calculatedItems.map((item) => ({
             item_id: item.item_id,
-            item_type: item.item_type as any,
+            item_type: item.item_type,
             quantity: item.quantity,
-            source: item.source as any,
+            source: item.source,
             hpp_at_estimation: item.hpp_per_unit,
             sell_price_at_estimation: item.sell_price_per_unit,
           })),

@@ -25,11 +25,21 @@ try {
   console.warn('⚠️ Failed to read .env file, continuing without it:', err);
 }
 
+// Merge local .env values into process.env when not already provided by the system.
+// This ensures the service uses the repository .env during local development but
+// does not override explicit environment variables provided by the host (e.g., CI, Cloud Run).
+Object.keys(envConfig).forEach((key) => {
+  if (!process.env[key]) {
+    process.env[key] = envConfig[key];
+  }
+});
+
 console.log('🔍 Environment Variables:');
 console.log('System process.env.PORT:', process.env.PORT);
 console.log('Local .env PORT:', envConfig.PORT);
 console.log('process.env.NODE_ENV:', process.env.NODE_ENV);
-console.log('JWT_SECRET:', envConfig.JWT_SECRET ? 'Found' : 'Not found');
+console.log('JWT_SECRET:', process.env.JWT_SECRET ? 'Found' : 'Not found');
+console.log('process.env.DATABASE_URL:', process.env.DATABASE_URL ? 'loaded ✅' : 'NOT loaded ❌');
 
 // Use PORT environment variable for Cloud Run compatibility
 const PORT = Number(envConfig.PORT) || Number(process.env.PORT) || 8080;
@@ -39,4 +49,6 @@ console.log(`🎯 Selected PORT: ${PORT}`);
 
 app.listen(PORT, () => {
   console.log(`🚀 Engineering service listening on port ${PORT}`);
+  // WARNING: temporary debug log — remove in production to avoid leaking DB credentials
+  // console.log('DEBUG DATABASE_URL:', process.env.DATABASE_URL);
 });

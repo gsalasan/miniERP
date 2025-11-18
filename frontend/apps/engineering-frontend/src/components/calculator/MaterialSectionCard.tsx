@@ -123,9 +123,13 @@ export const MaterialSectionCard: React.FC<MaterialSectionCardProps> = ({
     const updatedItems = section.items.map((item) => {
       if (item.id === itemId) {
         const updated = { ...item, [field]: value };
-        // Recalculate total
+        // Recalculate total with safe number parsing
         if (field === "quantity" || field === "hpp_per_unit") {
-          updated.total_hpp = updated.quantity * updated.hpp_per_unit;
+          const qty = Number(updated.quantity) || 0;
+          const hpp = Number(updated.hpp_per_unit) || 0;
+          updated.quantity = qty;
+          updated.hpp_per_unit = hpp;
+          updated.total_hpp = qty * hpp;
         }
         return updated;
       }
@@ -315,9 +319,10 @@ export const MaterialSectionCard: React.FC<MaterialSectionCardProps> = ({
                       <TextField
                         type="number"
                         value={item.quantity}
-                        onChange={(e) =>
-                          handleUpdateItem(item.id, "quantity", parseFloat(e.target.value) || 0)
-                        }
+                        onChange={(e) => {
+                          const val = parseFloat(e.target.value);
+                          handleUpdateItem(item.id, "quantity", isNaN(val) || val < 0 ? 0 : val);
+                        }}
                         size="small"
                         inputProps={{ min: 0, step: 0.1 }}
                         sx={{ width: 80 }}

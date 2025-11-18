@@ -6,14 +6,8 @@ export const verifyToken = (
   res: Response,
   next: NextFunction
 ) => {
-  // TEMPORARY: Skip authentication for development/testing
-  // TODO: Re-enable authentication once cross-app navigation is working
-  console.log('🔓 Bypassing authentication for development');
-  next();
-  return;
-
   const authHeader = req.headers.authorization ?? '';
-
+  
   if (!authHeader.startsWith('Bearer ')) {
     return res
       .status(401)
@@ -31,10 +25,19 @@ export const verifyToken = (
         .json({ success: false, message: 'Konfigurasi server salah' });
     }
 
-    const decoded = jwt.verify(token, secret as jwt.Secret);
-    (req as Request & { user: jwt.JwtPayload | string }).user = decoded;
+    const decoded = jwt.verify(token, secret as jwt.Secret) as any;
+    
+    // Map token payload to consistent user structure
+    (req as Request & { user: any }).user = {
+      userId: decoded.id || decoded.userId,
+      email: decoded.email,
+      name: decoded.name || decoded.email,
+      roles: decoded.roles || []
+    };
+    
+    console.log('✅ Token verified for user:', decoded.email, 'with roles:', decoded.roles);
     next();
-  } catch {
+  } catch (error) {
     return res
       .status(403)
       .json({ success: false, message: 'Token tidak valid' });
