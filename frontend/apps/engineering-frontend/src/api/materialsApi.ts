@@ -124,10 +124,59 @@ export class MaterialsService {
   async getFilterOptions(): Promise<FilterOptions> {
     try {
       const response = await apiClient.get(`${this.baseUrl}/filter-options`);
-      return response.data; // Backend returns direct data, not wrapped
+      // Backend sometimes wraps the result as { success, data } — normalize here
+      const payload = response.data;
+      return payload.data ?? payload;
     } catch (error) {
       throw new Error(
         `Failed to fetch filter options: ${error instanceof Error ? error.message : "Unknown error"}`,
+      );
+    }
+  }
+
+  // FITUR 3.2.C: Create material with vendor and initial price
+  async createMaterialWithVendor(data: {
+    item_name: string;
+    owner_pn?: string;
+    category?: string;
+    brand?: string;
+    satuan: string;
+    status?: string;
+    location?: string;
+    initialPrice: {
+      vendor: string;
+      price: number;
+      currency: string;
+      exchangeRate?: number;
+      cost_validity?: string;
+    };
+  }): Promise<MaterialResponse> {
+    try {
+      const response = await apiClient.post(`${this.baseUrl}/with-vendor`, data);
+      return response.data;
+    } catch (error) {
+      if (axios.isAxiosError(error) && error.response?.status === 409) {
+        // Duplicate P/N error
+        throw new Error(
+          error.response.data.message || "Material dengan P/N ini sudah ada di database.",
+        );
+      }
+      throw new Error(
+        `Failed to create material: ${error instanceof Error ? error.message : "Unknown error"}`,
+      );
+    }
+  }
+
+  // FITUR 3.2.C: Search materials for autocomplete
+  async searchMaterials(query: string, limit: number = 20): Promise<Material[]> {
+    try {
+      const response = await apiClient.get(`${this.baseUrl}/search`, {
+        params: { q: query, limit },
+      });
+      return response.data;
+    } catch (error) {
+      throw new Error(
+        `Failed to search materials: ${error instanceof Error ? error.message : "Unknown error"}`,
       );
     }
   }
