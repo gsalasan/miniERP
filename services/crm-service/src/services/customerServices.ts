@@ -5,6 +5,8 @@ export interface CreateCustomerData {
   customer_name: string;
   channel: string;
   city: string;
+  district?: string;
+  alamat?: string;
   status: CustomerStatus;
   top_days: number;
   assigned_sales_id?: string;
@@ -18,12 +20,19 @@ export interface CreateCustomerData {
     phone?: string;
     contact_person?: string;
   }[];
+  rekenings?: {
+    bank_name?: string;
+    account_number: string;
+    account_holder?: string;
+  }[];
 }
 
 export interface UpdateCustomerData {
   customer_name?: string;
   channel?: string;
   city?: string;
+  district?: string;
+  alamat?: string;
   status?: CustomerStatus;
   top_days?: number;
   assigned_sales_id?: string;
@@ -38,12 +47,19 @@ export interface UpdateCustomerData {
     phone?: string;
     contact_person?: string;
   }[];
+  rekenings?: {
+    id?: string;
+    bank_name?: string;
+    account_number: string;
+    account_holder?: string;
+  }[];
 }
 
 export const getAllCustomersService = async () => {
   return await prisma.customers.findMany({
     include: {
       customer_contacts: true,
+      customer_rekenings: true,
     },
     orderBy: {
       createdAt: 'desc',
@@ -56,12 +72,13 @@ export const getCustomerByIdService = async (id: string) => {
     where: { id },
     include: {
       customer_contacts: true,
+      customer_rekenings: true,
     },
   });
 };
 
 export const createCustomerService = async (data: CreateCustomerData) => {
-  const { contacts, ...customerData } = data;
+  const { contacts, rekenings, ...customerData } = data;
 
   return await prisma.customers.create({
     data: {
@@ -76,9 +93,20 @@ export const createCustomerService = async (data: CreateCustomerData) => {
             })),
           }
         : undefined,
+      customer_rekenings: rekenings
+        ? {
+            create: rekenings.map(r => ({
+              id: crypto.randomUUID(),
+              bank_name: r.bank_name,
+              account_number: r.account_number,
+              account_holder: r.account_holder,
+            })),
+          }
+        : undefined,
     },
     include: {
       customer_contacts: true,
+      customer_rekenings: true,
     },
   });
 };
@@ -88,35 +116,30 @@ export const updateCustomerService = async (
   data: UpdateCustomerData
 ) => {
   try {
-    const { contacts, ...customerData } = data;
+    const { contacts, rekenings, ...customerData } = data;
 
     // Cek apakah customer exists
     const existingCustomer = await prisma.customers.findUnique({
       where: { id },
-      include: { customer_contacts: true },
+      include: { customer_contacts: true, customer_rekenings: true },
     });
 
     if (!existingCustomer) {
       return null;
     }
 
-    // Update customer dan contacts dalam transaction
+    // Update customer dan related entities dalam transaction
     return await prisma.$transaction(async tx => {
       // Update customer data
-      const updatedCustomer = await tx.customers.update({
+      await tx.customers.update({
         where: { id },
         data: customerData,
-        include: {
-          customer_contacts: true,
-        },
       });
 
       // Handle contacts update jika ada
       if (contacts) {
         // Delete existing contacts
-        await tx.customer_contacts.deleteMany({
-          where: { customer_id: id },
-        });
+        await tx.customer_contacts.deleteMany({ where: { customer_id: id } });
 
         // Create new contacts
         if (contacts.length > 0) {
@@ -132,17 +155,35 @@ export const updateCustomerService = async (
             })),
           });
         }
-
-        // Fetch updated customer with new contacts
-        return await tx.customers.findUnique({
-          where: { id },
-          include: {
-            customer_contacts: true,
-          },
-        });
       }
 
-      return updatedCustomer;
+      // Handle rekenings update jika ada
+      if (rekenings) {
+        // Delete existing rekenings
+        await tx.customer_rekenings.deleteMany({ where: { customer_id: id } });
+
+        // Create new rekenings
+        if (rekenings.length > 0) {
+          await tx.customer_rekenings.createMany({
+            data: rekenings.map(r => ({
+              id: crypto.randomUUID(),
+              customer_id: id,
+              bank_name: r.bank_name,
+              account_number: r.account_number,
+              account_holder: r.account_holder,
+            })),
+          });
+        }
+      }
+
+      // Return updated customer with relations
+      return await tx.customers.findUnique({
+        where: { id },
+        include: {
+          customer_contacts: true,
+          customer_rekenings: true,
+        },
+      });
     });
   } catch (error) {
     // eslint-disable-next-line no-console
@@ -154,18 +195,14 @@ export const updateCustomerService = async (
 export const deleteCustomerService = async (id: string) => {
   try {
     // Cek apakah customer exists
-    const existingCustomer = await prisma.customers.findUnique({
-      where: { id },
-    });
+    const existingCustomer = await prisma.customers.findUnique({ where: { id } });
 
     if (!existingCustomer) {
       return null;
     }
 
-    // Delete customer (contacts akan terhapus otomatis karena onDelete: Cascade)
-    await prisma.customers.delete({
-      where: { id },
-    });
+    // Delete customer (contacts & rekenings akan terhapus otomatis karena onDelete: Cascade)
+    await prisma.customers.delete({ where: { id } });
 
     return true;
   } catch (error) {

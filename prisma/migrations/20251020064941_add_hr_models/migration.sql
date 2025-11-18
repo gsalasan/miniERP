@@ -32,17 +32,17 @@ CREATE TYPE "LeaveStatus" AS ENUM ('PENDING', 'APPROVED', 'REJECTED', 'CANCELLED
 -- CreateEnum
 CREATE TYPE "AttendanceStatus" AS ENUM ('PRESENT', 'ABSENT', 'LATE', 'HALF_DAY', 'WORK_FROM_HOME', 'ON_LEAVE');
 
--- DropForeignKey
-ALTER TABLE "public"."customer_contacts" DROP CONSTRAINT "customer_contacts_customer_id_fkey";
+-- DropForeignKey (use IF EXISTS to be safe when applying to shadow DB)
+ALTER TABLE IF EXISTS "public"."customer_contacts" DROP CONSTRAINT IF EXISTS "customer_contacts_customer_id_fkey";
 
--- DropTable
-DROP TABLE "public"."customer_contacts";
+-- DropTable (use IF EXISTS)
+DROP TABLE IF EXISTS "public"."customer_contacts";
 
--- DropTable
-DROP TABLE "public"."customers";
+-- DropTable (use IF EXISTS)
+DROP TABLE IF EXISTS "public"."customers";
 
--- DropEnum
-DROP TYPE "public"."CustomerStatus";
+-- DropEnum (use IF EXISTS)
+DROP TYPE IF EXISTS "public"."CustomerStatus";
 
 -- CreateTable
 CREATE TABLE "hr_employees" (

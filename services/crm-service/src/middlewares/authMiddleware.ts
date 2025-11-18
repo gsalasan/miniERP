@@ -27,6 +27,20 @@ export const verifyToken = (
 
     const decoded = jwt.verify(token, secret);
     (req as any).user = decoded;
+    // Development-only debug: log minimal decoded token info to help diagnose auth/role issues
+    try {
+      if (process.env.NODE_ENV === 'development') {
+        const d: any = decoded as any;
+        console.debug('[authMiddleware] decoded token summary:', {
+          id: d?.id || d?.sub || null,
+          role: d?.role || null,
+          roles: d?.roles || null,
+          email: d?.email || null,
+        });
+      }
+    } catch (e) {
+      // ignore logging errors
+    }
     next();
   } catch (err) {
     return res

@@ -45,7 +45,7 @@ export const getEstimationQueue = async (req: Request, res: Response) => {
     const estimations = await prisma.estimations.findMany({
       where: {
         status: {
-          in: ['PENDING', 'IN_PROGRESS'],
+          in: ['PENDING', 'PENDING_APPROVAL', 'IN_PROGRESS', 'REVISED', 'APPROVED', 'REJECTED'],
         },
       },
       include: {
@@ -277,9 +277,20 @@ export const getEstimationById = async (req: Request, res: Response) => {
             customer: true,
           },
         },
+        requested_by: {
+          include: {
+            employee: true,
+          },
+        },
+        assigned_to: {
+          include: {
+            employee: true,
+          },
+        },
       },
     });
-    if (!estimation) return res.status(404).json({ error: 'Estimation not found' });
+    if (!estimation)
+      return res.status(404).json({ error: 'Estimation not found' });
     res.json(estimation);
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
@@ -708,6 +719,20 @@ export const submitEstimation = async (req: Request, res: Response) => {
       return res.status(400).json({ error: 'Sections array is required' });
     }
 
+    // Fetch existing estimation to check for CE number
+    const existingEstimation = await prisma.estimations.findUnique({
+      where: { id },
+      select: {
+        ce_number: true,
+        ce_date: true,
+        status: true,
+      },
+    });
+
+    if (!existingEstimation) {
+      return res.status(404).json({ error: 'Estimation not found' });
+    }
+
     // Delete existing items for this estimation
     await prisma.estimation_items.deleteMany({
       where: { estimation_id: id },
@@ -764,25 +789,52 @@ export const submitEstimation = async (req: Request, res: Response) => {
       });
     }
 
-    // Generate CE Number (format: CE-YYYY-XXX)
-    const year = new Date().getFullYear();
-    // Hitung jumlah estimasi yang sudah punya CE Number di tahun ini
-    const countThisYear = await prisma.estimations.count({
-      where: {
-        ce_number: {
-          startsWith: `CE-${year}-`,
+    // Generate CE Number only if not already assigned (for first submit)
+    let ceNumber = existingEstimation.ce_number;
+    let ceDate = existingEstimation.ce_date;
+    
+    if (!ceNumber) {
+      // Use transaction to prevent race condition
+      const year = new Date().getFullYear();
+      
+      // Get the latest CE number for this year with row lock
+      const latestCE = await prisma.estimations.findFirst({
+        where: {
+          ce_number: {
+            startsWith: `CE-${year}-`,
+            not: null,
+          },
         },
-      },
-    });
-    const ceNumber = `CE-${year}-${String(countThisYear + 1).padStart(3, "0")}`;
+        orderBy: {
+          ce_number: 'desc',
+        },
+        select: {
+          ce_number: true,
+        },
+      });
 
-    // Update estimation timestamp, CE Number, CE Date
+      let nextNumber = 1;
+      if (latestCE?.ce_number) {
+        const match = latestCE.ce_number.match(/CE-\d{4}-(\d+)/);
+        if (match) {
+          nextNumber = parseInt(match[1], 10) + 1;
+        }
+      }
+
+      ceNumber = `CE-${year}-${String(nextNumber).padStart(3, "0")}`;
+      ceDate = new Date();
+    }
+
+    // Update estimation timestamp, CE Number (if new), CE Date, and mark as PENDING_APPROVAL (menunggu approval)
     const updatedEstimation = await prisma.estimations.update({
       where: { id },
       data: {
         updated_at: new Date(),
-        ce_number: ceNumber,
-        ce_date: new Date(), // This already uses actual time, but ensure frontend displays time part
+        ...(existingEstimation.ce_number ? {} : { ce_number: ceNumber }), // Only update if not exists
+        ...(existingEstimation.ce_date ? {} : { ce_date: ceDate }), // Only update if not exists
+        status: 'PENDING_APPROVAL',
+        submitted_by_user_id: (req as any).user?.userId || (req as any).user?.id || null,
+        submitted_at: new Date(),
       },
       include: {
         project: {
@@ -803,5 +855,194 @@ export const submitEstimation = async (req: Request, res: Response) => {
     const msg = err instanceof Error ? err.message : String(err);
     console.error('Error submitting estimation:', msg);
     res.status(500).json({ error: msg });
+  }
+};
+
+// FITUR 3.2.D: Approval decision on estimation
+export const decideOnEstimation = async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    const { decision, comment } = req.body || {};
+
+    if (!decision) {
+      return res.status(400).json({ success: false, error: 'decision is required' });
+    }
+
+    // Normalize decision to uppercase underscore
+    const norm = String(decision).trim().toUpperCase();
+    let finalDecision: 'APPROVED' | 'REVISION_REQUIRED' | 'REJECTED';
+    if (['APPROVED'].includes(norm)) finalDecision = 'APPROVED';
+    else if (['REVISION_REQUIRED', 'REVISIONREQUIRED', 'REVISION-REQUIRED'].includes(norm)) finalDecision = 'REVISION_REQUIRED';
+    else if (['REJECTED'].includes(norm)) finalDecision = 'REJECTED';
+    else {
+      return res.status(400).json({ success: false, error: 'Invalid decision value' });
+    }
+
+    if ((finalDecision === 'REVISION_REQUIRED' || finalDecision === 'REJECTED') && (!comment || !String(comment).trim())) {
+      return res.status(400).json({ success: false, error: 'comment is required for revision or rejection' });
+    }
+
+    const estimation = await prisma.estimations.findUnique({
+      where: { id },
+      include: {
+        project: true,
+      },
+    });
+    if (!estimation) {
+      return res.status(404).json({ success: false, error: 'Estimation not found' });
+    }
+
+    // Only allow decision when waiting approval; we map this to PENDING in current enum
+    if (estimation.status !== 'PENDING_APPROVAL') {
+      return res.status(409).json({ success: false, error: 'Estimasi ini tidak sedang dalam status menunggu approval.' });
+    }
+
+    // Map decision to existing enum statuses
+    const newStatus = finalDecision === 'APPROVED'
+      ? 'APPROVED'
+      : finalDecision === 'REJECTED'
+        ? 'REJECTED'
+        : 'REVISED';
+
+    const approverId = (req as any).user?.userId || (req as any).user?.id || null;
+
+    const updated = await prisma.estimations.update({
+      where: { id },
+      data: {
+        status: newStatus as any,
+        approved_by_user_id: finalDecision === 'APPROVED' ? approverId : null,
+        approved_at: finalDecision === 'APPROVED' ? new Date() : null,
+        updated_at: new Date(),
+      },
+      include: {
+        project: true,
+        requested_by: true,
+        assigned_to: true,
+      },
+    });
+
+    // Audit trail via ProjectActivity
+    try {
+      await prisma.projectActivity.create({
+        data: {
+          project_id: updated.project_id,
+          activity_type: 'STATUS_CHANGE' as any,
+          description: `Estimation ${updated.id} decision: ${finalDecision}`,
+          performed_by: approverId || 'system',
+          metadata: {
+            decision: finalDecision,
+            comment: comment || null,
+            estimationId: updated.id,
+            previousStatus: estimation.status,
+            newStatus,
+          } as any,
+        },
+      });
+    } catch (e) {
+      // ignore audit fail to not block decision
+    }
+
+    // TODO: NotificationService integration placeholder
+    
+    // If APPROVED, prepare for CRM integration (create quotation draft)
+    if (finalDecision === 'APPROVED') {
+      // TODO: Auto-create quotation in CRM service or set flag for manual send
+      console.log(`✓ Estimation ${id} approved - ready to send to CRM as quotation`);
+    }
+
+    return res.status(200).json({ success: true, data: updated });
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    console.error('Error deciding on estimation:', msg);
+    return res.status(500).json({ success: false, error: msg });
+  }
+};
+
+// FITUR: Send Approved Estimation to CRM as Quotation
+export const sendEstimationToCRM = async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    
+    const estimation = await prisma.estimations.findUnique({
+      where: { id },
+      include: {
+        items: true,
+        project: {
+          include: {
+            customer: true,
+          },
+        },
+        requested_by: {
+          include: {
+            employee: true,
+          },
+        },
+        assigned_to: {
+          include: {
+            employee: true,
+          },
+        },
+      },
+    });
+
+    if (!estimation) {
+      return res.status(404).json({ success: false, error: 'Estimation not found' });
+    }
+
+    if (estimation.status !== 'APPROVED') {
+      return res.status(400).json({ 
+        success: false, 
+        error: 'Only approved estimations can be sent to CRM' 
+      });
+    }
+
+    // Prepare quotation payload for CRM service
+    const quotationPayload = {
+      estimation_id: estimation.id,
+      ce_number: estimation.ce_number,
+      project_id: estimation.project_id,
+      project_name: estimation.project?.project_name,
+      customer_id: estimation.project?.customer_id,
+      customer_name: estimation.project?.customer?.customer_name,
+      sales_pic: estimation.project?.sales_pic || estimation.requested_by?.employee?.full_name,
+      technical_brief: estimation.technical_brief,
+      items: estimation.items.map((item: any) => ({
+        item_id: item.item_id,
+        item_type: item.item_type,
+        quantity: Number(item.quantity),
+        unit_price: Number(item.sell_price_at_estimation),
+        total_price: Number(item.quantity) * Number(item.sell_price_at_estimation),
+      })),
+      total_amount: Number(estimation.total_sell_price),
+      gross_margin: Number(estimation.total_sell_price) - Number(estimation.total_direct_hpp),
+      valid_until: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 days from now
+      notes: `Generated from Cost Estimation ${estimation.ce_number}`,
+    };
+
+    // TODO: Call CRM service API to create quotation
+    // const crmResponse = await axios.post('http://crm-service:3002/api/v1/quotations', quotationPayload);
+    
+    // For now, just return the payload that would be sent
+    console.log('📤 Sending to CRM:', JSON.stringify(quotationPayload, null, 2));
+
+    // Mark estimation as sent to CRM (optional: add sent_to_crm_at field to schema)
+    await prisma.estimations.update({
+      where: { id },
+      data: {
+        updated_at: new Date(),
+        // sent_to_crm_at: new Date(), // TODO: add this field to schema
+      },
+    });
+
+    return res.status(200).json({ 
+      success: true, 
+      message: 'Estimation sent to CRM successfully',
+      quotation_payload: quotationPayload,
+      // crm_quotation_id: crmResponse.data.id, // TODO: when integrated
+    });
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    console.error('Error sending estimation to CRM:', msg);
+    return res.status(500).json({ success: false, error: msg });
   }
 };

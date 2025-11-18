@@ -13,12 +13,34 @@ export interface AuthenticatedRequest extends Request {
 export const getPipeline = async (req: AuthenticatedRequest, res: Response) => {
   try {
     const loggedInUser = req.user;
+    const { sales_user_id, statuses } = req.query as { sales_user_id?: string; statuses?: string };
+    
+    console.log('[pipelineController.getPipeline] request', {
+      user: loggedInUser?.id,
+      roles: (loggedInUser as any)?.roles || loggedInUser?.role,
+      rawStatusesParam: statuses,
+      sales_user_id
+    });
     
     if (!loggedInUser) {
+      console.log('No authenticated user found');
       return res.status(401).json({ error: 'Unauthorized' });
     }
 
-    const result = await pipelineService.getPipelineData(loggedInUser);
+  console.log('[pipelineController.getPipeline] fetching data for', loggedInUser.id);
+  const statusesList = statuses
+    ? statuses.split(',').map(s => String(s).trim()).filter(Boolean)
+    : undefined;
+  console.log('[pipelineController.getPipeline] parsed statusesList', statusesList);
+  const result = await pipelineService.getPipelineData(loggedInUser, sales_user_id, statusesList);
+    
+    console.log('[pipelineController.getPipeline] result summary', {
+      pipelineKeys: Object.keys(result.pipeline),
+      totalOpportunities: result.summary?.totalOpportunities,
+      invalidRequestedStatuses: result.summary?.invalidRequestedStatuses,
+      usedStatuses: result.summary?.usedStatuses,
+      requestedStatuses: result.summary?.requestedStatuses
+    });
 
     res.json({
       success: true,
@@ -36,6 +58,29 @@ export const getPipeline = async (req: AuthenticatedRequest, res: Response) => {
       error: 'Internal server error',
       message: process.env.NODE_ENV === 'development' ? error.message : undefined
     });
+  }
+};
+
+// GET /api/v1/pipeline/projects/:projectId - Get single project detail
+export const getProjectById = async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const loggedInUser = req.user;
+    const { projectId } = req.params;
+
+    if (!loggedInUser) {
+      return res.status(401).json({ error: 'Unauthorized' });
+    }
+
+    const project = await pipelineService.getProjectDetail(projectId, loggedInUser);
+    res.json({ success: true, data: project });
+  } catch (error) {
+    if ((error as Error).message === 'Project not found') {
+      return res.status(404).json({ error: 'Project not found' });
+    }
+    if ((error as Error).message === 'You can only view your own projects') {
+      return res.status(403).json({ error: 'Forbidden: You can only view your own projects' });
+    }
+    res.status(500).json({ error: 'Internal server error' });
   }
 };
 
@@ -218,5 +263,71 @@ export const updateProject = async (req: AuthenticatedRequest, res: Response) =>
       error: 'Internal server error',
       message: process.env.NODE_ENV === 'development' ? error.message : undefined
     });
+  }
+};
+
+// POST /api/v1/pipeline/activities - create a project activity (used by frontend actions like checklist)
+export const createProjectActivity = async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const loggedInUser = req.user;
+    const { projectId, activityType, description, metadata } = req.body as {
+      projectId?: string;
+      activityType?: string;
+      description?: string;
+      metadata?: Record<string, unknown>;
+    };
+
+    if (!loggedInUser) {
+      return res.status(401).json({ error: 'Unauthorized' });
+    }
+
+    if (!projectId || !description) {
+      return res.status(400).json({ error: 'Bad Request', message: 'projectId and description are required' });
+    }
+
+    const created = await pipelineService.createProjectActivity(
+      projectId,
+      activityType || 'CUSTOM',
+      description,
+      metadata || null,
+      loggedInUser
+    );
+
+    res.status(201).json({ success: true, data: created });
+  } catch (error: any) {
+    console.error('Error creating project activity:', error);
+    if (error.message === 'Project not found') {
+      return res.status(404).json({ error: 'Project not found' });
+    }
+    if (error.message === 'You can only add activities to your own projects') {
+      return res.status(403).json({ error: 'Forbidden: You can only add activities to your own projects' });
+    }
+    res.status(500).json({ error: 'Internal server error', message: process.env.NODE_ENV === 'development' ? error.message : undefined });
+  }
+};
+
+// DELETE /api/v1/pipeline/projects/:projectId
+export const deleteProject = async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const loggedInUser = req.user;
+    const { projectId } = req.params;
+
+    if (!loggedInUser) {
+      return res.status(401).json({ error: 'Unauthorized' });
+    }
+
+    await pipelineService.deleteProject(projectId, loggedInUser);
+
+    // Return 204 No Content to indicate deletion
+    return res.status(204).send();
+  } catch (error: any) {
+    console.error('Error deleting project:', error);
+    if (error.message === 'Project not found') {
+      return res.status(404).json({ error: 'Project not found' });
+    }
+    if (error.message === 'You can only delete your own projects') {
+      return res.status(403).json({ error: 'Forbidden: You can only delete your own projects' });
+    }
+    res.status(500).json({ error: 'Internal server error', message: process.env.NODE_ENV === 'development' ? error.message : undefined });
   }
 };

@@ -1,0 +1,30 @@
+{
+  "id": "pipeline-api-env",
+  "name": "miniERP Pipeline API Environment",
+  "values": [
+    {
+      "key": "base_url",
+      "value": "http://localhost:4002",
+      "type": "default",
+      "enabled": true
+    },
+    {
+      "key": "jwt_token",
+      "value": "test-token-replace-with-valid-jwt",
+      "type": "secret",
+      "enabled": true
+    },
+    {
+      "key": "project_id",
+      "value": "proj-001",
+      "type": "default",
+      "enabled": true
+    },
+    {
+      "key": "customer_id",
+      "value": "cust-001",
+      "type": "default",
+      "enabled": true
+    }
+  ]
+}

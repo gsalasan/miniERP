@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import * as estimationController from '../controllers/estimationController';
-import { requireRole, requireProjectManager, requireProjectEngineer, requireEngineeringAccess } from '../middlewares/role.middleware';
+import { requireRole, requireProjectManager, requireProjectEngineer, requireEngineeringAccess, requireApprovalManager } from '../middlewares/role.middleware';
 import { verifyToken } from '../middlewares/auth.middleware';
 
 const router = Router();
@@ -50,6 +50,18 @@ router.put(
   verifyToken,
   requireProjectEngineer,
   estimationController.submitEstimation
+);
+router.put(
+  '/api/v1/estimations/:id/decide',
+  verifyToken,
+  requireApprovalManager,
+  estimationController.decideOnEstimation
+);
+router.post(
+  '/api/v1/estimations/:id/send-to-crm',
+  verifyToken,
+  requireApprovalManager,
+  estimationController.sendEstimationToCRM
 );
 router.put('/api/v1/estimations/:id', verifyToken, requireProjectManager, estimationController.updateEstimation);
 router.delete('/api/v1/estimations/:id', verifyToken, requireProjectManager, estimationController.deleteEstimation);

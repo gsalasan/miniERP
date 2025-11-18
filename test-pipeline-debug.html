@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Pipeline API Response</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .result { background: #f0f0f0; padding: 15px; margin: 10px 0; border-radius: 5px; }
+        .error { background: #ffebee; border-left: 4px solid #f44336; }
+        .success { background: #e8f5e8; border-left: 4px solid #4caf50; }
+        button { padding: 10px 20px; margin: 10px 5px; }
+        pre { background: #f5f5f5; padding: 10px; border-radius: 4px; overflow: auto; max-height: 400px; }
+        .step { margin: 20px 0; border: 1px solid #ddd; padding: 15px; border-radius: 5px; }
+    </style>
+</head>
+<body>
+    <h1>Test Pipeline API Response Structure</h1>
+    
+    <div class="step">
+        <h3>Step 1: Test Pipeline API Response</h3>
+        <button onclick="testPipelineStructure()">Test Pipeline Structure</button>
+        <div id="pipelineResult" class="result"></div>
+    </div>
+
+    <div class="step">
+        <h3>Step 2: Test Create Project</h3>
+        <button onclick="testCreateProject()">Test Create Project</button>
+        <div id="createResult" class="result"></div>
+    </div>
+
+    <div class="step">
+        <h3>Step 3: Test Get Customers</h3>
+        <button onclick="testCustomers()">Test Get Customers</button>
+        <div id="customersResult" class="result"></div>
+    </div>
+
+    <script>
+        const API_BASE_URL = 'http://localhost:4002/api/v1';
+        const JWT_TOKEN = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6InVzZXIxIiwibmFtZSI6IkRpa2kgUHJpeWFudG8iLCJlbWFpbCI6ImRpa2lAY29tcGFueS5jb20iLCJyb2xlcyI6WyJTQUxFUyJdLCJpYXQiOjE3NjI0NzkyMTcsImV4cCI6MTc2MjU2NTYxN30.vtcIrY73tbxC0YEVsp_l8-jdWGjcsEFjwBQq1vJB4c0';
+
+        // Store token in localStorage for frontend testing
+        localStorage.setItem('authToken', JWT_TOKEN);
+
+        async function testPipelineStructure() {
+            const resultDiv = document.getElementById('pipelineResult');
+            try {
+                const response = await fetch(`${API_BASE_URL}/pipeline`, {
+                    method: 'GET',
+                    headers: {
+                        'Authorization': `Bearer ${JWT_TOKEN}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    resultDiv.innerHTML = `
+                        <div class="success">
+                            <strong>✅ Pipeline API Response successful!</strong><br>
+                            Status: ${response.status}<br>
+                            Data Structure: <pre>${JSON.stringify(data, null, 2)}</pre>
+                        </div>
+                    `;
+                } else {
+                    resultDiv.innerHTML = `
+                        <div class="error">
+                            <strong>❌ Pipeline API failed!</strong><br>
+                            Status: ${response.status}<br>
+                            Response: <pre>${JSON.stringify(data, null, 2)}</pre>
+                        </div>
+                    `;
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `
+                    <div class="error">
+                        <strong>❌ Pipeline API error!</strong><br>
+                        Error: ${error.message}
+                    </div>
+                `;
+            }
+        }
+
+        async function testCreateProject() {
+            const resultDiv = document.getElementById('createResult');
+            
+            const projectData = {
+                project_name: "Test Project dari API Test",
+                description: "Deskripsi test project",
+                customer_id: "test-customer-id",
+                estimated_value: 50000000,
+                lead_score: 75,
+                priority: "HIGH"
+            };
+
+            try {
+                const response = await fetch(`${API_BASE_URL}/pipeline/projects`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${JWT_TOKEN}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(projectData)
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    resultDiv.innerHTML = `
+                        <div class="success">
+                            <strong>✅ Create Project successful!</strong><br>
+                            Status: ${response.status}<br>
+                            Created Project: <pre>${JSON.stringify(data, null, 2)}</pre>
+                        </div>
+                    `;
+                } else {
+                    resultDiv.innerHTML = `
+                        <div class="error">
+                            <strong>❌ Create Project failed!</strong><br>
+                            Status: ${response.status}<br>
+                            Error: <pre>${JSON.stringify(data, null, 2)}</pre>
+                        </div>
+                    `;
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `
+                    <div class="error">
+                        <strong>❌ Create Project error!</strong><br>
+                        Error: ${error.message}
+                    </div>
+                `;
+            }
+        }
+
+        async function testCustomers() {
+            const resultDiv = document.getElementById('customersResult');
+            try {
+                const response = await fetch(`${API_BASE_URL}/customers`, {
+                    method: 'GET',
+                    headers: {
+                        'Authorization': `Bearer ${JWT_TOKEN}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    resultDiv.innerHTML = `
+                        <div class="success">
+                            <strong>✅ Customers API successful!</strong><br>
+                            Status: ${response.status}<br>
+                            Total Customers: ${Array.isArray(data.data) ? data.data.length : 'Unknown'}<br>
+                            Sample Data: <pre>${JSON.stringify(data, null, 2).substring(0, 1000)}...</pre>
+                        </div>
+                    `;
+                } else {
+                    resultDiv.innerHTML = `
+                        <div class="error">
+                            <strong>❌ Customers API failed!</strong><br>
+                            Status: ${response.status}<br>
+                            Response: <pre>${JSON.stringify(data, null, 2)}</pre>
+                        </div>
+                    `;
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `
+                    <div class="error">
+                        <strong>❌ Customers API error!</strong><br>
+                        Error: ${error.message}
+                    </div>
+                `;
+            }
+        }
+    </script>
+</body>
+</html>
