@@ -1,0 +1,3 @@
+-- Placeholder migration: add_discount_policies
+-- Prisma indicated this migration exists in the database but is missing locally.
+-- This file is a local placeholder. Replace with original migration SQL if available.

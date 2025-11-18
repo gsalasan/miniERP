@@ -1,15 +1,8 @@
-import express from 'express';
+import app from './app';
 
-const app = express();
+const PORT = Number(process.env.PROCUREMENT_PORT) || 4006;
 
-app.get('/health', (_req, res) => {
-  res.status(200).json({ success: true, service: 'procurement-service' });
-});
-
-const port = process.env.PORT ? Number(process.env.PORT) : 8080;
-app.listen(port, () => {
+app.listen(PORT, () => {
   // eslint-disable-next-line no-console
-  console.log(`Procurement service listening on port ${port}`);
+  console.log(`Procurement Service running on port ${PORT}`);
 });
-
-

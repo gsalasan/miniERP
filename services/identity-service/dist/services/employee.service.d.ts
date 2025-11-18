@@ -24,6 +24,19 @@ export declare const createEmployeeWithUser: (data: CreateEmployeeWithUserReques
         hire_date: Date;
         basic_salary: import("@prisma/client/runtime/library").Decimal;
         allowances: import("@prisma/client/runtime/library").JsonValue;
+        department: string | null;
+        blood_type: import(".prisma/client").$Enums.BloodType | null;
+        bank_name: string | null;
+        bank_account_number: string | null;
+        npwp: string | null;
+        ptkp: string | null;
+        phone: string | null;
+        tax_id: string | null;
+        gender: import(".prisma/client").$Enums.Gender | null;
+        marital_status: import(".prisma/client").$Enums.MaritalStatus | null;
+        employment_type: import(".prisma/client").$Enums.EmploymentType;
+        status: import(".prisma/client").$Enums.EmployeeStatus;
+        education_level: import(".prisma/client").$Enums.EducationLevel | null;
     };
     user: {
         id: string;

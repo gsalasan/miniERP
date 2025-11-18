@@ -31,8 +31,8 @@ console.log('Local .env PORT:', envConfig.PORT);
 console.log('process.env.NODE_ENV:', process.env.NODE_ENV);
 console.log('JWT_SECRET:', envConfig.JWT_SECRET ? 'Found' : 'Not found');
 
-// Use PORT environment variable for Cloud Run compatibility
-const PORT = Number(process.env.PORT) || 8080;
+// Prioritize local .env PORT over system environment for development
+const PORT = Number(envConfig.PORT) || Number(process.env.PORT) || 4001;
 const HOST = '0.0.0.0';
 
 console.log(`🎯 Selected PORT: ${PORT}`);
