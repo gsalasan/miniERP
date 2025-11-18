@@ -102,15 +102,6 @@ export const movePipelineCard = async (req: AuthenticatedRequest, res: Response)
       });
     }
 
-    // Validate status format (alphanumeric with underscores/dashes)
-    if (!/^[A-Za-z0-9_-]{1,100}$/.test(newStatus)) {
-      return res.status(400).json({ 
-        error: 'Bad Request',
-        message:
-          'Invalid status format. Only alphanumeric characters, underscores, and dashes are allowed (max 100 characters)',
-      });
-    }
-
     const updatedProject = await pipelineService.moveProjectCard(projectId, newStatus, loggedInUser);
 
     res.json({
@@ -121,41 +112,33 @@ export const movePipelineCard = async (req: AuthenticatedRequest, res: Response)
 
   } catch (error) {
     console.error('Error moving pipeline card:', error);
+    
     // Handle specific business errors
     if (error.message === 'Project not found') {
-      return res.status(404).json({ 
-        error: 'Not Found',
-        message: 'Project not found'
-      });
+      return res.status(404).json({ error: 'Project not found' });
     }
     
     if (error.message === 'You can only move your own projects') {
-      return res.status(403).json({ 
-        error: 'Forbidden',
-        message: 'You can only move your own projects'
-      });
+      return res.status(403).json({ error: 'Forbidden: You can only move your own projects' });
     }
     
-    if (error.message.includes('Invalid status provided')) {
+    if (error.message === 'Invalid status provided') {
       return res.status(400).json({ 
         error: 'Bad Request',
-        message: error.message
+        message: 'Invalid status provided'
       });
     }
     
-    // Handle status transition validation errors
-    if (error.message.includes('Transisi status tidak valid') || 
-        error.message.includes('Tidak bisa') || 
-        error.message.includes('hanya bisa')) {
-      return res.status(422).json({ 
+    if (error.message.includes('Tidak bisa')) {
+      return res.status(400).json({ 
         error: 'Business Rule Violation',
         message: error.message
       });
     }
 
     res.status(500).json({ 
-      error: 'Internal Server Error',
-      message: process.env.NODE_ENV === 'development' ? error.message : 'An unexpected error occurred'
+      error: 'Internal server error',
+      message: process.env.NODE_ENV === 'development' ? error.message : undefined
     });
   }
 };

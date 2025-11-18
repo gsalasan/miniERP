@@ -2,32 +2,38 @@ import { PrismaClient, Prisma } from '@prisma/client';
 
 const prisma = new PrismaClient();
 
-
+// Default/suggested status values for new projects (can be customized by users)
+const SUGGESTED_PROJECT_STATUSES: string[] = [
+  'LEADS',
+  'PROSPECT',
+  'MEETING_SCHEDULED',
+  'PRE_SALES',
+  'PROPOSAL_DELIVERED',
+  'WON',
+  'LOST',
+  'ON_HOLD',
+  'DRAFT',
+  'ONGOING',
+  'COMPLETED',
+  'CANCELLED'
+];
 
 /**
  * Basic validation: ensure status values are reasonable strings (no injection, reasonable length)
  */
-function sanitizeStatuses(
-  input: string[] | undefined,
-  fallback: string[]
-): string[] {
+function sanitizeStatuses(input: string[] | undefined, fallback: string[]): string[] {
   if (!input || input.length === 0) {
     return fallback;
   }
-
+  
   // Filter: alphanumeric, underscore, dash, max 100 chars (matches DB VARCHAR(100))
   const valid: string[] = [];
   for (const s of input) {
-    if (
-      typeof s === 'string' &&
-      s.length > 0 &&
-      s.length <= 100 &&
-      /^[A-Z0-9_-]+$/i.test(s)
-    ) {
+    if (typeof s === 'string' && s.length > 0 && s.length <= 100 && /^[A-Z0-9_-]+$/i.test(s)) {
       valid.push(s.toUpperCase()); // Normalize to uppercase
     }
   }
-
+  
   // If everything was invalid, return fallback
   if (valid.length === 0) {
     return fallback;
@@ -37,14 +43,14 @@ function sanitizeStatuses(
 
 export interface PipelineData {
   [status: string]: {
-    items: Record<string, unknown>[];
+    items: any[];
     totalValue: number;
   };
 }
 
 export interface UserInfo {
   id: string;
-  role?: string; // Single role (legacy)
+  role?: string;  // Single role (legacy)
   roles?: string[]; // Multiple roles (new format)
   name?: string;
   email?: string;
@@ -85,7 +91,7 @@ export class PipelineService {
       const candidate = `PRJ-${y}${m}-${rand}`;
 
       const exists = await prisma.projects.findUnique({
-        where: { project_number: candidate },
+        where: { project_number: candidate }
       });
       if (!exists) return candidate;
       attempt++;
@@ -94,7 +100,7 @@ export class PipelineService {
     const ts = Date.now();
     return `PRJ-${ts}`;
   }
-
+  
   /**
    * Get pipeline data grouped by status with role-based filtering
    */
@@ -130,16 +136,16 @@ export class PipelineService {
     // Role-based filtering
     // Support both single role (legacy) and roles array (new format)
     const userRoles = user.roles || (user.role ? [user.role] : []);
-    const hasValidRole = userRoles.some(role =>
+    const hasValidRole = userRoles.some((role) =>
       ['SALES', 'CEO', 'SALES_MANAGER'].includes(role)
     );
-
+    
     if (!hasValidRole) {
       throw new Error('Insufficient permissions');
     }
-
+    
     let queryFilter: Record<string, unknown> = {};
-
+    
     if (
       userRoles.includes('SALES') &&
       !userRoles.includes('CEO') &&
@@ -150,6 +156,7 @@ export class PipelineService {
     } else if (filterSalesUserId && filterSalesUserId !== 'all') {
       // CEO / SALES_MANAGER bisa memfilter berdasarkan dropdown
       queryFilter.sales_user_id = filterSalesUserId;
+    } else {
     }
 
     // Fetch projects with customer data
@@ -157,7 +164,7 @@ export class PipelineService {
       ...queryFilter,
       status: { in: selectedStatuses },
     };
-
+    
     const projects = await prisma.projects.findMany({
       where: whereClause,
       include: {
@@ -171,13 +178,13 @@ export class PipelineService {
         },
       },
       orderBy: {
-        updated_at: 'desc',
-      },
+        updated_at: 'desc'
+      }
     });
 
     // Independent query to discover all statuses visible to this user (ignoring the status filter) for diagnostics
     const roleOnlyFilter: { sales_user_id?: string } = {};
-    if (typeof queryFilter.sales_user_id === 'string') {
+    if (queryFilter.sales_user_id) {
       roleOnlyFilter.sales_user_id = queryFilter.sales_user_id;
     }
     const allUserProjects = await prisma.projects.findMany({
@@ -185,12 +192,8 @@ export class PipelineService {
       select: { status: true },
     });
     const countsMap: Record<string, number> = {};
-    allUserProjects.forEach(p => {
-      countsMap[p.status] = (countsMap[p.status] || 0) + 1;
-    });
-    const availableStatusesForUser = Object.entries(countsMap).map(
-      ([status, count]) => ({ status, count })
-    );
+    allUserProjects.forEach(p => { countsMap[p.status] = (countsMap[p.status] || 0) + 1; });
+    const availableStatusesForUser = Object.entries(countsMap).map(([status, count]) => ({ status, count }));
 
     // Initialize pipeline structure based on selected statuses
     const pipeline: PipelineData = selectedStatuses.reduce((acc, s) => {
@@ -199,33 +202,21 @@ export class PipelineService {
     }, {} as PipelineData);
 
     // Build user map for sales users
-    const salesUserIds = Array.from(
-      new Set(projects.map(p => p.sales_user_id).filter(Boolean))
-    ) as string[];
-    let salesUserMap: Record<
-      string,
-      { id: string; name: string; email: string }
-    > = {};
+    const salesUserIds = Array.from(new Set(projects.map(p => p.sales_user_id).filter(Boolean))) as string[];
+    let salesUserMap: Record<string, { id: string; name: string; email: string } > = {};
     if (salesUserIds.length > 0) {
       const users = await prisma.users.findMany({
         where: { id: { in: salesUserIds } },
-        select: {
-          id: true,
-          email: true,
-          employee: { select: { full_name: true } },
-        },
+        select: { id: true, email: true, employee: { select: { full_name: true } } }
       });
-      salesUserMap = users.reduce(
-        (acc, u) => {
-          acc[u.id] = {
-            id: u.id,
-            name: u.employee?.full_name || u.email,
-            email: u.email,
-          };
-          return acc;
-        },
-        {} as Record<string, { id: string; name: string; email: string }>
-      );
+      salesUserMap = users.reduce((acc, u) => {
+        acc[u.id] = {
+          id: u.id,
+          name: u.employee?.full_name || u.email,
+          email: u.email,
+        };
+        return acc;
+      }, {} as Record<string, { id: string; name: string; email: string }>);
     }
 
     // Group projects by status and calculate totals
@@ -239,7 +230,7 @@ export class PipelineService {
           customer: {
             id: project.customer.id,
             name: project.customer.customer_name,
-            city: project.customer.city,
+            city: project.customer.city
           },
           estimated_value: project.estimated_value,
           contract_value: project.contract_value,
@@ -248,13 +239,11 @@ export class PipelineService {
           priority: project.priority,
           expected_close_date: project.expected_close_date,
           sales_user_id: project.sales_user_id,
-          sales_user: project.sales_user_id
-            ? salesUserMap[project.sales_user_id] || null
-            : null,
+          sales_user: project.sales_user_id ? salesUserMap[project.sales_user_id] || null : null,
           created_at: project.created_at,
-          updated_at: project.updated_at,
+          updated_at: project.updated_at
         });
-
+        
         // Add to total value (use contract_value if available, otherwise estimated_value)
         const value = project.contract_value || project.estimated_value || 0;
         pipeline[status].totalValue += Number(value);
@@ -263,10 +252,7 @@ export class PipelineService {
 
     // Calculate summary
     const totalOpportunities = projects.length;
-    const totalValue = Object.values(pipeline).reduce(
-      (sum, column) => sum + column.totalValue,
-      0
-    );
+    const totalValue = Object.values(pipeline).reduce((sum, column) => sum + column.totalValue, 0);
 
     return {
       pipeline,
@@ -274,31 +260,25 @@ export class PipelineService {
         totalOpportunities,
         totalValue,
         currency: 'IDR',
-        requestedStatuses: Array.isArray(dynamicStatuses)
-          ? dynamicStatuses
-          : defaultStatuses,
+        requestedStatuses: Array.isArray(dynamicStatuses) ? dynamicStatuses : defaultStatuses,
         usedStatuses: selectedStatuses,
         invalidRequestedStatuses: [],
-        availableStatusesForUser,
-      },
+        availableStatusesForUser
+      }
     };
   }
 
   /**
    * Move a project card to a new status with business rules validation
    */
-  async moveProjectCard(
-    projectId: string,
-    newStatus: string,
-    user: UserInfo
-  ): Promise<{
+  async moveProjectCard(projectId: string, newStatus: string, user: UserInfo): Promise<{
     id: string;
     project_name: string;
     description: string | null;
     customer: { id: string; customer_name: string; city: string };
     status: string;
-    estimated_value: number | null;
-    contract_value: number | null;
+    estimated_value: any;
+    contract_value: any;
     lead_score: number | null;
     estimation_status: string | null;
     priority: string;
@@ -308,9 +288,7 @@ export class PipelineService {
     // Basic validation: ensure status is a reasonable string
     const sanitized = sanitizeStatuses([newStatus], ['PROSPECT']);
     if (sanitized.length === 0 || sanitized[0] !== newStatus.toUpperCase()) {
-      throw new Error(
-        'Invalid status provided - must be alphanumeric with underscores/dashes, max 100 characters'
-      );
+      throw new Error('Invalid status provided - must be alphanumeric with underscores/dashes, max 100 characters');
     }
 
     // Find the project
@@ -321,12 +299,7 @@ export class PipelineService {
 
     // Authorization check
     const userRoles = user.roles || (user.role ? [user.role] : []);
-    if (
-      userRoles.includes('SALES') &&
-      !userRoles.includes('CEO') &&
-      !userRoles.includes('SALES_MANAGER') &&
-      project.sales_user_id !== user.id
-    ) {
+    if (userRoles.includes('SALES') && !userRoles.includes('CEO') && !userRoles.includes('SALES_MANAGER') && project.sales_user_id !== user.id) {
       throw new Error('You can only move your own projects');
     }
 
@@ -338,18 +311,18 @@ export class PipelineService {
     // Update project status (now accepts any valid VARCHAR value)
     const updatedProject = await prisma.projects.update({
       where: { id: projectId },
-      data: {
+      data: { 
         status: newStatus.toUpperCase(), // Normalize to uppercase
-        updated_by: user.id,
+        updated_by: user.id
       },
       include: {
         customer: {
           select: {
             id: true,
             customer_name: true,
-            city: true,
-          },
-        },
+            city: true
+          }
+        }
       }
     });
 
@@ -429,72 +402,28 @@ export class PipelineService {
 
   /**
    * Validate business rules for status transitions
-   * Defines allowed transitions from each status
    */
   private validateStatusTransition(project: any, newStatus: string): void {
-    const currentStatus = project.status;
-    const upperNewStatus = newStatus.toUpperCase();
-
-    // Define valid transitions for each status
-    const allowedTransitions: Record<string, string[]> = {
-      'PROSPECT': ['MEETING_SCHEDULED', 'PRE_SALES', 'LOST'],
-      'MEETING_SCHEDULED': ['PROSPECT', 'PRE_SALES', 'LOST'],
-      'PRE_SALES': ['MEETING_SCHEDULED', 'PROPOSAL_DELIVERED', 'LOST'],
-      'PROPOSAL_DELIVERED': ['PRE_SALES', 'NEGOTIATION', 'LOST'],
-      'NEGOTIATION': ['PROPOSAL_DELIVERED', 'WON', 'LOST'],
-      'WON': [], // Final state - cannot transition to other states
-      'LOST': [] // Final state - cannot transition to other states
-    };
-
-    // Check if current status is in our allowed transitions map
-    if (!allowedTransitions[currentStatus]) {
-      // Allow any transition if current status is not in our predefined list
-      // This provides flexibility for custom statuses
-      return;
-    }
-
-    // Check if the new status is allowed from current status
-    if (!allowedTransitions[currentStatus].includes(upperNewStatus)) {
-      const currentName = this.getStatusDisplayName(currentStatus);
-      const newName = this.getStatusDisplayName(upperNewStatus);
-      throw new Error(
-        `Transisi status tidak valid: Tidak bisa berpindah dari "${currentName}" ke "${newName}". ` +
-        `Status yang diizinkan: ${allowedTransitions[currentStatus].map(s => this.getStatusDisplayName(s)).join(', ') || 'Tidak ada (status final)'}`
-      );
-    }
-
-    // Special validation: Cannot move to PROPOSAL_DELIVERED without approved estimation
+    // Business rule: Cannot move to PROPOSAL_DELIVERED without approved estimation
     if (
-      currentStatus === 'PRE_SALES' &&
-      upperNewStatus === 'PROPOSAL_DELIVERED' &&
+      project.status === 'PRE_SALES' &&
+      newStatus === 'PROPOSAL_DELIVERED' &&
       project.estimation_status !== 'APPROVED'
     ) {
-      throw new Error('Tidak bisa membuat proposal sebelum estimasi disetujui. Harap selesaikan dan approve estimasi terlebih dahulu.');
+      throw new Error('Tidak bisa membuat proposal sebelum estimasi disetujui');
     }
 
-    // Validation: Cannot move to WON without negotiation
-    if (
-      upperNewStatus === 'WON' &&
-      currentStatus !== 'NEGOTIATION'
-    ) {
-      throw new Error('Project hanya bisa dimenangkan (WON) dari tahap negosiasi.');
+    // Add more business rules here as needed
+    // Example: Cannot move from PROSPECT directly to NEGOTIATION
+    if (project.status === 'PROSPECT' && newStatus === 'NEGOTIATION') {
+      throw new Error('Tidak bisa langsung ke tahap negosiasi dari prospek');
     }
-  }
 
-  /**
-   * Get user-friendly display name for status
-   */
-  private getStatusDisplayName(status: string): string {
-    const statusNames: Record<string, string> = {
-      'PROSPECT': 'Prospek',
-      'MEETING_SCHEDULED': 'Meeting Terjadwal',
-      'PRE_SALES': 'Pre-Sales',
-      'PROPOSAL_DELIVERED': 'Proposal Terkirim',
-      'NEGOTIATION': 'Negosiasi',
-      'WON': 'Menang',
-      'LOST': 'Kalah'
-    };
-    return statusNames[status] || status;
+    // Example: Cannot reopen LOST or WON projects to active statuses
+    const activeStatuses = ['PROSPECT', 'MEETING_SCHEDULED', 'PRE_SALES', 'PROPOSAL_DELIVERED', 'NEGOTIATION'];
+    if (['LOST', 'WON'].includes(project.status) && activeStatuses.includes(newStatus)) {
+      throw new Error('Tidak bisa mengaktifkan kembali project yang sudah selesai');
+    }
   }
 
   /**
@@ -774,22 +703,22 @@ export class PipelineService {
         // Delete project milestones
         prisma.project_milestones.deleteMany({ where: { project_id: projectId } }),
       ]);
-
+      
       // Delete estimations separately as they may have their own child records
       // First get all estimation IDs for this project
       const estimations = await prisma.estimations.findMany({
         where: { project_id: projectId },
         select: { id: true }
       });
-
+      
       if (estimations.length > 0) {
         const estimationIds = estimations.map(e => e.id);
-
+        
         // Delete estimation items first
         await prisma.estimation_items.deleteMany({
           where: { estimation_id: { in: estimationIds } }
         });
-
+        
         // Then delete estimations
         await prisma.estimations.deleteMany({
           where: { project_id: projectId }
