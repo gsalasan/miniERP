@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import {
   Dialog,
   DialogTitle,
@@ -18,6 +18,7 @@ import {
   IconButton,
 } from "@mui/material";
 import Autocomplete from "@mui/material/Autocomplete";
+import ArrowDropDownIcon from "@mui/icons-material/ArrowDropDown";
 import VendorCreateDialog from "./VendorCreateDialog";
 import { Close as CloseIcon, Save as SaveIcon, Add as AddIcon } from "@mui/icons-material";
 import { Material, FilterOptions } from "../types/material";
@@ -33,6 +34,7 @@ interface MaterialFormModalProps {
   onSuccess: () => void;
   material?: Material | null; // null for add, Material object for edit
   filterOptions?: FilterOptions | null;
+  initialItemName?: string; // optional prefill when creating
 }
 
 interface FormData {
@@ -77,6 +79,7 @@ const MaterialFormModal: React.FC<MaterialFormModalProps> = ({
   onSuccess,
   material,
   filterOptions: _filterOptions,
+  initialItemName,
 }) => {
   const [formData, setFormData] = useState<FormData>(initialFormData);
   const [loading, setLoading] = useState(false);
@@ -90,6 +93,19 @@ const MaterialFormModal: React.FC<MaterialFormModalProps> = ({
   const { showSuccess, showError } = useNotification();
 
   const isEditMode = !!material;
+
+  // Deduplicate filter options to avoid React key warnings when Autocomplete renders lists
+  const sbusOptions = useMemo(() => {
+    return Array.from(new Set(_filterOptions?.sbus || []));
+  }, [_filterOptions?.sbus]);
+
+  const systemsOptions = useMemo(() => {
+    return Array.from(new Set(_filterOptions?.systems || []));
+  }, [_filterOptions?.systems]);
+
+  const subsystemsOptions = useMemo(() => {
+    return Array.from(new Set(_filterOptions?.subsystems || []));
+  }, [_filterOptions?.subsystems]);
 
   // Reset form when modal opens/closes or material changes
   useEffect(() => {
@@ -129,12 +145,15 @@ const MaterialFormModal: React.FC<MaterialFormModalProps> = ({
             : "",
         });
       } else {
-        setFormData(initialFormData);
+        setFormData({
+          ...initialFormData,
+          item_name: initialItemName || "",
+        });
       }
       setError(null);
       setFormErrors({});
     }
-  }, [open, material, isEditMode]);
+  }, [open, material, isEditMode, initialItemName]);
 
   const handleInputChange =
     (field: keyof FormData) =>
@@ -143,8 +162,7 @@ const MaterialFormModal: React.FC<MaterialFormModalProps> = ({
         | React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
         | { target: { value: unknown } },
     ) => {
-          // eslint-disable-next-line prettier/prettier
-          const value = (event as unknown as { target: { value: string } }).target.value;
+      const value = (event as unknown as { target: { value: string } }).target.value;
 
       // Special handling for location changes
       if (field === "location") {
@@ -377,42 +395,7 @@ const MaterialFormModal: React.FC<MaterialFormModalProps> = ({
             />
           </Grid>
 
-          <Grid item xs={12} md={6}>
-            <Autocomplete
-              options={vendors}
-              getOptionLabel={(option) => option.vendor_name}
-              loading={vendorsLoading}
-              value={
-                formData.vendor
-                  ? vendors.find((v) => v.vendor_name === formData.vendor) || null
-                  : null
-              }
-              onChange={(_, value) => {
-                setFormData((prev) => ({ ...prev, vendor: value?.vendor_name || "" }));
-                if (formErrors.vendor) setFormErrors((prev) => ({ ...prev, vendor: undefined }));
-              }}
-              onInputChange={(_, value) => setVendorInput(value)}
-              renderInput={(params) => (
-                <TextField
-                  {...params}
-                  label="Vendor"
-                  placeholder="Select vendor"
-                  error={!!formErrors.vendor}
-                  helperText={formErrors.vendor}
-                  disabled={loading}
-                />
-              )}
-            />
-            <Box sx={{ mt: 1, display: "flex", justifyContent: "flex-end" }}>
-              <Button
-                size="small"
-                onClick={() => setOpenVendorCreate(true)}
-                startIcon={<AddIcon />}
-              >
-                Tambah vendor baru{vendorInput ? ` "${vendorInput}"` : ""}
-              </Button>
-            </Box>
-          </Grid>
+          {/* Vendor field moved below to Status & Location section per UX request */}
 
           {/* System Information */}
           <Grid item xs={12}>
@@ -422,39 +405,153 @@ const MaterialFormModal: React.FC<MaterialFormModalProps> = ({
           </Grid>
 
           <Grid item xs={12} md={4}>
-            <TextField
-              fullWidth
-              label="SBU"
-              value={formData.sbu}
-              onChange={handleInputChange("sbu")}
-              error={!!formErrors.sbu}
-              helperText={formErrors.sbu}
-              disabled={loading}
-            />
+            {sbusOptions && sbusOptions.length > 0 ? (
+              <Autocomplete
+                freeSolo
+                options={sbusOptions}
+                value={formData.sbu || ""}
+                onChange={(_e, value) =>
+                  setFormData((p) => ({ ...p, sbu: (value as string) || "" }))
+                }
+                onInputChange={(_e, value) => setFormData((p) => ({ ...p, sbu: value }))}
+                popupIcon={<ArrowDropDownIcon />}
+                size="small"
+                renderInput={(params) => {
+                  const InputProps = {
+                    ...params.InputProps,
+                    endAdornment: (
+                      <>
+                        {params.InputProps?.endAdornment}
+                        <ArrowDropDownIcon
+                          sx={{ ml: 0.5, color: (theme) => theme.palette.action.active }}
+                        />
+                      </>
+                    ),
+                  };
+                  return (
+                    <TextField
+                      {...params}
+                      label="SBU"
+                      placeholder="Select or type SBU"
+                      error={!!formErrors.sbu}
+                      helperText={formErrors.sbu}
+                      disabled={loading}
+                      InputProps={InputProps}
+                    />
+                  );
+                }}
+              />
+            ) : (
+              <TextField
+                fullWidth
+                label="SBU"
+                value={formData.sbu}
+                onChange={handleInputChange("sbu")}
+                error={!!formErrors.sbu}
+                helperText={formErrors.sbu}
+                disabled={loading}
+              />
+            )}
           </Grid>
 
           <Grid item xs={12} md={4}>
-            <TextField
-              fullWidth
-              label="System"
-              value={formData.system}
-              onChange={handleInputChange("system")}
-              error={!!formErrors.system}
-              helperText={formErrors.system}
-              disabled={loading}
-            />
+            {systemsOptions && systemsOptions.length > 0 ? (
+              <Autocomplete
+                freeSolo
+                options={systemsOptions}
+                value={formData.system || ""}
+                onChange={(_e, value) =>
+                  setFormData((p) => ({ ...p, system: (value as string) || "" }))
+                }
+                onInputChange={(_e, value) => setFormData((p) => ({ ...p, system: value }))}
+                popupIcon={<ArrowDropDownIcon />}
+                size="small"
+                renderInput={(params) => {
+                  const InputProps = {
+                    ...params.InputProps,
+                    endAdornment: (
+                      <>
+                        {params.InputProps?.endAdornment}
+                        <ArrowDropDownIcon
+                          sx={{ ml: 0.5, color: (theme) => theme.palette.action.active }}
+                        />
+                      </>
+                    ),
+                  };
+                  return (
+                    <TextField
+                      {...params}
+                      label="System"
+                      placeholder="Select or type System"
+                      error={!!formErrors.system}
+                      helperText={formErrors.system}
+                      disabled={loading}
+                      InputProps={InputProps}
+                    />
+                  );
+                }}
+              />
+            ) : (
+              <TextField
+                fullWidth
+                label="System"
+                value={formData.system}
+                onChange={handleInputChange("system")}
+                error={!!formErrors.system}
+                helperText={formErrors.system}
+                disabled={loading}
+              />
+            )}
           </Grid>
 
           <Grid item xs={12} md={4}>
-            <TextField
-              fullWidth
-              label="Subsystem"
-              value={formData.subsystem}
-              onChange={handleInputChange("subsystem")}
-              error={!!formErrors.subsystem}
-              helperText={formErrors.subsystem}
-              disabled={loading}
-            />
+            {subsystemsOptions && subsystemsOptions.length > 0 ? (
+              <Autocomplete
+                freeSolo
+                options={subsystemsOptions}
+                value={formData.subsystem || ""}
+                onChange={(_e, value) =>
+                  setFormData((p) => ({ ...p, subsystem: (value as string) || "" }))
+                }
+                onInputChange={(_e, value) => setFormData((p) => ({ ...p, subsystem: value }))}
+                popupIcon={<ArrowDropDownIcon />}
+                size="small"
+                renderInput={(params) => {
+                  const InputProps = {
+                    ...params.InputProps,
+                    endAdornment: (
+                      <>
+                        {params.InputProps?.endAdornment}
+                        <ArrowDropDownIcon
+                          sx={{ ml: 0.5, color: (theme) => theme.palette.action.active }}
+                        />
+                      </>
+                    ),
+                  };
+                  return (
+                    <TextField
+                      {...params}
+                      label="Subsystem"
+                      placeholder="Select or type Subsystem"
+                      error={!!formErrors.subsystem}
+                      helperText={formErrors.subsystem}
+                      disabled={loading}
+                      InputProps={InputProps}
+                    />
+                  );
+                }}
+              />
+            ) : (
+              <TextField
+                fullWidth
+                label="Subsystem"
+                value={formData.subsystem}
+                onChange={handleInputChange("subsystem")}
+                error={!!formErrors.subsystem}
+                helperText={formErrors.subsystem}
+                disabled={loading}
+              />
+            )}
           </Grid>
 
           <Grid item xs={12}>
@@ -518,6 +615,44 @@ const MaterialFormModal: React.FC<MaterialFormModalProps> = ({
                 ))}
               </Select>
             </FormControl>
+          </Grid>
+
+          {/* Vendor placed here under Status & Location as requested */}
+          <Grid item xs={12} md={6}>
+            <Autocomplete
+              options={vendors}
+              getOptionLabel={(option) => option.vendor_name}
+              loading={vendorsLoading}
+              value={
+                formData.vendor
+                  ? vendors.find((v) => v.vendor_name === formData.vendor) || null
+                  : null
+              }
+              onChange={(_, value) => {
+                setFormData((prev) => ({ ...prev, vendor: value?.vendor_name || "" }));
+                if (formErrors.vendor) setFormErrors((prev) => ({ ...prev, vendor: undefined }));
+              }}
+              onInputChange={(_, value) => setVendorInput(value)}
+              renderInput={(params) => (
+                <TextField
+                  {...params}
+                  label="Vendor"
+                  placeholder="Select vendor"
+                  error={!!formErrors.vendor}
+                  helperText={formErrors.vendor}
+                  disabled={loading}
+                />
+              )}
+            />
+            <Box sx={{ mt: 1, display: "flex", justifyContent: "flex-end" }}>
+              <Button
+                size="small"
+                onClick={() => setOpenVendorCreate(true)}
+                startIcon={<AddIcon />}
+              >
+                Tambah vendor baru{vendorInput ? ` "${vendorInput}"` : ""}
+              </Button>
+            </Box>
           </Grid>
 
           {/* Cost Information */}

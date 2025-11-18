@@ -1,12 +1,5 @@
 import React from "react";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableRow,
-  Skeleton,
-} from "@mui/material";
+import { Table, TableBody, TableCell, TableHead, TableRow, Skeleton } from "@mui/material";
 
 interface ServicesTableSkeletonProps {
   rows?: number;
@@ -52,9 +45,24 @@ const ServicesTableSkeleton: React.FC<ServicesTableSkeletonProps> = ({ rows = 10
               <Skeleton variant="rounded" width={60} height={24} />
             </TableCell>
             <TableCell align="center">
-              <Skeleton variant="circular" width={32} height={32} sx={{ display: "inline-block", mr: 1 }} />
-              <Skeleton variant="circular" width={32} height={32} sx={{ display: "inline-block", mr: 1 }} />
-              <Skeleton variant="circular" width={32} height={32} sx={{ display: "inline-block" }} />
+              <Skeleton
+                variant="circular"
+                width={32}
+                height={32}
+                sx={{ display: "inline-block", mr: 1 }}
+              />
+              <Skeleton
+                variant="circular"
+                width={32}
+                height={32}
+                sx={{ display: "inline-block", mr: 1 }}
+              />
+              <Skeleton
+                variant="circular"
+                width={32}
+                height={32}
+                sx={{ display: "inline-block" }}
+              />
             </TableCell>
           </TableRow>
         ))}

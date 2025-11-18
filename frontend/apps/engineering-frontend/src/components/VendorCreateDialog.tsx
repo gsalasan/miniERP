@@ -1,4 +1,3 @@
-/* eslint-disable prettier/prettier */
 import React, { useState, useEffect } from "react";
 import {
   Dialog,
@@ -93,9 +92,7 @@ export const VendorCreateDialog: React.FC<VendorCreateDialogProps> = ({
             <TextField
               label="Vendor Name"
               value={vendorName}
-              onChange={(e) =>
-                setVendorName((e.target as unknown as { value: string }).value)
-              }
+              onChange={(e) => setVendorName((e.target as unknown as { value: string }).value)}
               fullWidth
               required
               error={!!errors.vendor_name}
@@ -114,7 +111,9 @@ export const VendorCreateDialog: React.FC<VendorCreateDialogProps> = ({
                   setClassification((e.target as { value: string }).value as Classification | "")
                 }
               >
-                <MenuItem value=""><em>Pilih classification</em></MenuItem>
+                <MenuItem value="">
+                  <em>Pilih classification</em>
+                </MenuItem>
                 <MenuItem value="Local">Local</MenuItem>
                 <MenuItem value="International">International</MenuItem>
                 <MenuItem value="Principal">Principal</MenuItem>
@@ -149,7 +148,9 @@ export const VendorCreateDialog: React.FC<VendorCreateDialogProps> = ({
         </Grid>
       </DialogContent>
       <DialogActions>
-        <Button onClick={onClose} disabled={loading} variant="outlined">Batal</Button>
+        <Button onClick={onClose} disabled={loading} variant="outlined">
+          Batal
+        </Button>
         <Button onClick={handleSubmit} disabled={loading} variant="contained">
           {loading ? <CircularProgress size={20} /> : "Simpan"}
         </Button>

@@ -45,15 +45,18 @@ import ServiceFormModal from "./ServiceFormModal";
 import ServiceDetailModal from "./ServiceDetailModal";
 import DeleteConfirmationModal from "./DeleteConfirmationModal";
 import { useNotification } from "../contexts/NotificationContext";
+import { useAuth } from "../context/AuthContext";
 
 interface ServicesListProps {
   globalSearch?: string;
 }
 
 const ServicesList: React.FC<ServicesListProps> = ({ globalSearch }) => {
-
   // Notification hook
   const { showSuccess, showError } = useNotification();
+  
+  // Auth hook for role-based access
+  const { canCreateService, canEditService, canDeleteService } = useAuth();
 
   // State untuk data services dan UI
   const [services, setServices] = useState<Service[]>([]);
@@ -245,13 +248,30 @@ const ServicesList: React.FC<ServicesListProps> = ({ globalSearch }) => {
     <Box sx={{ p: 3 }}>
       <Card sx={{ mb: 3, overflow: "visible" }}>
         <CardContent sx={{ p: 3 }}>
-          <Box sx={{ display: "flex", gap: 3, alignItems: "center", flexWrap: "wrap", justifyContent: "space-between" }}>
+          <Box
+            sx={{
+              display: "flex",
+              gap: 3,
+              alignItems: "center",
+              flexWrap: "wrap",
+              justifyContent: "space-between",
+            }}
+          >
             <TextField
               placeholder="Cari layanan berdasarkan kode atau nama..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              InputProps={{ startAdornment: <SearchIcon sx={{ color: "action.active", mr: 1.5 }} /> }}
-              sx={{ flexGrow: 1, minWidth: 300, "& .MuiOutlinedInput-root": { backgroundColor: "background.paper", "& input": { py: 1.5, fontSize: "1rem" } } }}
+              InputProps={{
+                startAdornment: <SearchIcon sx={{ color: "action.active", mr: 1.5 }} />,
+              }}
+              sx={{
+                flexGrow: 1,
+                minWidth: 300,
+                "& .MuiOutlinedInput-root": {
+                  backgroundColor: "background.paper",
+                  "& input": { py: 1.5, fontSize: "1rem" },
+                },
+              }}
             />
 
             <Box sx={{ display: "flex", gap: 2, alignItems: "center", flexWrap: "wrap" }}>
@@ -260,22 +280,82 @@ const ServicesList: React.FC<ServicesListProps> = ({ globalSearch }) => {
                 startIcon={<FilterIcon />}
                 onClick={() => setShowAdvancedFilters(!showAdvancedFilters)}
                 size="medium"
-                sx={{ minWidth: 120, position: "relative", "&::after": activeFiltersCount > 0 ? { content: `"${activeFiltersCount}"`, position: "absolute", top: -8, right: -8, backgroundColor: "error.main", color: "white", borderRadius: "50%", minWidth: 20, height: 20, fontSize: "0.75rem", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 600 } : {} }}
+                sx={{
+                  minWidth: 120,
+                  position: "relative",
+                  "&::after":
+                    activeFiltersCount > 0
+                      ? {
+                          content: `"${activeFiltersCount}"`,
+                          position: "absolute",
+                          top: -8,
+                          right: -8,
+                          backgroundColor: "error.main",
+                          color: "white",
+                          borderRadius: "50%",
+                          minWidth: 20,
+                          height: 20,
+                          fontSize: "0.75rem",
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          fontWeight: 600,
+                        }
+                      : {},
+                }}
               >
                 Filters
                 {showAdvancedFilters ? <ExpandLessIcon /> : <ExpandMoreIcon />}
               </Button>
 
               {activeFiltersCount > 0 && (
-                <Button variant="text" startIcon={<ClearIcon />} onClick={clearAllFilters} color="error" size="small">Clear All ({activeFiltersCount})</Button>
+                <Button
+                  variant="text"
+                  startIcon={<ClearIcon />}
+                  onClick={clearAllFilters}
+                  color="error"
+                  size="small"
+                >
+                  Clear All ({activeFiltersCount})
+                </Button>
               )}
 
-              <Button variant="text" startIcon={<RefreshIcon />} onClick={handleRefresh} size="small">Refresh</Button>
+              <Button
+                variant="text"
+                startIcon={<RefreshIcon />}
+                onClick={handleRefresh}
+                size="small"
+              >
+                Refresh
+              </Button>
             </Box>
 
             <Box sx={{ display: "flex", gap: 2 }}>
-              <Button variant="outlined" startIcon={<ExportIcon />} onClick={handleExport} disabled={services.length === 0} size="medium" sx={{ minWidth: 100 }}>Export</Button>
-              <Button variant="contained" startIcon={<AddIcon />} onClick={() => { setFormMode("create"); setSelectedService(null); setOpenFormModal(true); }} size="medium" sx={{ minWidth: 100 }}>Add</Button>
+              <Button
+                variant="outlined"
+                startIcon={<ExportIcon />}
+                onClick={handleExport}
+                disabled={services.length === 0}
+                size="medium"
+                sx={{ minWidth: 100 }}
+              >
+                Export
+              </Button>
+              {canCreateService() && (
+                <Button
+                  variant="contained"
+                  startIcon={<AddIcon />}
+                  onClick={() => {
+                    setFormMode("create");
+                    setSelectedService(null);
+                    setOpenFormModal(true);
+                  }}
+                  size="medium"
+                  sx={{ minWidth: 100 }}
+                >
+                  Add
+                </Button>
+              )}
             </Box>
           </Box>
 
@@ -367,7 +447,11 @@ const ServicesList: React.FC<ServicesListProps> = ({ globalSearch }) => {
         </Card>
       )}
 
-      {error && (<Alert severity="error" sx={{ mb: 2 }} onClose={() => setError(null)}>{error}</Alert>)}
+      {error && (
+        <Alert severity="error" sx={{ mb: 2 }} onClose={() => setError(null)}>
+          {error}
+        </Alert>
+      )}
 
       <Card>
         <CardContent sx={{ p: 0 }}>
@@ -391,14 +475,20 @@ const ServicesList: React.FC<ServicesListProps> = ({ globalSearch }) => {
                   {services.length === 0 ? (
                     <TableRow>
                       <TableCell colSpan={7} align="center" sx={{ py: 4 }}>
-                        <Typography variant="body2" color="textSecondary">{searchTerm ? "Tidak ada layanan yang sesuai dengan pencarian" : "Belum ada data layanan"}</Typography>
+                        <Typography variant="body2" color="textSecondary">
+                          {searchTerm
+                            ? "Tidak ada layanan yang sesuai dengan pencarian"
+                            : "Belum ada data layanan"}
+                        </Typography>
                       </TableCell>
                     </TableRow>
                   ) : (
                     services.map((service) => (
                       <TableRow key={service.id} hover>
                         <TableCell>
-                          <Typography variant="body2" fontWeight="medium">{service.service_code}</Typography>
+                          <Typography variant="body2" fontWeight="medium">
+                            {service.service_code}
+                          </Typography>
                         </TableCell>
                         <TableCell>
                           <Typography variant="body2">{service.service_name}</Typography>
@@ -407,31 +497,61 @@ const ServicesList: React.FC<ServicesListProps> = ({ globalSearch }) => {
                           <Typography variant="body2">{service.unit}</Typography>
                         </TableCell>
                         <TableCell>
-                          <Typography variant="body2">{service.sbu_name || service.sbu || "-"}</Typography>
+                          <Typography variant="body2">
+                            {service.sbu_name || service.sbu || "-"}
+                          </Typography>
                         </TableCell>
                         <TableCell>
-                          <Typography variant="body2">{service.kategori_jasa_name || service.kategori_jasa || "-"}</Typography>
+                          <Typography variant="body2">
+                            {service.kategori_jasa_name || service.kategori_jasa || "-"}
+                          </Typography>
                         </TableCell>
                         <TableCell align="center">{getStatusChip(service.is_active)}</TableCell>
                         <TableCell align="center">
                           <Box sx={{ display: "flex", justifyContent: "center", gap: 0.5 }}>
                             <Tooltip title="Lihat Detail">
-                              <IconButton size="small" onClick={() => { setSelectedService(service); setOpenDetailModal(true); }} color="info">
+                              <IconButton
+                                size="small"
+                                onClick={() => {
+                                  setSelectedService(service);
+                                  setOpenDetailModal(true);
+                                }}
+                                color="info"
+                              >
                                 <VisibilityIcon fontSize="small" />
                               </IconButton>
                             </Tooltip>
 
-                            <Tooltip title="Edit">
-                              <IconButton size="small" onClick={() => { setFormMode("edit"); setSelectedService(service); setOpenFormModal(true); }} color="primary">
-                                <EditIcon fontSize="small" />
-                              </IconButton>
-                            </Tooltip>
+                            {canEditService() && (
+                              <Tooltip title="Edit">
+                                <IconButton
+                                  size="small"
+                                  onClick={() => {
+                                    setFormMode("edit");
+                                    setSelectedService(service);
+                                    setOpenFormModal(true);
+                                  }}
+                                  color="primary"
+                                >
+                                  <EditIcon fontSize="small" />
+                                </IconButton>
+                              </Tooltip>
+                            )}
 
-                            <Tooltip title="Hapus">
-                              <IconButton size="small" color="error" onClick={() => { setServiceToDelete(service); setOpenDeleteDialog(true); }}>
-                                <DeleteIcon fontSize="small" />
-                              </IconButton>
-                            </Tooltip>
+                            {canDeleteService() && (
+                              <Tooltip title="Hapus">
+                                <IconButton
+                                  size="small"
+                                  color="error"
+                                  onClick={() => {
+                                    setServiceToDelete(service);
+                                    setOpenDeleteDialog(true);
+                                  }}
+                                >
+                                  <DeleteIcon fontSize="small" />
+                                </IconButton>
+                              </Tooltip>
+                            )}
                           </Box>
                         </TableCell>
                       </TableRow>
@@ -451,7 +571,9 @@ const ServicesList: React.FC<ServicesListProps> = ({ globalSearch }) => {
             onPageChange={handleChangePage}
             onRowsPerPageChange={handleChangeRowsPerPage}
             labelRowsPerPage="Rows per page:"
-            labelDisplayedRows={({ from, to, count }) => `${from}–${to} of ${count !== -1 ? count : `more than ${to}`}`}
+            labelDisplayedRows={({ from, to, count }) =>
+              `${from}–${to} of ${count !== -1 ? count : `more than ${to}`}`
+            }
           />
         </CardContent>
       </Card>
@@ -502,7 +624,11 @@ const ServicesList: React.FC<ServicesListProps> = ({ globalSearch }) => {
           }
         }}
         title="Konfirmasi Hapus Layanan"
-        message={serviceToDelete ? `Apakah Anda yakin ingin menghapus layanan "${serviceToDelete.service_name}"? Tindakan ini tidak dapat dibatalkan.` : ""}
+        message={
+          serviceToDelete
+            ? `Apakah Anda yakin ingin menghapus layanan "${serviceToDelete.service_name}"? Tindakan ini tidak dapat dibatalkan.`
+            : ""
+        }
         loading={deleteLoading}
         error={deleteError}
       />
