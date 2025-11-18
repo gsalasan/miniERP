@@ -226,13 +226,15 @@ export const deleteDescription = async (req: Request, res: Response) => {
 
 // Team Recommendations
 export const listTeamRecs = async (req: Request, res: Response) => {
-  const { search, page, limit } = req.query as {
+  const { search, page, limit, type } = req.query as {
     search?: string;
     page?: string;
     limit?: string;
+    type?: string;
   };
   const result = await taxonomyService.listTeamRecs({
     search,
+    type,
     page: Number(page),
     limit: Number(limit),
   });
@@ -247,16 +249,16 @@ export const getTeamRec = async (req: Request, res: Response) => {
 };
 
 export const createTeamRec = async (req: Request, res: Response) => {
-  const { name } = req.body;
+  const { name, type } = req.body;
   if (!name) return bad(res, 'name is required');
-  const item = await taxonomyService.createTeamRec({ name });
+  const item = await taxonomyService.createTeamRec({ name, type });
   return created(res, item, 'Team recommendation created');
 };
 
 export const updateTeamRec = async (req: Request, res: Response) => {
   const { id } = req.params;
-  const { name } = req.body;
-  const item = await taxonomyService.updateTeamRec(id, { name });
+  const { name, type } = req.body;
+  const item = await taxonomyService.updateTeamRec(id, { name, type });
   return ok(res, item, 'Team recommendation updated');
 };
 

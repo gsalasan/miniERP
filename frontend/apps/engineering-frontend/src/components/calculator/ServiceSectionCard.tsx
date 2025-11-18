@@ -160,9 +160,13 @@ export const ServiceSectionCard: React.FC<ServiceSectionCardProps> = ({
               }
             }
 
-            // Recalculate total
+            // Recalculate total with safe number parsing
             if (field === "quantity" || field === "cost_per_unit" || field === "source") {
-              updated.total_hpp = updated.quantity * updated.cost_per_unit;
+              const qty = Number(updated.quantity) || 0;
+              const cost = Number(updated.cost_per_unit) || 0;
+              updated.quantity = qty;
+              updated.cost_per_unit = cost;
+              updated.total_hpp = qty * cost;
             }
 
             return updated;
@@ -394,14 +398,15 @@ export const ServiceSectionCard: React.FC<ServiceSectionCardProps> = ({
                             <TextField
                               type="number"
                               value={item.quantity}
-                              onChange={(e) =>
+                              onChange={(e) => {
+                                const val = parseFloat(e.target.value);
                                 handleUpdateServiceItem(
                                   group.id,
                                   item.id,
                                   "quantity",
-                                  parseFloat(e.target.value) || 0,
-                                )
-                              }
+                                  isNaN(val) || val < 0 ? 0 : val,
+                                );
+                              }}
                               size="small"
                               inputProps={{ min: 0, step: 0.1 }}
                               sx={{ width: 80 }}

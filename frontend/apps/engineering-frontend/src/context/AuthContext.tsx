@@ -179,7 +179,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   // Materials permissions
   const canCreateMaterial = (): boolean => {
-    return isProjectManager();
+    // Allow PM and PE to add items, aligned with estimation modals
+    return isProjectManager() || isProjectEngineer();
   };
 
   const canEditMaterial = (): boolean => {
@@ -192,7 +193,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   // Services permissions
   const canCreateService = (): boolean => {
-    return isProjectManager();
+    // Allow PM and PE to add services
+    return isProjectManager() || isProjectEngineer();
   };
 
   const canEditService = (): boolean => {
