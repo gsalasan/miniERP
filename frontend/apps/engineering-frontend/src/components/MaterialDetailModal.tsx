@@ -242,7 +242,9 @@ const MaterialDetailModal: React.FC<MaterialDetailModalProps> = ({ open, onClose
                     <Typography variant="caption" color="text.secondary">
                       Components
                     </Typography>
-                    <Typography variant="body1">{formatComponentName(material.components)}</Typography>
+                    <Typography variant="body1">
+                      {formatComponentName(material.components)}
+                    </Typography>
                   </Grid>
                 </Grid>
               </CardContent>
