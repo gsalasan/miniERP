@@ -28,6 +28,14 @@ export interface Estimation {
   ce_date?: Date | string | null;
   ce_period_start?: Date | string | null;
   ce_period_end?: Date | string | null;
+  so_number?: string | null; // Sales Order reference
+  so_date?: Date | string | null; // SO date
+  sales_order_id?: string | null;
+  sales_order?: {
+    id: string;
+    so_number: string;
+    order_date: Date | string;
+  } | null;
 
   // Relations
   client?: Customer | null;

@@ -40,6 +40,14 @@ interface EstimationReview {
   id: string;
   ce_number: string;
   status: string;
+  so_number?: string | null;
+  so_date?: string | null;
+  sales_order_id?: string | null;
+  sales_order?: {
+    id: string;
+    so_number: string;
+    order_date: string;
+  } | null;
   project: {
     project_name: string;
     project_number: string;
@@ -303,6 +311,13 @@ export const EstimationReviewPage: React.FC = () => {
             color="primary"
             variant="outlined"
           />
+          {(estimation.so_number || estimation.sales_order?.so_number) && (
+            <Chip
+              label={`SO: ${estimation.so_number || estimation.sales_order?.so_number}`}
+              color="secondary"
+              variant="outlined"
+            />
+          )}
           <Chip
             label={getStatusLabel(estimation.status)}
             color={getStatusColor(estimation.status)}
@@ -372,6 +387,26 @@ export const EstimationReviewPage: React.FC = () => {
                     {estimation.submitted_at ? formatDate(estimation.submitted_at) : "-"}
                   </Typography>
                 </Grid>
+                {(estimation.so_number || estimation.sales_order?.so_number) && (
+                  <Grid item xs={12} md={6}>
+                    <Typography variant="body2" color="text.secondary" gutterBottom>
+                      SO Number
+                    </Typography>
+                    <Typography variant="body1" fontWeight="medium">
+                      {estimation.so_number || estimation.sales_order?.so_number}
+                    </Typography>
+                  </Grid>
+                )}
+                {(estimation.so_date || estimation.sales_order?.order_date) && (
+                  <Grid item xs={12} md={6}>
+                    <Typography variant="body2" color="text.secondary" gutterBottom>
+                      SO Date
+                    </Typography>
+                    <Typography variant="body1" fontWeight="medium">
+                      {formatDate((estimation.so_date || estimation.sales_order?.order_date) as string)}
+                    </Typography>
+                  </Grid>
+                )}
               </Grid>
             </CardContent>
           </Card>
