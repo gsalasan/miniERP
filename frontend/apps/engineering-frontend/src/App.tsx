@@ -11,6 +11,8 @@ import {
   EstimationsListPage,
   EstimationQueuePage,
   EstimationRequestDemoPage,
+  ApprovalQueuePage,
+  EstimationReviewPage,
 } from "./pages/estimations";
 import { EngineeringDashboardPage } from "./pages/dashboard/EngineeringDashboardPage";
 import { NotificationProvider } from "./contexts/NotificationContext";
@@ -361,9 +363,11 @@ function App() {
                 <Route path="/items/services" element={<ServicesPage />} />
                 <Route path="/estimations" element={<EstimationsListPage />} />
                 <Route path="/estimations/queue" element={<EstimationQueuePage />} />
+                <Route path="/estimations/approval-queue" element={<ApprovalQueuePage />} />
                 <Route path="/estimations/request-demo" element={<EstimationRequestDemoPage />} />
                 <Route path="/estimations/:id" element={<EstimationCalculatorPage />} />
                 <Route path="/estimations/:id/view" element={<EstimationCalculatorPage />} />
+                <Route path="/estimations/:id/review" element={<EstimationReviewPage />} />
                 {/* Add more routes as needed */}
               </Routes>
             </Layout>

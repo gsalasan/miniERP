@@ -2,6 +2,8 @@ import React from "react";
 import { Card, CardContent, Typography, Box, Divider, Chip, LinearProgress } from "@mui/material";
 import { FinancialSummary } from "../../types/estimation";
 import { TrendingUp, AccountBalance, ShowChart } from "@mui/icons-material";
+import { OverheadBreakdownTable } from "./OverheadBreakdownTable";
+import { PricingSummaryCard } from "./PricingSummaryCard";
 
 interface FinancialSummaryPanelProps {
   summary: FinancialSummary;
@@ -194,6 +196,24 @@ export const FinancialSummaryPanel: React.FC<FinancialSummaryPanelProps> = ({
             />
           </Box>
         </Box>
+
+        {/* NEW: Pricing Summary Card */}
+        {summary.pricing_summary && (
+          <Box mt={3}>
+            <PricingSummaryCard pricingSummary={summary.pricing_summary} />
+          </Box>
+        )}
+
+        {/* NEW: Overhead Breakdown Table */}
+        {summary.overhead_breakdown && summary.overhead_breakdown.length > 0 && (
+          <Box mt={3}>
+            <OverheadBreakdownTable
+              overheadBreakdown={summary.overhead_breakdown}
+              totalOverhead={summary.overhead_allocation}
+              policyApplied={summary.policy_applied}
+            />
+          </Box>
+        )}
       </CardContent>
     </Card>
   );
