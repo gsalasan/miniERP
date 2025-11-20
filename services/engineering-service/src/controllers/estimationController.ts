@@ -106,6 +106,13 @@ export const getEstimationQueue = async (req: Request, res: Response) => {
             city: true,
           },
         },
+        sales_order: {
+          select: {
+            id: true,
+            so_number: true,
+            order_date: true,
+          },
+        },
       },
       orderBy: {
         date_requested: 'desc',
@@ -166,6 +173,13 @@ export const getApprovalQueue = async (req: Request, res: Response) => {
         },
         items: true,
         client: true,
+        sales_order: {
+          select: {
+            id: true,
+            so_number: true,
+            order_date: true,
+          },
+        },
       },
       orderBy: {
         submitted_at: 'desc',
@@ -399,6 +413,13 @@ export const getEstimations = async (req: Request, res: Response) => {
     const estimations = await prisma.estimations.findMany({
       include: {
         items: true,
+        sales_order: {
+          select: {
+            id: true,
+            so_number: true,
+            order_date: true,
+          },
+        },
       },
     });
     res.json(estimations);
@@ -432,6 +453,13 @@ export const getEstimationById = async (req: Request, res: Response) => {
           },
         },
         client: true,
+        sales_order: {
+          select: {
+            id: true,
+            so_number: true,
+            order_date: true,
+          },
+        },
       },
     });
     if (!estimation)
