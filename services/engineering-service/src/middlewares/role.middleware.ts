@@ -67,3 +67,8 @@ export const requireProjectEngineer = requireRole(['PROJECT_ENGINEER']);
  * Middleware for both PM and PE access
  */
 export const requireEngineeringAccess = requireRole(['PROJECT_MANAGER', 'PROJECT_ENGINEER']);
+
+/**
+ * Middleware for approval actions: allow PROJECT_MANAGER, CEO, or OPERATIONAL_MANAGER
+ */
+export const requireApprovalManager = requireRole(['PROJECT_MANAGER', 'CEO', 'OPERATIONAL_MANAGER']);
