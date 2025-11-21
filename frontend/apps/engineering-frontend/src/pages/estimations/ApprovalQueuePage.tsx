@@ -31,6 +31,7 @@ import { useNotification } from "../../contexts/NotificationContext";
 interface ApprovalEstimation {
   id: string;
   ce_number: string;
+  so_number?: string | null;
   project: {
     project_name: string;
     project_number: string;
@@ -38,6 +39,11 @@ interface ApprovalEstimation {
       customer_name: string;
     };
   };
+  sales_order?: {
+    id: string;
+    so_number: string;
+    order_date: string;
+  } | null;
   assigned_to: {
     employee: {
       full_name: string;
@@ -207,6 +213,7 @@ export const ApprovalQueuePage: React.FC = () => {
                 <TableHead>
                   <TableRow>
                     <TableCell sx={{ fontWeight: 600 }}>CE Number</TableCell>
+                    <TableCell sx={{ fontWeight: 600 }}>SO Number</TableCell>
                     <TableCell sx={{ fontWeight: 600 }}>Project</TableCell>
                     <TableCell sx={{ fontWeight: 600 }}>Customer</TableCell>
                     <TableCell sx={{ fontWeight: 600 }}>PE</TableCell>
@@ -236,6 +243,11 @@ export const ApprovalQueuePage: React.FC = () => {
                       <TableCell>
                         <Typography variant="body2" fontWeight={600}>
                           {est.ce_number || "-"}
+                        </Typography>
+                      </TableCell>
+                      <TableCell>
+                        <Typography variant="body2" fontWeight={600}>
+                          {est.so_number || est.sales_order?.so_number || "-"}
                         </Typography>
                       </TableCell>
                       <TableCell>
