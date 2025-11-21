@@ -1,5 +1,7 @@
 import prisma from '../utils/prisma';
 import { CustomerStatus } from '@prisma/client';
+import { eventBus } from '../utils/eventBus';
+import { EventNames, CustomerCreatedPayload, CustomerUpdatedPayload } from '../../../shared-event-bus/src/events';
 
 export interface CreateCustomerData {
   customer_name: string;
@@ -80,7 +82,7 @@ export const getCustomerByIdService = async (id: string) => {
 export const createCustomerService = async (data: CreateCustomerData) => {
   const { contacts, rekenings, ...customerData } = data;
 
-  return await prisma.customers.create({
+  const customer = await prisma.customers.create({
     data: {
       id: crypto.randomUUID(),
       ...customerData,
@@ -109,6 +111,25 @@ export const createCustomerService = async (data: CreateCustomerData) => {
       customer_rekenings: true,
     },
   });
+
+  // Publish customer:created event
+  try {
+    await eventBus.publish<CustomerCreatedPayload>(EventNames.CUSTOMER_CREATED, {
+      customerId: customer.id,
+      customerName: customer.customer_name,
+      channel: customer.channel,
+      city: customer.city,
+      status: customer.status,
+      creditLimit: customer.credit_limit || undefined,
+      noNpwp: customer.no_npwp || undefined,
+      sppkp: customer.sppkp || undefined,
+    });
+  } catch (error) {
+    console.error('[EventBus] Error publishing customer:created event:', error);
+    // Don't throw - event publishing failure shouldn't break the operation
+  }
+
+  return customer;
 };
 
 export const updateCustomerService = async (
@@ -129,7 +150,7 @@ export const updateCustomerService = async (
     }
 
     // Update customer dan related entities dalam transaction
-    return await prisma.$transaction(async tx => {
+    const updatedCustomer = await prisma.$transaction(async tx => {
       // Update customer data
       await tx.customers.update({
         where: { id },
@@ -185,6 +206,38 @@ export const updateCustomerService = async (
         },
       });
     });
+
+    // Publish customer:updated event
+    if (updatedCustomer) {
+      try {
+        // Calculate changes
+        const changes: Record<string, unknown> = {};
+        if (customerData.customer_name !== undefined) changes.customer_name = customerData.customer_name;
+        if (customerData.channel !== undefined) changes.channel = customerData.channel;
+        if (customerData.city !== undefined) changes.city = customerData.city;
+        if (customerData.status !== undefined) changes.status = customerData.status;
+        if (customerData.credit_limit !== undefined) changes.credit_limit = customerData.credit_limit;
+        if (customerData.no_npwp !== undefined) changes.no_npwp = customerData.no_npwp;
+        if (customerData.sppkp !== undefined) changes.sppkp = customerData.sppkp;
+
+        await eventBus.publish<CustomerUpdatedPayload>(EventNames.CUSTOMER_UPDATED, {
+          customerId: updatedCustomer.id,
+          customerName: updatedCustomer.customer_name,
+          channel: updatedCustomer.channel,
+          city: updatedCustomer.city,
+          status: updatedCustomer.status,
+          creditLimit: updatedCustomer.credit_limit || undefined,
+          noNpwp: updatedCustomer.no_npwp || undefined,
+          sppkp: updatedCustomer.sppkp || undefined,
+          changes,
+        });
+      } catch (error) {
+        console.error('[EventBus] Error publishing customer:updated event:', error);
+        // Don't throw - event publishing failure shouldn't break the operation
+      }
+    }
+
+    return updatedCustomer;
   } catch (error) {
     // eslint-disable-next-line no-console
     console.error('Error in updateCustomerService:', error);
