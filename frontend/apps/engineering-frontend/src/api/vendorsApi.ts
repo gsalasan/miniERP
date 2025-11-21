@@ -3,7 +3,7 @@ import { Vendor } from "../types/vendor";
 
 // Procurement service base URL (separate from engineering service)
 const PROCUREMENT_API_BASE_URL =
-  import.meta.env.VITE_PROCUREMENT_API_BASE_URL || "http://localhost:3003";
+  import.meta.env.VITE_PROCUREMENT_API_BASE_URL || "http://localhost:4006";
 
 const apiClient = axios.create({
   baseURL: PROCUREMENT_API_BASE_URL,

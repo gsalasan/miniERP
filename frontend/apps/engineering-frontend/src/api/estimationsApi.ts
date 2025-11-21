@@ -235,6 +235,36 @@ export class EstimationsService {
       );
     }
   }
+
+  // FITUR 3.2.D: Get approval queue (PM & CEO only)
+  async getApprovalQueue(): Promise<EstimationsResponse> {
+    try {
+      const response = await apiClient.get(`${this.baseUrl}/approval-queue`);
+      return { data: response.data, success: true };
+    } catch (error) {
+      throw new Error(
+        `Failed to fetch approval queue: ${error instanceof Error ? error.message : "Unknown error"}`,
+      );
+    }
+  }
+
+  // FITUR 3.2.D: Approval decision (Approve/Reject/RevisionRequired)
+  async decideOnEstimation(
+    estimationId: string,
+    data: {
+      decision: "APPROVED" | "REJECTED" | "REVISION_REQUIRED";
+      reviewerComments?: string;
+    },
+  ): Promise<EstimationResponse> {
+    try {
+      const response = await apiClient.put(`${this.baseUrl}/${estimationId}/decide`, data);
+      return { data: response.data, success: true };
+    } catch (error) {
+      throw new Error(
+        `Failed to decide on estimation: ${error instanceof Error ? error.message : "Unknown error"}`,
+      );
+    }
+  }
 }
 
 export const estimationsService = new EstimationsService();

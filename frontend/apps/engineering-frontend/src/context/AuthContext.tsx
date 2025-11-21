@@ -56,8 +56,11 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     const urlParams = new URLSearchParams(window.location.search);
     const tokenFromUrl = urlParams.get("token");
 
+    console.log("🚀 AuthContext init - tokenFromUrl:", !!tokenFromUrl);
+
     if (tokenFromUrl) {
       // Always override token if provided in URL
+      console.log("✅ Token found in URL, saving to localStorage");
       localStorage.setItem("token", tokenFromUrl);
       setToken(tokenFromUrl);
       // Remove token param from URL
@@ -66,6 +69,55 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       const newUrl = window.location.pathname + (newSearch ? `?${newSearch}` : "");
       window.history.replaceState({}, document.title, newUrl);
     } else {
+      // Check for cross-app token from main dashboard
+      const crossAppToken = localStorage.getItem("cross_app_token");
+      const crossAppUser = localStorage.getItem("cross_app_user");
+      const crossAppTimestamp = localStorage.getItem("cross_app_timestamp");
+      
+      console.log("🔍 Checking cross-app token:", {
+        hasToken: !!crossAppToken,
+        hasUser: !!crossAppUser,
+        timestamp: crossAppTimestamp,
+      });
+      
+      // Use cross_app_token if fresh (within 30 seconds)
+      if (crossAppToken && crossAppTimestamp) {
+        const age = Date.now() - parseInt(crossAppTimestamp, 10);
+        console.log("⏱️ Token age:", age, "ms (max 30000ms)");
+        
+        if (age < 30000) { // 30 detik
+          console.log("✅ Using cross-app token");
+          localStorage.setItem("token", crossAppToken);
+          setToken(crossAppToken);
+          
+          // Set user jika tersedia
+          if (crossAppUser) {
+            try {
+              const parsedUser = JSON.parse(crossAppUser);
+              // Map ke format User kita
+              const mappedUser: User = {
+                userId: parsedUser.userId || parsedUser.id || "",
+                email: parsedUser.email || "",
+                name: parsedUser.name || parsedUser.full_name || parsedUser.email || "",
+                roles: parsedUser.roles || [],
+              };
+              setUser(mappedUser);
+              localStorage.setItem("user", JSON.stringify(mappedUser));
+              console.log("👤 User set from cross-app:", mappedUser.email);
+            } catch (e) {
+              console.error("Failed to parse cross_app_user", e);
+            }
+          }
+          
+          // Clean up cross-app data setelah digunakan
+          localStorage.removeItem("cross_app_token");
+          localStorage.removeItem("cross_app_user");
+          localStorage.removeItem("cross_app_timestamp");
+        } else {
+          console.log("⚠️ Token expired, age:", age);
+        }
+      }
+      
       const storedToken = localStorage.getItem("token");
       if (storedToken) setToken(storedToken);
     }

@@ -248,18 +248,21 @@ export const EstimationQueuePage: React.FC = () => {
     switch (status) {
       case "PENDING":
         return "info";
-      case "ASSIGNED":
-        return "primary";
       case "IN_PROGRESS":
         return "warning";
-      case "PENDING_INFO":
-        return "secondary";
-      case "COMPLETED":
-        return "success";
+      case "PENDING_APPROVAL":
+      case "PENDING_DISCOUNT_APPROVAL":
+        return "primary";
       case "APPROVED":
+      case "DISCOUNT_APPROVED":
         return "success";
       case "REJECTED":
         return "error";
+      case "REVISION_REQUIRED":
+        return "warning";
+      case "DRAFT":
+      case "ARCHIVED":
+        return "default";
       default:
         return "default";
     }
@@ -268,15 +271,15 @@ export const EstimationQueuePage: React.FC = () => {
   const getStatusLabel = (status: EstimationStatus): string => {
     const labels: Record<EstimationStatus, string> = {
       PENDING: "Baru",
-      ASSIGNED: "Ditugaskan",
       IN_PROGRESS: "Dikerjakan",
-      PENDING_INFO: "Menunggu Info",
-      COMPLETED: "Selesai",
+      PENDING_APPROVAL: "Menunggu Persetujuan",
       APPROVED: "Disetujui",
       REJECTED: "Ditolak",
-      ARCHIVED: "Diarsipkan",
+      REVISION_REQUIRED: "Perlu Revisi",
       DRAFT: "Draft",
-      REVISED: "Direvisi",
+      ARCHIVED: "Diarsipkan",
+      PENDING_DISCOUNT_APPROVAL: "Menunggu Approval Diskon",
+      DISCOUNT_APPROVED: "Diskon Disetujui",
     };
     return labels[status] || status;
   };
@@ -310,9 +313,20 @@ export const EstimationQueuePage: React.FC = () => {
         <Typography variant="h4" fontWeight="bold">
           Antrian Kerja Estimasi
         </Typography>
-        <Button variant="outlined" startIcon={<FilterIcon />} onClick={fetchQueue}>
-          Refresh
-        </Button>
+        <Box display="flex" gap={2}>
+          {(isProjectManager || user?.roles?.includes('CEO') || user?.roles?.includes('OPERATIONAL_MANAGER')) && (
+            <Button 
+              variant="contained" 
+              color="primary"
+              onClick={() => navigate('/estimations/approval-queue')}
+            >
+              Approval Queue
+            </Button>
+          )}
+          <Button variant="outlined" startIcon={<FilterIcon />} onClick={fetchQueue}>
+            Refresh
+          </Button>
+        </Box>
       </Box>
 
       {/* Alerts */}
@@ -354,10 +368,13 @@ export const EstimationQueuePage: React.FC = () => {
               >
                 <MenuItem value="ALL">Semua Status</MenuItem>
                 <MenuItem value="PENDING">Baru</MenuItem>
-                <MenuItem value="ASSIGNED">Ditugaskan</MenuItem>
                 <MenuItem value="IN_PROGRESS">Dikerjakan</MenuItem>
-                <MenuItem value="PENDING_INFO">Menunggu Info</MenuItem>
-                <MenuItem value="COMPLETED">Selesai</MenuItem>
+                <MenuItem value="PENDING_APPROVAL">Menunggu Persetujuan</MenuItem>
+                <MenuItem value="APPROVED">Disetujui</MenuItem>
+                <MenuItem value="REJECTED">Ditolak</MenuItem>
+                <MenuItem value="REVISION_REQUIRED">Perlu Revisi</MenuItem>
+                <MenuItem value="DRAFT">Draft</MenuItem>
+                <MenuItem value="ARCHIVED">Diarsipkan</MenuItem>
               </Select>
             </FormControl>
           </Box>

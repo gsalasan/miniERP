@@ -221,6 +221,7 @@ export const EstimationCalculatorPage: React.FC = () => {
       setFinancialSummary({
         total_direct_hpp: 0,
         overhead_allocation: 0,
+        overhead_percentage: 0,
         total_estimasi_hpp: 0,
         total_harga_jual_standar: 0,
         estimasi_gross_margin: 0,
@@ -239,6 +240,13 @@ export const EstimationCalculatorPage: React.FC = () => {
         profit_margin_percentage: 20, // Default 20%
       });
 
+      console.log("📊 Enhanced calculation result:", result.summary);
+
+      // Backend now returns enhanced summary with:
+      // - overhead_breakdown (22 categories)
+      // - pricing_summary (from PricingEngine)
+      // - average_markup_percentage
+      // - policy_applied
       setFinancialSummary(result.summary || result);
     } catch (err) {
       console.error("Calculation error:", err);
