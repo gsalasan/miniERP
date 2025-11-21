@@ -1,8 +1,3 @@
-/**
- * Quotation API Service
- * Handles communication with CRM service for quotation generation
- */
-
 import axios from "axios";
 import { QuotationData } from "../types/quotation";
 

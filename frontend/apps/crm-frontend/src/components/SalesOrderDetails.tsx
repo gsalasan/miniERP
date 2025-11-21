@@ -41,7 +41,7 @@ const SalesOrderDetails: React.FC<SalesOrderDetailsProps> = ({ projectId }) => {
 
   useEffect(() => {
     loadSalesOrder();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+  
   }, [projectId]);
 
   const loadSalesOrder = async () => {
