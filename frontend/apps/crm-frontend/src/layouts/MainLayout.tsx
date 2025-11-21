@@ -1,4 +1,4 @@
-import React from 'react';
+import React from "react";
 import {
   Box,
   AppBar,
@@ -14,7 +14,7 @@ import {
   useMediaQuery,
   useTheme,
   IconButton,
-} from '@mui/material';
+} from "@mui/material";
 import {
   Menu as MenuIcon,
   People as PeopleIcon,
@@ -23,8 +23,8 @@ import {
   Assignment as AssignmentIcon,
   Home as HomeIcon,
   Logout as LogoutIcon,
-} from '@mui/icons-material';
-import { useNavigate, useLocation } from 'react-router-dom';
+} from "@mui/icons-material";
+import { useNavigate, useLocation } from "react-router-dom";
 
 const drawerWidth = 280;
 
@@ -35,7 +35,7 @@ interface MainLayoutProps {
 const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
   const [mobileOpen, setMobileOpen] = React.useState(false);
   const theme = useTheme();
-  const isMobile = useMediaQuery(theme.breakpoints.down('md'));
+  const isMobile = useMediaQuery(theme.breakpoints.down("md"));
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -44,67 +44,67 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
   };
 
   const handleHomeClick = () => {
-    window.location.href = 'http://localhost:3000/dashboard';
+    window.location.href = "http://localhost:3000/dashboard";
   };
 
   const handleLogoutClick = () => {
     // Clear any stored auth data
-    localStorage.removeItem('token');
-    localStorage.removeItem('user');
+    localStorage.removeItem("token");
+    localStorage.removeItem("user");
     sessionStorage.clear();
     // Redirect to login page
-    window.location.href = 'http://localhost:3000';
+    window.location.href = "http://localhost:3000";
   };
 
   const menuItems = [
     {
-      text: 'Dashboard',
+      text: "Dashboard",
       icon: <DashboardIcon />,
-      path: '/',
+      path: "/",
     },
     {
-      text: 'Customers',
+      text: "Customers",
       icon: <PeopleIcon />,
-      path: '/customers',
+      path: "/customers",
     },
     {
-      text: 'Pipeline',
+      text: "Pipeline",
       icon: <TrendingUpIcon />,
-      path: '/pipeline',
+      path: "/pipeline",
     },
     {
-      text: 'Sales Orders',
+      text: "Sales Orders",
       icon: <AssignmentIcon />,
-      path: '/sales-orders',
+      path: "/sales-orders",
     },
   ];
 
   const drawer = (
-    <Box sx={{ overflow: 'auto', height: '100%', bgcolor: '#F4F4F4' }}>
+    <Box sx={{ overflow: "auto", height: "100%", bgcolor: "#F4F4F4" }}>
       {/* Logo Section */}
       <Box
         sx={{
           p: 0,
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          height: '96px',
-          width: '100%',
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          height: "96px",
+          width: "100%",
         }}
       >
         <img
-          src='/unais.png'
-          alt='UNAIS Logo'
+          src="/unais.png"
+          alt="UNAIS Logo"
           style={{
-            height: '72px',
-            width: 'auto',
-            objectFit: 'contain',
-            padding: '4px',
+            height: "72px",
+            width: "auto",
+            objectFit: "contain",
+            padding: "4px",
           }}
         />
       </Box>
       <List sx={{ px: 1, py: 2 }}>
-        {menuItems.map(item => {
+        {menuItems.map((item) => {
           const isActive = location.pathname === item.path;
           return (
             <ListItem key={item.text} disablePadding sx={{ mb: 0.5 }}>
@@ -113,18 +113,16 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
                 sx={{
                   borderRadius: 2,
                   mx: 1,
-                  backgroundColor: isActive ? '#06103A' : 'transparent',
-                  color: isActive ? 'white' : '#333333',
-                  '&:hover': {
-                    backgroundColor: isActive
-                      ? '#4E88BE'
-                      : 'rgba(6, 16, 58, 0.08)',
+                  backgroundColor: isActive ? "#06103A" : "transparent",
+                  color: isActive ? "white" : "#333333",
+                  "&:hover": {
+                    backgroundColor: isActive ? "#4E88BE" : "rgba(6, 16, 58, 0.08)",
                   },
                 }}
               >
                 <ListItemIcon
                   sx={{
-                    color: isActive ? 'white' : '#6B6E70',
+                    color: isActive ? "white" : "#6B6E70",
                     minWidth: 40,
                   }}
                 >
@@ -133,7 +131,7 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
                 <ListItemText
                   primary={item.text}
                   primaryTypographyProps={{
-                    fontSize: '0.875rem',
+                    fontSize: "0.875rem",
                     fontWeight: isActive ? 600 : 500,
                   }}
                 />
@@ -146,57 +144,57 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
   );
 
   return (
-    <Box sx={{ display: 'flex', minHeight: '100vh' }}>
+    <Box sx={{ display: "flex", minHeight: "100vh" }}>
       {/* AppBar */}
       <AppBar
-        position='fixed'
+        position="fixed"
         sx={{
           width: { md: `calc(100% - ${drawerWidth}px)` },
           ml: { md: `${drawerWidth}px` },
-          boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
-          bgcolor: 'white',
-          color: 'text.primary',
+          boxShadow: "0 2px 4px rgba(0,0,0,0.1)",
+          bgcolor: "white",
+          color: "text.primary",
         }}
       >
         <Toolbar>
           {isMobile && (
             <IconButton
-              color='inherit'
-              aria-label='open drawer'
-              edge='start'
+              color="inherit"
+              aria-label="open drawer"
+              edge="start"
               onClick={handleDrawerToggle}
               sx={{ mr: 2 }}
             >
               <MenuIcon />
             </IconButton>
           )}
-          <Typography variant='h6' noWrap component='div' sx={{ flexGrow: 1 }}>
+          <Typography variant="h6" noWrap component="div" sx={{ flexGrow: 1 }}>
             Customer Relationship Management
           </Typography>
 
           {/* Right side icons */}
-          <Box sx={{ display: 'flex', gap: 1 }}>
+          <Box sx={{ display: "flex", gap: 1 }}>
             <IconButton
-              color='inherit'
+              color="inherit"
               onClick={handleHomeClick}
               sx={{
-                '&:hover': {
-                  bgcolor: 'rgba(6, 16, 58, 0.08)',
+                "&:hover": {
+                  bgcolor: "rgba(6, 16, 58, 0.08)",
                 },
               }}
-              title='Home'
+              title="Home"
             >
               <HomeIcon />
             </IconButton>
             <IconButton
-              color='inherit'
+              color="inherit"
               onClick={handleLogoutClick}
               sx={{
-                '&:hover': {
-                  bgcolor: 'rgba(6, 16, 58, 0.08)',
+                "&:hover": {
+                  bgcolor: "rgba(6, 16, 58, 0.08)",
                 },
               }}
-              title='Logout'
+              title="Logout"
             >
               <LogoutIcon />
             </IconButton>
@@ -205,21 +203,18 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
       </AppBar>
 
       {/* Drawer */}
-      <Box
-        component='nav'
-        sx={{ width: { md: drawerWidth }, flexShrink: { md: 0 } }}
-      >
+      <Box component="nav" sx={{ width: { md: drawerWidth }, flexShrink: { md: 0 } }}>
         {isMobile ? (
           <Drawer
-            variant='temporary'
+            variant="temporary"
             open={mobileOpen}
             onClose={handleDrawerToggle}
             ModalProps={{
               keepMounted: true,
             }}
             sx={{
-              '& .MuiDrawer-paper': {
-                boxSizing: 'border-box',
+              "& .MuiDrawer-paper": {
+                boxSizing: "border-box",
                 width: drawerWidth,
               },
             }}
@@ -228,13 +223,13 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
           </Drawer>
         ) : (
           <Drawer
-            variant='permanent'
+            variant="permanent"
             sx={{
-              '& .MuiDrawer-paper': {
-                boxSizing: 'border-box',
+              "& .MuiDrawer-paper": {
+                boxSizing: "border-box",
                 width: drawerWidth,
-                border: 'none',
-                borderRight: '1px solid #dee2e6',
+                border: "none",
+                borderRight: "1px solid #dee2e6",
               },
             }}
             open
@@ -246,16 +241,16 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
 
       {/* Main content */}
       <Box
-        component='main'
+        component="main"
         sx={{
           flexGrow: 1,
           width: { md: `calc(100% - ${drawerWidth}px)` },
-          bgcolor: '#F4F4F4',
-          minHeight: '100vh',
+          bgcolor: "#F4F4F4",
+          minHeight: "100vh",
         }}
       >
         <Toolbar />
-        <Container maxWidth='xl' sx={{ py: 3 }}>
+        <Container maxWidth="xl" sx={{ py: 3 }}>
           {children}
         </Container>
       </Box>

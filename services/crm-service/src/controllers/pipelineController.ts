@@ -129,8 +129,11 @@ export const movePipelineCard = async (req: AuthenticatedRequest, res: Response)
       });
     }
     
-    if (error.message.includes('Tidak bisa')) {
-      return res.status(400).json({ 
+    // Handle all validation errors from validateStatusTransition with 422 status
+    if (error.message.includes('Transisi status tidak valid') || 
+        error.message.includes('Tidak bisa') ||
+        error.message.includes('hanya bisa')) {
+      return res.status(422).json({ 
         error: 'Business Rule Violation',
         message: error.message
       });

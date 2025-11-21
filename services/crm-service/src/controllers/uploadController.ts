@@ -1,5 +1,7 @@
 import { Request, Response } from 'express';
 import { Storage } from '@google-cloud/storage';
+import path from 'path';
+import fs from 'fs';
 
 // Generates a signed URL for uploading a single file to GCS (v4 signed URL)
 export const presignUpload = async (req: Request, res: Response) => {
@@ -42,5 +44,51 @@ export const presignUpload = async (req: Request, res: Response) => {
   } catch (err: any) {
     console.error('presignUpload error', err);
     return res.status(500).json({ message: err?.message || 'Failed to create presigned URL' });
+  }
+};
+
+/**
+ * Upload file ke local storage (untuk development)
+ * File akan disimpan di folder uploads/po-documents/
+ */
+export const uploadFileLocal = async (req: Request, res: Response) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ 
+        success: false, 
+        message: 'No file uploaded' 
+      });
+    }
+
+    const file = req.file;
+    const baseUrl = `${req.protocol}://${req.get('host')}`;
+    const fileUrl = `${baseUrl}/uploads/${file.filename}`;
+
+    console.log('✅ File uploaded:', {
+      filename: file.filename,
+      originalName: file.originalname,
+      size: file.size,
+      path: file.path,
+      url: fileUrl
+    });
+
+    return res.status(200).json({
+      success: true,
+      message: 'File uploaded successfully',
+      data: {
+        url: fileUrl,
+        filename: file.filename,
+        originalName: file.originalname,
+        mimetype: file.mimetype,
+        size: file.size,
+        path: file.path
+      }
+    });
+  } catch (err: any) {
+    console.error('❌ uploadFileLocal error:', err);
+    return res.status(500).json({ 
+      success: false, 
+      message: err?.message || 'Failed to upload file' 
+    });
   }
 };

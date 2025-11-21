@@ -1,41 +1,36 @@
-import axios from 'axios';
-import {
-  Customer,
-  CreateCustomerData,
-  UpdateCustomerData,
-} from '../types/customer';
-import { config, auth } from '../config';
+import axios from "axios";
+import { Customer, CreateCustomerData, UpdateCustomerData } from "../types/customer";
+import { config, auth } from "../config";
 
 // Create axios instance for CRM service
 const crmApi = axios.create({
   baseURL: config.CRM_SERVICE_URL,
   headers: {
-    'Content-Type': 'application/json',
+    "Content-Type": "application/json",
   },
   timeout: 10000, // 10 seconds timeout
 });
 
 // Add request interceptor to include auth token
 crmApi.interceptors.request.use(
-  config => {
+  (config) => {
     // Support either 'authToken' or legacy 'token' keys saved by the login flow
     const token =
-      localStorage.getItem(auth.TOKEN_KEY) ||
-      localStorage.getItem(auth.LEGACY_TOKEN_KEY);
+      localStorage.getItem(auth.TOKEN_KEY) || localStorage.getItem(auth.LEGACY_TOKEN_KEY);
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
     return config;
   },
-  error => {
+  (error) => {
     return Promise.reject(error);
-  }
+  },
 );
 
 // Add response interceptor to handle errors
 crmApi.interceptors.response.use(
-  response => response,
-  error => {
+  (response) => response,
+  (error) => {
     if (error.response?.status === 401) {
       // Handle unauthorized access: remove any saved token keys
       localStorage.removeItem(auth.TOKEN_KEY);
@@ -44,29 +39,29 @@ crmApi.interceptors.response.use(
       // window.location.href = '/login';
     }
     return Promise.reject(error);
-  }
+  },
 );
 
 export const customersApi = {
   // Get all customers (alias for getAllCustomers)
   getCustomers: async (): Promise<Customer[]> => {
     try {
-      const response = await crmApi.get('/customers');
+      const response = await crmApi.get("/customers");
       return response.data.data || response.data;
     } catch (error) {
-      console.error('Error fetching customers:', error);
-      throw new Error('Gagal memuat data customer');
+      console.error("Error fetching customers:", error);
+      throw new Error("Gagal memuat data customer");
     }
   },
 
   // Get all customers
   getAllCustomers: async (): Promise<Customer[]> => {
     try {
-      const response = await crmApi.get('/customers');
+      const response = await crmApi.get("/customers");
       return response.data.data || response.data;
     } catch (error) {
-      console.error('Error fetching customers:', error);
-      throw new Error('Gagal memuat data customer');
+      console.error("Error fetching customers:", error);
+      throw new Error("Gagal memuat data customer");
     }
   },
 
@@ -77,36 +72,33 @@ export const customersApi = {
       return response.data.data || response.data;
     } catch (error) {
       // eslint-disable-next-line no-console
-      console.error('Error fetching customer:', error);
-      throw new Error('Gagal memuat data customer');
+      console.error("Error fetching customer:", error);
+      throw new Error("Gagal memuat data customer");
     }
   },
 
   // Create new customer
   createCustomer: async (data: CreateCustomerData): Promise<Customer> => {
     try {
-      const response = await crmApi.post('/customers', data);
+      const response = await crmApi.post("/customers", data);
       return response.data.data || response.data;
     } catch (error) {
       // eslint-disable-next-line no-console
-      console.error('Error creating customer:', error);
-      throw new Error('Gagal membuat customer baru');
+      console.error("Error creating customer:", error);
+      throw new Error("Gagal membuat customer baru");
     }
   },
 
   // Update customer
-  updateCustomer: async (
-    id: string,
-    data: UpdateCustomerData
-  ): Promise<Customer> => {
+  updateCustomer: async (id: string, data: UpdateCustomerData): Promise<Customer> => {
     try {
       const response = await crmApi.put(`/customers/${id}`, data);
       return response.data.data || response.data;
     } catch (error: unknown) {
       // eslint-disable-next-line no-console
-      console.error('Error updating customer:', error);
+      console.error("Error updating customer:", error);
       // Get specific error message from backend if available
-      if (error && typeof error === 'object' && 'response' in error) {
+      if (error && typeof error === "object" && "response" in error) {
         const axiosError = error as {
           response?: { data?: { message?: string; errors?: string[] } };
         };
@@ -116,10 +108,10 @@ export const customersApi = {
           axiosError.response?.data?.errors &&
           Array.isArray(axiosError.response.data.errors)
         ) {
-          throw new Error(axiosError.response.data.errors.join(', '));
+          throw new Error(axiosError.response.data.errors.join(", "));
         }
       }
-      throw new Error('Gagal mengupdate customer');
+      throw new Error("Gagal mengupdate customer");
     }
   },
 
@@ -129,22 +121,19 @@ export const customersApi = {
       await crmApi.delete(`/customers/${id}`);
     } catch (error) {
       // eslint-disable-next-line no-console
-      console.error('Error deleting customer:', error);
-      throw new Error('Gagal menghapus customer');
+      console.error("Error deleting customer:", error);
+      throw new Error("Gagal menghapus customer");
     }
   },
 
   // Delete customer contact
-  deleteCustomerContact: async (
-    customerId: string,
-    contactId: string
-  ): Promise<void> => {
+  deleteCustomerContact: async (customerId: string, contactId: string): Promise<void> => {
     try {
       await crmApi.delete(`/customers/${customerId}/contacts/${contactId}`);
     } catch (error) {
       // eslint-disable-next-line no-console
-      console.error('Error deleting customer contact:', error);
-      throw new Error('Gagal menghapus kontak customer');
+      console.error("Error deleting customer contact:", error);
+      throw new Error("Gagal menghapus kontak customer");
     }
   },
 };
