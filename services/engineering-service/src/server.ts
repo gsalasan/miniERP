@@ -1,5 +1,7 @@
 import app from './app';
 import path from 'path';
+import { eventBus } from './utils/eventBus';
+import { EventNames, ProjectStatusChangedPayload } from '../../shared-event-bus/src/events';
 
 // Explicit path untuk .env file
 const envPath = path.join(__dirname, '..', '.env');
@@ -46,6 +48,13 @@ const PORT = Number(envConfig.PORT) || Number(process.env.PORT) || 8080;
 const HOST = '0.0.0.0';
 
 console.log(`🎯 Selected PORT: ${PORT}`);
+
+// Subscribe to project:status:changed events
+eventBus.subscribe<ProjectStatusChangedPayload>(EventNames.PROJECT_STATUS_CHANGED, async (payload) => {
+  console.log(`[Engineering Service] Received project status change: ${payload.data.projectId} from ${payload.data.previousStatus} to ${payload.data.newStatus}`);
+  // TODO: Implement logic to update estimation status based on project status
+  // For example, if project moves to WON, mark related estimations as completed
+});
 
 app.listen(PORT, () => {
   console.log(`🚀 Engineering service listening on port ${PORT}`);

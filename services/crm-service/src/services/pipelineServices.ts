@@ -1,4 +1,6 @@
 import { PrismaClient, Prisma } from '@prisma/client';
+import { eventBus } from '../utils/eventBus';
+import { EventNames, ProjectStatusChangedPayload } from '../../../shared-event-bus/src/events';
 
 const prisma = new PrismaClient();
 
@@ -328,6 +330,22 @@ export class PipelineService {
 
     // Create activity log
     await this.createActivityLog(projectId, oldStatus, newStatus, user);
+
+    // Publish project:status:changed event
+    try {
+      await eventBus.publish<ProjectStatusChangedPayload>(EventNames.PROJECT_STATUS_CHANGED, {
+        projectId: updatedProject.id,
+        projectName: updatedProject.project_name,
+        customerId: (updatedProject as any).customer.id,
+        previousStatus: oldStatus,
+        newStatus: updatedProject.status,
+        estimatedValue: updatedProject.estimated_value ? Number(updatedProject.estimated_value) : undefined,
+        contractValue: updatedProject.contract_value ? Number(updatedProject.contract_value) : undefined,
+      });
+    } catch (error) {
+      console.error('[EventBus] Error publishing project:status:changed event:', error);
+      // Don't throw - event publishing failure shouldn't break the operation
+    }
 
     return {
       id: updatedProject.id,
