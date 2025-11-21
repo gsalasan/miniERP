@@ -4,6 +4,8 @@ import prisma from '../prisma/client';
 import { ItemType, SourceType } from '@prisma/client';
 import { eventBus } from '../utils/eventBus';
 import { EventNames, EstimationApprovedPayload, ProjectStatusChangedPayload } from '../../../shared-event-bus/src/events';
+import { PricingEngine } from '../services/PricingEngine.service';
+import { OverheadEngine } from '../services/OverheadEngine.service';
 
 // Get engineers/PE (users with PROJECT_ENGINEER role)
 export const getEngineers = async (req: Request, res: Response) => {
@@ -23,7 +25,6 @@ export const getEngineers = async (req: Request, res: Response) => {
             id: true,
             full_name: true,
             position: true,
-            department: true,
           },
         },
       },
@@ -44,12 +45,22 @@ export const getEngineers = async (req: Request, res: Response) => {
 // Get estimation queue (for queue page)
 export const getEstimationQueue = async (req: Request, res: Response) => {
   try {
+    const user = (req as any).user;
+    
+    // Define roles that can see all estimations
+    const canSeeAllRoles = ['OPERATIONAL_MANAGER', 'CEO', 'PROJECT_MANAGER'];
+    const canSeeAll = user.roles.some((role: string) => canSeeAllRoles.includes(role));
+    
+    // Build where clause based on user role (no status filter - show all)
+    const whereClause: any = {};
+    
+    // If user is PROJECT_ENGINEER, only show their assigned estimations
+    if (!canSeeAll) {
+      whereClause.assigned_to_user_id = user.id;
+    }
+    
     const estimations = await prisma.estimations.findMany({
-      where: {
-        status: {
-          in: ['PENDING', 'PENDING_APPROVAL', 'IN_PROGRESS', 'REVISED', 'APPROVED', 'REJECTED'],
-        },
-      },
+      where: whereClause,
       include: {
         project: {
           select: {
@@ -97,6 +108,13 @@ export const getEstimationQueue = async (req: Request, res: Response) => {
             city: true,
           },
         },
+        sales_order: {
+          select: {
+            id: true,
+            so_number: true,
+            order_date: true,
+          },
+        },
       },
       orderBy: {
         date_requested: 'desc',
@@ -107,6 +125,146 @@ export const getEstimationQueue = async (req: Request, res: Response) => {
     const msg = err instanceof Error ? err.message : String(err);
     console.error('Error fetching estimation queue:', msg);
     res.status(500).json({ error: msg });
+  }
+};
+
+// Get approval queue (for PM & CEO approval page)
+export const getApprovalQueue = async (req: Request, res: Response) => {
+  try {
+    const user = (req as any).user;
+    
+    // Only PM, CEO, and OPERATIONAL_MANAGER can access approval queue
+    const canApproveRoles = ['OPERATIONAL_MANAGER', 'CEO', 'PROJECT_MANAGER'];
+    const canApprove = user?.roles?.some((role: string) => canApproveRoles.includes(role));
+    
+    if (!canApprove) {
+      return res.status(403).json({ 
+        error: 'Forbidden: Only Project Manager, CEO, or Operational Manager can access approval queue' 
+      });
+    }
+    
+    // Get all estimations that have been submitted (including approved/rejected)
+    const estimations = await prisma.estimations.findMany({
+      where: {
+        status: {
+          in: [
+            'PENDING_APPROVAL',
+            'APPROVED',
+            'REJECTED',
+            'REVISION_REQUIRED',
+            'PENDING_DISCOUNT_APPROVAL',
+            'DISCOUNT_APPROVED',
+          ],
+        },
+      },
+      include: {
+        project: {
+          include: {
+            customer: true,
+          },
+        },
+        assigned_to: {
+          include: {
+            employee: true,
+          },
+        },
+        requested_by: {
+          include: {
+            employee: true,
+          },
+        },
+        items: true,
+        client: true,
+        sales_order: {
+          select: {
+            id: true,
+            so_number: true,
+            order_date: true,
+          },
+        },
+      },
+      orderBy: {
+        submitted_at: 'desc',
+      },
+    });
+    
+    // Serialize + fully enhance each estimation with fresh engine calculations
+    const serializedEstimations = await Promise.all(
+      estimations.map(async (est) => {
+        // Normalize items
+        const normalizedItems = (est.items || []).map((it: any) => ({
+          ...it,
+          quantity: it.quantity ? Number(it.quantity) : 0,
+          hpp_at_estimation: it.hpp_at_estimation ? Number(it.hpp_at_estimation) : 0,
+          sell_price_at_estimation: it.sell_price_at_estimation ? Number(it.sell_price_at_estimation) : 0,
+        }));
+
+        // Recompute direct HPP from items (DB field might be stale/zero)
+        const recomputedDirectHpp = normalizedItems.reduce((sum: number, it: any) => {
+          return sum + (Number(it.quantity) || 0) * (Number(it.hpp_at_estimation) || 0);
+        }, 0);
+
+        // Pricing calculation (bulk)
+        let pricingSummary: any = null;
+        try {
+          if (normalizedItems.length > 0) {
+            const itemsForPricing = normalizedItems.map((item: any) => ({
+              item_id: item.item_id,
+              item_type: item.item_type as 'MATERIAL' | 'SERVICE',
+              hpp_per_unit: Number(item.hpp_at_estimation) || 0,
+              quantity: Number(item.quantity) || 0,
+              category: 'GENERAL',
+            }));
+            const pricingResult = await PricingEngine.calculateBulkSellPrices({ items: itemsForPricing, use_cache: true });
+            pricingSummary = pricingResult.summary;
+          }
+        } catch (pricingErr) {
+          console.warn(`⚠️ PricingEngine failed for estimation ${est.id}:`, pricingErr);
+        }
+
+        // Overhead calculation using recomputed direct HPP
+        let overheadResult: any = null;
+        try {
+          if (recomputedDirectHpp > 0) {
+            overheadResult = await OverheadEngine.calculateOverheadAllocation({
+              total_direct_hpp: recomputedDirectHpp,
+              use_default_percentage: true,
+            });
+          }
+        } catch (overheadErr) {
+          console.warn(`⚠️ OverheadEngine failed for estimation ${est.id}:`, overheadErr);
+        }
+
+        // Derive totals
+        const total_direct_hpp = recomputedDirectHpp;
+        const total_overhead_allocation = overheadResult ? overheadResult.overhead_allocation : (est.total_overhead_allocation ? Number(est.total_overhead_allocation) : 0);
+        const total_hpp = overheadResult ? overheadResult.total_hpp_with_overhead : (est.total_hpp ? Number(est.total_hpp) : total_direct_hpp + total_overhead_allocation);
+        const total_sell_price = pricingSummary ? pricingSummary.total_sell_price : (est.total_sell_price ? Number(est.total_sell_price) : 0);
+        const gross_margin_percentage = total_sell_price > 0 ? ((total_sell_price - total_direct_hpp) / total_sell_price) * 100 : 0;
+        const overhead_percentage = total_direct_hpp > 0 ? (total_overhead_allocation / total_direct_hpp) * 100 : 0;
+        const average_markup_percentage = pricingSummary ? pricingSummary.average_markup_percentage : 0;
+
+        return {
+          ...est,
+          items: normalizedItems,
+          total_direct_hpp,
+          total_overhead_allocation,
+            total_hpp,
+          total_sell_price,
+          gross_margin_percentage: Math.round(gross_margin_percentage * 100) / 100,
+          overhead_percentage: Math.round(overhead_percentage * 100) / 100,
+          average_markup_percentage: Math.round(average_markup_percentage * 100) / 100,
+        };
+      })
+    );
+    
+    res.json(serializedEstimations);
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    const stack = err instanceof Error ? err.stack : '';
+    console.error('Error fetching approval queue:', msg);
+    console.error('Stack trace:', stack);
+    res.status(500).json({ error: msg, details: stack });
   }
 };
 
@@ -257,6 +415,13 @@ export const getEstimations = async (req: Request, res: Response) => {
     const estimations = await prisma.estimations.findMany({
       include: {
         items: true,
+        sales_order: {
+          select: {
+            id: true,
+            so_number: true,
+            order_date: true,
+          },
+        },
       },
     });
     res.json(estimations);
@@ -289,11 +454,128 @@ export const getEstimationById = async (req: Request, res: Response) => {
             employee: true,
           },
         },
+        client: true,
+        sales_order: {
+          select: {
+            id: true,
+            so_number: true,
+            order_date: true,
+          },
+        },
       },
     });
     if (!estimation)
       return res.status(404).json({ error: 'Estimation not found' });
-    res.json(estimation);
+    // Enrich items with readable names from Material/Service tables
+    const items = estimation.items || [];
+    const materialIds = items
+      .filter((it: any) => it.item_type === 'MATERIAL')
+      .map((it: any) => it.item_id);
+    const serviceIds = items
+      .filter((it: any) => it.item_type === 'SERVICE')
+      .map((it: any) => it.item_id);
+
+    const [materials, services] = await Promise.all([
+      materialIds.length
+        ? prisma.material.findMany({
+            where: { id: { in: materialIds } },
+            select: { id: true, item_name: true },
+          })
+        : Promise.resolve([]),
+      serviceIds.length
+        ? prisma.service.findMany({
+            where: { id: { in: serviceIds } },
+            select: { id: true, service_name: true },
+          })
+        : Promise.resolve([]),
+    ]);
+
+    const materialNameMap = Object.fromEntries(
+      (materials as any[]).map((m) => [m.id, m.item_name])
+    );
+    const serviceNameMap = Object.fromEntries(
+      (services as any[]).map((s) => [s.id, s.service_name])
+    );
+
+    const enrichedItems = items.map((it: any) => ({
+      ...it,
+      quantity: it.quantity ? Number(it.quantity) : 0,
+      hpp_at_estimation: it.hpp_at_estimation ? Number(it.hpp_at_estimation) : 0,
+      sell_price_at_estimation: it.sell_price_at_estimation ? Number(it.sell_price_at_estimation) : 0,
+      item_name:
+        it.item_type === 'MATERIAL'
+          ? materialNameMap[it.item_id] || it.item_name || it.item_id
+          : it.item_type === 'SERVICE'
+          ? serviceNameMap[it.item_id] || it.item_name || it.item_id
+          : it.item_name || it.item_id,
+    }));
+
+    const serializedEstimation = {
+      ...estimation,
+      items: enrichedItems,
+      total_direct_hpp: estimation.total_direct_hpp ? Number(estimation.total_direct_hpp) : 0,
+      total_overhead_allocation: estimation.total_overhead_allocation ? Number(estimation.total_overhead_allocation) : 0,
+      total_hpp: estimation.total_hpp ? Number(estimation.total_hpp) : 0,
+      total_sell_price: estimation.total_sell_price ? Number(estimation.total_sell_price) : 0,
+      gross_margin_percentage: estimation.gross_margin_percentage ? Number(estimation.gross_margin_percentage) : 0,
+    };
+
+    // 🆕 Calculate enhanced data using PricingEngine & OverheadEngine
+    // Only if estimation has items
+    if (enrichedItems.length > 0) {
+      try {
+        // Recompute direct HPP from items to ensure correctness (DB field may be 0 for drafts)
+        const recomputedDirectHpp = enrichedItems.reduce((sum: number, it: any) => {
+          const qty = Number(it.quantity) || 0;
+            const hppUnit = Number(it.hpp_at_estimation) || 0;
+            return sum + qty * hppUnit;
+        }, 0);
+        const directHppForOverhead = recomputedDirectHpp > 0 ? recomputedDirectHpp : serializedEstimation.total_direct_hpp;
+
+        // Step 1: Calculate overhead allocation with breakdown using recomputed direct HPP
+        const overheadResult = await OverheadEngine.calculateOverheadAllocation({
+          total_direct_hpp: directHppForOverhead,
+          use_default_percentage: true, // Use system policy (default)
+        });
+
+        // Step 2: Prepare items for pricing engine
+        const itemsForPricing = enrichedItems.map((item: any) => ({
+          item_id: item.item_id,
+          item_type: item.item_type as 'MATERIAL' | 'SERVICE',
+          hpp_per_unit: Number(item.hpp_at_estimation) || 0,
+          quantity: Number(item.quantity) || 0,
+          category: 'GENERAL', // Default category
+        }));
+
+        const pricingResult = await PricingEngine.calculateBulkSellPrices({
+          items: itemsForPricing,
+          use_cache: true,
+        });
+
+        // Add enhanced fields to response
+        (serializedEstimation as any).overhead_percentage = overheadResult.overhead_percentage;
+        (serializedEstimation as any).overhead_breakdown = overheadResult.overhead_breakdown;
+        (serializedEstimation as any).policy_applied = overheadResult.policy_applied;
+        (serializedEstimation as any).pricing_summary = pricingResult.summary;
+        (serializedEstimation as any).average_markup_percentage = pricingResult.summary.average_markup_percentage;
+        // Override/derive total fields to ensure frontend sees computed numbers
+        (serializedEstimation as any).total_direct_hpp = recomputedDirectHpp > 0 ? recomputedDirectHpp : pricingResult.summary.total_hpp;
+        (serializedEstimation as any).total_overhead_allocation = overheadResult.overhead_allocation;
+        (serializedEstimation as any).total_hpp = overheadResult.total_hpp_with_overhead; // direct + overhead
+        (serializedEstimation as any).total_sell_price = pricingResult.summary.total_sell_price;
+        const grossMarginPct = pricingResult.summary.total_sell_price > 0
+          ? ((pricingResult.summary.total_sell_price - pricingResult.summary.total_hpp) / pricingResult.summary.total_sell_price) * 100
+          : 0;
+        (serializedEstimation as any).gross_margin_percentage = Math.round(grossMarginPct * 100) / 100;
+
+        console.log(`✅ Enhanced estimation ${id} with overhead_breakdown (${overheadResult.overhead_breakdown.length} categories) and pricing_summary`);
+      } catch (enhanceErr) {
+        console.warn('⚠️ Failed to calculate enhanced data:', enhanceErr instanceof Error ? enhanceErr.message : enhanceErr);
+        // Continue without enhanced data - backward compatible
+      }
+    }
+
+    res.json(serializedEstimation);
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
     console.error('Error fetching estimation by id:', msg);
@@ -527,11 +809,25 @@ export const calculateModularEstimation = async (
     let total_direct_hpp = 0;
     let total_service_cost = 0;
 
+    // Collect all items for bulk pricing calculation
+    const allItemsForPricing: any[] = [];
+
     // Process Material sections
     sections.forEach((section: any) => {
       if (section.type === 'MATERIAL' && section.items) {
         section.items.forEach((item: any) => {
           total_direct_hpp += item.total_hpp || 0;
+          
+          // Add to pricing calculation
+          if (item.item_id && item.quantity && item.hpp_per_unit) {
+            allItemsForPricing.push({
+              item_id: item.item_id,
+              item_type: 'MATERIAL' as ItemType,
+              hpp_per_unit: item.hpp_per_unit,
+              quantity: item.quantity,
+              category: item.category || 'MATERIAL_DEFAULT'
+            });
+          }
         });
       }
 
@@ -541,6 +837,17 @@ export const calculateModularEstimation = async (
           if (group.items) {
             group.items.forEach((item: any) => {
               total_service_cost += item.total_hpp || 0;
+              
+              // Add to pricing calculation
+              if (item.item_id && item.quantity && item.hpp_per_unit) {
+                allItemsForPricing.push({
+                  item_id: item.item_id,
+                  item_type: 'SERVICE' as ItemType,
+                  hpp_per_unit: item.hpp_per_unit,
+                  quantity: item.quantity,
+                  category: item.category || 'SERVICE_DEFAULT'
+                });
+              }
             });
           }
         });
@@ -548,16 +855,45 @@ export const calculateModularEstimation = async (
     });
 
     const total_hpp_langsung = total_direct_hpp + total_service_cost;
-    const overhead_allocation =
-      (total_hpp_langsung * (overhead_percentage || 0)) / 100;
-    const total_estimasi_hpp = total_hpp_langsung + overhead_allocation;
 
-    // Apply profit margin
-    const profit_amount =
-      (total_estimasi_hpp * (profit_margin_percentage || 0)) / 100;
-    const total_harga_jual_standar = total_estimasi_hpp + profit_amount;
+    // ==================== STEP 1: Calculate Overhead using OverheadEngine ====================
+    console.log('📊 Calculating overhead allocation with OverheadEngine...');
+    const overheadResult = await OverheadEngine.calculateOverheadAllocation({
+      total_direct_hpp: total_hpp_langsung,
+      use_default_percentage: !overhead_percentage || overhead_percentage === 0,
+      custom_percentage: overhead_percentage > 0 ? overhead_percentage : undefined
+    });
 
-    // Calculate margins
+    const overhead_allocation = overheadResult.overhead_allocation;
+    const total_estimasi_hpp = overheadResult.total_hpp_with_overhead;
+    const overhead_breakdown = overheadResult.overhead_breakdown;
+
+    console.log(`✅ Overhead calculated: ${overheadResult.overhead_percentage}% = Rp ${overhead_allocation.toLocaleString()}`);
+
+    // ==================== STEP 2: Calculate Sell Prices using PricingEngine ====================
+    console.log('💰 Calculating sell prices with PricingEngine...');
+    
+    let total_harga_jual_standar = 0;
+    let pricing_summary: any = null;
+
+    if (allItemsForPricing.length > 0) {
+      const pricingResult = await PricingEngine.calculateBulkSellPrices({
+        items: allItemsForPricing,
+        use_cache: true
+      });
+      
+      total_harga_jual_standar = pricingResult.summary.total_sell_price;
+      pricing_summary = pricingResult.summary;
+      
+      console.log(`✅ Pricing calculated: Total sell price = Rp ${total_harga_jual_standar.toLocaleString()}`);
+    } else {
+      // Fallback to profit margin calculation if no items
+      const profit_amount = (total_estimasi_hpp * (profit_margin_percentage || 0)) / 100;
+      total_harga_jual_standar = total_estimasi_hpp + profit_amount;
+      console.log('⚠️  No items for pricing calculation, using profit margin fallback');
+    }
+
+    // ==================== STEP 3: Calculate Margins ====================
     const estimasi_gross_margin = total_harga_jual_standar - total_hpp_langsung;
     const estimasi_gross_margin_pct =
       total_harga_jual_standar > 0
@@ -572,6 +908,7 @@ export const calculateModularEstimation = async (
 
     const summary = {
       total_direct_hpp: total_hpp_langsung,
+      overhead_percentage: overheadResult.overhead_percentage,
       overhead_allocation,
       total_estimasi_hpp,
       total_harga_jual_standar,
@@ -579,7 +916,19 @@ export const calculateModularEstimation = async (
       estimasi_gross_margin_pct,
       estimasi_net_margin,
       estimasi_net_margin_pct,
+      // Additional data from engines
+      overhead_breakdown,
+      pricing_summary,
+      average_markup_percentage: pricing_summary?.average_markup_percentage || 0,
+      policy_applied: overheadResult.policy_applied
     };
+
+    console.log('📈 Final Summary:');
+    console.log(`   Direct HPP: Rp ${total_hpp_langsung.toLocaleString()}`);
+    console.log(`   Overhead (${overheadResult.overhead_percentage}%): Rp ${overhead_allocation.toLocaleString()}`);
+    console.log(`   Total HPP: Rp ${total_estimasi_hpp.toLocaleString()}`);
+    console.log(`   Sell Price: Rp ${total_harga_jual_standar.toLocaleString()}`);
+    console.log(`   Net Margin: Rp ${estimasi_net_margin.toLocaleString()} (${estimasi_net_margin_pct.toFixed(2)}%)`);
 
     res.status(200).json({ summary });
   } catch (err) {
@@ -899,12 +1248,12 @@ export const decideOnEstimation = async (req: Request, res: Response) => {
       return res.status(409).json({ success: false, error: 'Estimasi ini tidak sedang dalam status menunggu approval.' });
     }
 
-    // Map decision to existing enum statuses
+    // Map decision to proper enum statuses
     const newStatus = finalDecision === 'APPROVED'
       ? 'APPROVED'
       : finalDecision === 'REJECTED'
         ? 'REJECTED'
-        : 'REVISED';
+        : 'REVISION_REQUIRED';
 
     const approverId = (req as any).user?.userId || (req as any).user?.id || null;
 

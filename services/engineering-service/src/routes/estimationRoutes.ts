@@ -15,6 +15,12 @@ router.get(
   requireEngineeringAccess,
   estimationController.getEstimationQueue
 );
+router.get(
+  '/api/v1/estimations/approval-queue',
+  verifyToken,
+  requireApprovalManager,
+  estimationController.getApprovalQueue
+);
 router.put(
   '/api/v1/estimations/:id/assign',
   verifyToken,

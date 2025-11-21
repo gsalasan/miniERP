@@ -23,8 +23,10 @@ import {
   Build as BuildIcon,
   Calculate as CalculateIcon,
   Queue as QueueIcon,
+  CheckCircle as ApprovalIcon,
 } from "@mui/icons-material";
 import { useNavigate, useLocation } from "react-router-dom";
+import { useAuth } from "../context/AuthContext";
 
 const drawerWidth = 280;
 
@@ -75,6 +77,7 @@ interface MenuItem {
   text: string;
   icon: React.ReactNode;
   path: string;
+  requiresRoles?: string[]; // Optional: only show for specific roles
 }
 
 const menuItems: MenuItem[] = [
@@ -93,6 +96,12 @@ const menuItems: MenuItem[] = [
     icon: <QueueIcon />,
     path: "/estimations/queue",
   },
+  {
+    text: "Approval Queue",
+    icon: <ApprovalIcon />,
+    path: "/estimations/approval-queue",
+    requiresRoles: ["CEO", "PROJECT_MANAGER", "OPERATIONAL_MANAGER"],
+  },
 ];
 
 export const Layout: React.FC<LayoutProps> = ({ children }) => {
@@ -101,6 +110,7 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
   const isMobile = useMediaQuery(theme.breakpoints.down("md"));
   const navigate = useNavigate();
   const location = useLocation();
+  const { user } = useAuth();
 
   const handleDrawerToggle = () => {
     setMobileOpen(!mobileOpen);
@@ -123,8 +133,19 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
     if (item.path === "/estimations/queue") {
       return location.pathname === "/estimations/queue";
     }
+    if (item.path === "/estimations/approval-queue") {
+      return location.pathname === "/estimations/approval-queue";
+    }
 
     return location.pathname === item.path;
+  };
+
+  // Check if user has required roles for a menu item
+  const hasRequiredRoles = (item: MenuItem): boolean => {
+    if (!item.requiresRoles || item.requiresRoles.length === 0) {
+      return true; // No role requirement, show to everyone
+    }
+    return item.requiresRoles.some(role => user?.roles?.includes(role));
   };
 
   const drawer = (
@@ -144,7 +165,9 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
       {/* Navigation Menu */}
       <Box sx={{ flexGrow: 1, px: 2, mt: 2 }}>
         <List sx={{ p: 0 }}>
-          {menuItems.map((item) => (
+          {menuItems
+            .filter(item => hasRequiredRoles(item))
+            .map((item) => (
             <ListItem key={item.text} disablePadding sx={{ mb: 1 }}>
               <ListItemButton
                 selected={isItemSelected(item)}

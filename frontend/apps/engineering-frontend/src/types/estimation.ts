@@ -28,6 +28,14 @@ export interface Estimation {
   ce_date?: Date | string | null;
   ce_period_start?: Date | string | null;
   ce_period_end?: Date | string | null;
+  so_number?: string | null; // Sales Order reference
+  so_date?: Date | string | null; // SO date
+  sales_order_id?: string | null;
+  sales_order?: {
+    id: string;
+    so_number: string;
+    order_date: Date | string;
+  } | null;
 
   // Relations
   client?: Customer | null;
@@ -102,15 +110,15 @@ export interface Project {
 
 export type EstimationStatus =
   | "PENDING"
-  | "ASSIGNED"
   | "IN_PROGRESS"
-  | "PENDING_INFO"
-  | "COMPLETED"
+  | "PENDING_APPROVAL"
   | "APPROVED"
   | "REJECTED"
-  | "ARCHIVED"
+  | "REVISION_REQUIRED"
   | "DRAFT"
-  | "REVISED";
+  | "ARCHIVED"
+  | "PENDING_DISCOUNT_APPROVAL"
+  | "DISCOUNT_APPROVED";
 export type ItemType = "MATERIAL" | "SERVICE";
 export type SourceType = "INTERNAL" | "EXTERNAL";
 
@@ -238,12 +246,37 @@ export interface CalculatorState {
 export interface FinancialSummary {
   total_direct_hpp: number;
   overhead_allocation: number;
+  overhead_percentage?: number;
   total_estimasi_hpp: number;
   total_harga_jual_standar: number;
   estimasi_gross_margin: number;
   estimasi_gross_margin_pct: number;
   estimasi_net_margin: number;
   estimasi_net_margin_pct: number;
+  
+  // NEW: Enhanced fields from PricingEngine & OverheadEngine integration
+  overhead_breakdown?: OverheadBreakdownItem[];
+  pricing_summary?: PricingSummary;
+  average_markup_percentage?: number;
+  policy_applied?: string;
+}
+
+// Overhead Breakdown Item (22 categories)
+export interface OverheadBreakdownItem {
+  category: string;
+  target_percentage: number;
+  allocation_percentage_to_hpp: number;
+  allocated_amount: number;
+  description: string;
+}
+
+// Pricing Summary from PricingEngine
+export interface PricingSummary {
+  total_items: number;
+  total_hpp: number;
+  total_markup: number;
+  total_sell_price: number;
+  average_markup_percentage: number;
 }
 
 // Submit Request

@@ -158,20 +158,38 @@ export const DashboardPage: React.FC = () => {
     try {
       // Try to get user from backend first
       const profile = await identityService.getCurrentUser();
-      const name = profile.employee?.full_name || profile.username || "Engineer";
+      console.log("👤 Profile from API:", profile);
+      
+      const name = 
+        profile.employee?.full_name || 
+        profile.name || 
+        profile.username || 
+        profile.email?.split("@")[0] || 
+        "Engineer";
+      
+      console.log("✅ User name set to:", name);
       setUserName(name);
-    } catch {
+    } catch (error) {
+      console.error("❌ Failed to load user from API:", error);
       // Fallback to localStorage
       try {
         const userStr = localStorage.getItem("user");
         if (userStr) {
           const user = JSON.parse(userStr);
+          console.log("👤 User from localStorage:", user);
+          
           const name =
-            user.employee?.full_name || user.name || user.email?.split("@")[0] || "Engineer";
+            user.employee?.full_name || 
+            user.name || 
+            user.full_name ||
+            user.email?.split("@")[0] || 
+            "Engineer";
+          
+          console.log("✅ User name set from localStorage:", name);
           setUserName(name);
         }
-      } catch {
-        // Silent fail - use default username
+      } catch (e) {
+        console.error("❌ Failed to parse localStorage user:", e);
       }
     }
   };

@@ -47,14 +47,14 @@ export const getEngineeringDashboard = async (req: Request, res: Response) => {
       : {};
 
     // 1. Volume & Kecepatan Kerja
-    const requestsIn = await prisma.estimation.count({
+    const requestsIn = await prisma.estimations.count({
       where: {
         ...dateFilter,
         ...assigneeFilter,
       },
     });
 
-    const completedEstimations = await prisma.estimation.count({
+    const completedEstimations = await prisma.estimations.count({
       where: {
         status: 'APPROVED',
         updated_at: {
@@ -66,7 +66,7 @@ export const getEngineeringDashboard = async (req: Request, res: Response) => {
     });
 
     // Calculate average turnaround time (in days)
-    const estimationsWithTime = await prisma.estimation.findMany({
+    const estimationsWithTime = await prisma.estimations.findMany({
       where: {
         status: 'APPROVED',
         updated_at: {
@@ -106,7 +106,7 @@ export const getEngineeringDashboard = async (req: Request, res: Response) => {
     };
 
     // 3. Beban Kerja Tim
-    const workloadData = await prisma.estimation.groupBy({
+    const workloadData = await prisma.estimations.groupBy({
       by: ['assigned_to_user_id'],
       where: {
         status: 'IN_PROGRESS',
@@ -195,7 +195,7 @@ export const getEngineeringDashboard = async (req: Request, res: Response) => {
     };
 
     // 5. Status Distribution
-    const statusDistribution = await prisma.estimation.groupBy({
+    const statusDistribution = await prisma.estimations.groupBy({
       by: ['status'],
       where: {
         ...dateFilter,
