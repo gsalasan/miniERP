@@ -1,20 +1,20 @@
-import axios from "axios";
-import { config, auth } from "../config";
+import axios from 'axios';
+import { config, auth } from '../config';
 
 export interface Estimation {
   id: string;
   project_id: string;
   version: number;
   status: 
-    | "PENDING" 
-    | "IN_PROGRESS" 
-    | "APPROVED" 
-    | "REJECTED" 
-    | "DRAFT" 
-    | "ARCHIVED"
-    | "PENDING_DISCOUNT_APPROVAL"
-    | "DISCOUNT_APPROVED"
-    | "DISCOUNT_REJECTED";
+    | 'PENDING' 
+    | 'IN_PROGRESS' 
+    | 'APPROVED' 
+    | 'REJECTED' 
+    | 'DRAFT' 
+    | 'ARCHIVED'
+    | 'PENDING_DISCOUNT_APPROVAL'
+    | 'DISCOUNT_APPROVED'
+    | 'DISCOUNT_REJECTED';
   requested_by_user_id?: string | null;
   assigned_to_user_id?: string | null;
   technical_brief?: string | null;
@@ -30,7 +30,7 @@ export interface Estimation {
 
 const engineeringApi = axios.create({
   baseURL: config.ENGINEERING_SERVICE_URL,
-  headers: { "Content-Type": "application/json" },
+  headers: { 'Content-Type': 'application/json' },
   timeout: 10000,
 });
 
@@ -55,7 +55,7 @@ export const estimationsApi = {
     technicalBrief: string;
     attachmentUrls?: string[];
   }): Promise<Estimation> {
-    const res = await engineeringApi.post("/estimations", payload);
+    const res = await engineeringApi.post('/estimations', payload);
     return res.data?.data || res.data;
   },
 };

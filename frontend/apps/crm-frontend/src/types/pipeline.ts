@@ -34,12 +34,12 @@ export interface Project {
 }
 
 export enum ProjectStatus {
-  PROSPECT = "PROSPECT",
-  MEETING_SCHEDULED = "MEETING_SCHEDULED",
-  PRE_SALES = "PRE_SALES",
-  PROPOSAL_DELIVERED = "PROPOSAL_DELIVERED",
-  WON = "WON",
-  LOST = "LOST",
+  PROSPECT = 'PROSPECT',
+  MEETING_SCHEDULED = 'MEETING_SCHEDULED',
+  PRE_SALES = 'PRE_SALES',
+  PROPOSAL_DELIVERED = 'PROPOSAL_DELIVERED',
+  WON = 'WON',
+  LOST = 'LOST',
 }
 export interface PipelineColumn {
   items: Project[];
@@ -91,7 +91,7 @@ export interface CreateProjectRequest {
   lead_score?: number;
   // defaulting new project to Prospect on creation
   status?: ProjectStatus;
-  priority?: "LOW" | "MEDIUM" | "HIGH" | "URGENT";
+  priority?: 'LOW' | 'MEDIUM' | 'HIGH' | 'URGENT';
   expected_close_date?: Date | null;
   notes?: string;
 }
@@ -110,34 +110,34 @@ export interface UpdateProjectRequest {
 // Pipeline Column Configuration
 export const PIPELINE_COLUMNS = {
   [ProjectStatus.PROSPECT]: {
-    title: "Prospect",
-    color: "#2196F3",
-    description: "Lead yang sudah dikualifikasi sebagai prospect",
+    title: 'Prospect',
+    color: '#2196F3',
+    description: 'Lead yang sudah dikualifikasi sebagai prospect',
   },
   [ProjectStatus.MEETING_SCHEDULED]: {
-    title: "Meeting Scheduled",
-    color: "#FF9800",
-    description: "Meeting sudah dijadwalkan",
+    title: 'Meeting Scheduled',
+    color: '#FF9800',
+    description: 'Meeting sudah dijadwalkan',
   },
   [ProjectStatus.PRE_SALES]: {
-    title: "Pre-Sales",
-    color: "#9C27B0",
-    description: "Analisis kebutuhan dan solusi",
+    title: 'Pre-Sales',
+    color: '#9C27B0',
+    description: 'Analisis kebutuhan dan solusi',
   },
   [ProjectStatus.PROPOSAL_DELIVERED]: {
-    title: "Proposal Delivered",
-    color: "#673AB7",
-    description: "Proposal sudah dikirim ke client",
+    title: 'Proposal Delivered',
+    color: '#673AB7',
+    description: 'Proposal sudah dikirim ke client',
   },
   [ProjectStatus.WON]: {
-    title: "Won",
-    color: "#4CAF50",
-    description: "Deal berhasil ditutup",
+    title: 'Won',
+    color: '#4CAF50',
+    description: 'Deal berhasil ditutup',
   },
   [ProjectStatus.LOST]: {
-    title: "Lost",
-    color: "#F44336",
-    description: "Deal gagal atau dibatalkan",
+    title: 'Lost',
+    color: '#F44336',
+    description: 'Deal gagal atau dibatalkan',
   },
 };
 

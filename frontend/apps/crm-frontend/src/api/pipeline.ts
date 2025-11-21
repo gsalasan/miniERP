@@ -1,4 +1,4 @@
-import axios from "axios";
+import axios from 'axios';
 import {
   Project,
   Pipeline,
@@ -9,14 +9,14 @@ import {
   CreateProjectRequest,
   UpdateProjectRequest,
   ProjectStatus,
-} from "../types/pipeline";
-import { config, auth } from "../config";
+} from '../types/pipeline';
+import { config, auth } from '../config';
 
 // Create axios instance for CRM service
 const crmApi = axios.create({
   baseURL: config.CRM_SERVICE_URL,
   headers: {
-    "Content-Type": "application/json",
+    'Content-Type': 'application/json',
   },
   timeout: 10000, // 10 seconds timeout
 });
@@ -61,12 +61,12 @@ export const pipelineApi = {
       const params: any = {};
       if (salesUserId) params.sales_user_id = salesUserId;
       if (Array.isArray(statuses) && statuses.length > 0) {
-        params.statuses = statuses.join(",");
+        params.statuses = statuses.join(',');
       }
 
-      console.log("[Pipeline API] Sending request with params:", params);
+      console.log('[Pipeline API] Sending request with params:', params);
 
-      const response = await crmApi.get("/pipeline", { params });
+      const response = await crmApi.get('/pipeline', { params });
 
       // Expected payload: { success: true, data: { pipeline, summary } }
       const root = response?.data;
@@ -99,19 +99,19 @@ export const pipelineApi = {
       // Try to surface backend message if available to aid debugging
       const backendMessage =
         err?.response?.data?.message || err?.response?.data?.error || err?.message;
-      throw new Error(backendMessage || "Gagal memuat data pipeline");
+      throw new Error(backendMessage || 'Gagal memuat data pipeline');
     }
   },
 
   // Move project card to different column
   movePipelineCard: async (request: MovePipelineRequest): Promise<MovePipelineResponse> => {
     try {
-      const response = await crmApi.put("/pipeline/move", request);
+      const response = await crmApi.put('/pipeline/move', request);
       return response.data;
     } catch (error: unknown) {
       // Extract error message from backend response
       const errorMessage =
-        (error as any).response?.data?.message || "Gagal memindahkan kartu pipeline";
+        (error as any).response?.data?.message || 'Gagal memindahkan kartu pipeline';
       throw new Error(errorMessage);
     }
   },
@@ -122,7 +122,7 @@ export const pipelineApi = {
       const response = await crmApi.get(`/pipeline/activities/${projectId}`);
       return response.data.data || response.data;
     } catch {
-      throw new Error("Gagal memuat aktivitas proyek");
+      throw new Error('Gagal memuat aktivitas proyek');
     }
   },
 
@@ -134,7 +134,7 @@ export const pipelineApi = {
     metadata?: Record<string, unknown>,
   ): Promise<any> => {
     try {
-      const response = await crmApi.post("/pipeline/activities", {
+      const response = await crmApi.post('/pipeline/activities', {
         projectId,
         activityType,
         description,
@@ -142,7 +142,7 @@ export const pipelineApi = {
       });
       return response.data.data || response.data;
     } catch (err) {
-      const errorMessage = (err as any).response?.data?.message || "Gagal membuat aktivitas proyek";
+      const errorMessage = (err as any).response?.data?.message || 'Gagal membuat aktivitas proyek';
       throw new Error(errorMessage);
     }
   },
@@ -150,11 +150,11 @@ export const pipelineApi = {
   // Create new project
   createProject: async (data: CreateProjectRequest): Promise<Project> => {
     try {
-      const response = await crmApi.post("/pipeline/projects", data);
+      const response = await crmApi.post('/pipeline/projects', data);
       return response.data.data || response.data;
     } catch (error: unknown) {
       // Extract error message from backend response
-      const errorMessage = (error as any).response?.data?.message || "Gagal membuat proyek baru";
+      const errorMessage = (error as any).response?.data?.message || 'Gagal membuat proyek baru';
       throw new Error(errorMessage);
     }
   },
@@ -166,7 +166,7 @@ export const pipelineApi = {
       return response.data.data || response.data;
     } catch (error: unknown) {
       // Extract error message from backend response
-      const errorMessage = (error as any).response?.data?.message || "Gagal mengupdate proyek";
+      const errorMessage = (error as any).response?.data?.message || 'Gagal mengupdate proyek';
       throw new Error(errorMessage);
     }
   },
@@ -177,7 +177,7 @@ export const pipelineApi = {
       const response = await crmApi.get(`/pipeline/projects/${projectId}`);
       return response.data.data || response.data;
     } catch {
-      throw new Error("Gagal memuat data proyek");
+      throw new Error('Gagal memuat data proyek');
     }
   },
   // Delete project
@@ -188,8 +188,8 @@ export const pipelineApi = {
       // If backend does not implement DELETE for projects (404), try a safe fallback:
       // mark the project as LOST so it leaves active pipeline columns.
       const statusCode = (error as any).response?.status;
-      console.error("[pipelineApi.deleteProject] error status:", statusCode);
-      console.error("[pipelineApi.deleteProject] response data:", (error as any).response?.data);
+      console.error('[pipelineApi.deleteProject] error status:', statusCode);
+      console.error('[pipelineApi.deleteProject] response data:', (error as any).response?.data);
 
       if (statusCode === 404) {
         try {
@@ -198,11 +198,11 @@ export const pipelineApi = {
           } as UpdateProjectRequest);
           return;
         } catch (putErr) {
-          console.error("[pipelineApi.deleteProject] fallback update error:", putErr);
+          console.error('[pipelineApi.deleteProject] fallback update error:', putErr);
           const fallbackMessage =
             (putErr as any).response?.data?.message ||
             (putErr as any).message ||
-            "Gagal menghapus proyek (fallback gagal)";
+            'Gagal menghapus proyek (fallback gagal)';
           throw new Error(fallbackMessage);
         }
       }
@@ -210,7 +210,7 @@ export const pipelineApi = {
       const errorMessage =
         (error as any).response?.data?.message ||
         (error as any).message ||
-        "Gagal menghapus proyek";
+        'Gagal menghapus proyek';
       throw new Error(errorMessage);
     }
   },

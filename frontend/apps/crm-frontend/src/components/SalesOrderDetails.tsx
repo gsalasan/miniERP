@@ -1,10 +1,10 @@
 /* eslint-disable prettier/prettier */
 /**
  * SalesOrderDetails - Compact card notification shown after project is WON
- * Left: check + text. Right: yellow "Lihat detail" button that links to Sales Orders page
+ * Left: check + text. Right: yellow 'Lihat detail' button that links to Sales Orders page
  */
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState } from 'react';
 import {
   Box,
   CircularProgress,
@@ -13,10 +13,10 @@ import {
   Button,
   Typography,
   Alert,
-} from "@mui/material";
-import { useAuth } from "../contexts/AuthContext";
-import { Link as RouterLink } from "react-router-dom";
-import CheckCircleIcon from "@mui/icons-material/CheckCircle";
+} from '@mui/material';
+import { useAuth } from '../contexts/AuthContext';
+import { Link as RouterLink } from 'react-router-dom';
+import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 
 interface SalesOrderDetailsProps {
   projectId: string;
@@ -41,7 +41,7 @@ const SalesOrderDetails: React.FC<SalesOrderDetailsProps> = ({ projectId }) => {
 
   useEffect(() => {
     loadSalesOrder();
-  
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [projectId]);
 
   const loadSalesOrder = async () => {
@@ -60,10 +60,10 @@ const SalesOrderDetails: React.FC<SalesOrderDetailsProps> = ({ projectId }) => {
       } else if (response.status === 404) {
         setSalesOrder(null);
       } else {
-        setError("Gagal memuat Sales Order");
+        setError('Gagal memuat Sales Order');
       }
     } catch {
-      setError("Gagal memuat Sales Order");
+      setError('Gagal memuat Sales Order');
     } finally {
       setLoading(false);
     }
@@ -71,7 +71,7 @@ const SalesOrderDetails: React.FC<SalesOrderDetailsProps> = ({ projectId }) => {
 
   if (loading) {
     return (
-      <Box display="flex" justifyContent="center" p={2}>
+      <Box display='flex' justifyContent='center' p={2}>
         <CircularProgress size={24} />
       </Box>
     );
@@ -79,9 +79,9 @@ const SalesOrderDetails: React.FC<SalesOrderDetailsProps> = ({ projectId }) => {
 
   if (error) {
     return (
-      <Card variant="outlined" sx={{ mb: 2 }}>
+      <Card variant='outlined' sx={{ mb: 2 }}>
         <CardContent>
-          <Alert severity="error">{error}</Alert>
+          <Alert severity='error'>{error}</Alert>
         </CardContent>
       </Card>
     );
@@ -90,15 +90,15 @@ const SalesOrderDetails: React.FC<SalesOrderDetailsProps> = ({ projectId }) => {
   if (!salesOrder) return null;
 
   return (
-    <Card variant="outlined" sx={{ mb: 2 }}>
-      <CardContent sx={{ display: "flex", alignItems: "center", gap: 2, width: '100%' }}>
-        <Box display="flex" alignItems="center" columnGap={1.25} sx={{ minWidth: 0 }}>
-          <CheckCircleIcon color="success" fontSize="small" />
+    <Card variant='outlined' sx={{ mb: 2 }}>
+      <CardContent sx={{ display: 'flex', alignItems: 'center', gap: 2, width: '100%' }}>
+        <Box display='flex' alignItems='center' columnGap={1.25} sx={{ minWidth: 0 }}>
+          <CheckCircleIcon color='success' fontSize='small' />
           <Box>
-            <Typography variant="subtitle2" sx={{ fontWeight: 600, lineHeight: 1 }}>
+            <Typography variant='subtitle2' sx={{ fontWeight: 600, lineHeight: 1 }}>
               Sales Order
             </Typography>
-            <Typography variant="caption" color="text.secondary">
+            <Typography variant='caption' color='text.secondary'>
               Berhasil dibuat
             </Typography>
           </Box>
@@ -118,8 +118,8 @@ const SalesOrderDetails: React.FC<SalesOrderDetailsProps> = ({ projectId }) => {
             <Button
               component={RouterLink}
               to={`/sales-orders?soId=${salesOrder.id}`}
-              variant="text"
-              size="small"
+              variant='text'
+              size='small'
               sx={{
                 color: 'warning.dark',
                 textTransform: 'none',

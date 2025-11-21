@@ -142,10 +142,10 @@ const SalesOrdersPage: React.FC = () => {
     <Box sx={{ p: 3 }}>
       {/* Header */}
       <Box sx={{ mb: 3 }}>
-        <Typography variant="h4" sx={{ fontWeight: 600, mb: 1 }}>
+        <Typography variant='h4' sx={{ fontWeight: 600, mb: 1 }}>
           Sales Orders
         </Typography>
-        <Typography variant="body2" color="text.secondary">
+        <Typography variant='body2' color='text.secondary'>
           Daftar semua Sales Order yang telah dibuat dari proyek WON
         </Typography>
       </Box>
@@ -153,13 +153,13 @@ const SalesOrdersPage: React.FC = () => {
       {/* Stats Card */}
       <Card sx={{ mb: 3, bgcolor: 'primary.main', color: 'white' }}>
         <CardContent>
-          <Box display="flex" alignItems="center" gap={2}>
+          <Box display='flex' alignItems='center' gap={2}>
             <CheckIcon sx={{ fontSize: 48 }} />
             <Box>
-              <Typography variant="h3" sx={{ fontWeight: 700 }}>
+              <Typography variant='h3' sx={{ fontWeight: 700 }}>
                 {salesOrders.length}
               </Typography>
-              <Typography variant="body1">Total Sales Orders</Typography>
+              <Typography variant='body1'>Total Sales Orders</Typography>
             </Box>
           </Box>
         </CardContent>
@@ -170,12 +170,12 @@ const SalesOrdersPage: React.FC = () => {
         <CardContent>
           <TextField
             fullWidth
-            placeholder="Cari berdasarkan nomor SO, nomor PO, nama proyek, atau customer..."
+            placeholder='Cari berdasarkan nomor SO, nomor PO, nama proyek, atau customer...'
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             InputProps={{
               startAdornment: (
-                <InputAdornment position="start">
+                <InputAdornment position='start'>
                   <SearchIcon />
                 </InputAdornment>
               ),
@@ -188,21 +188,21 @@ const SalesOrdersPage: React.FC = () => {
       <Card>
         <CardContent>
           {loading ? (
-            <Box display="flex" justifyContent="center" py={4}>
+            <Box display='flex' justifyContent='center' py={4}>
               <CircularProgress />
             </Box>
           ) : error ? (
-            <Alert severity="error">{error}</Alert>
+            <Alert severity='error'>{error}</Alert>
           ) : filteredOrders.length === 0 ? (
-            <Box textAlign="center" py={4}>
-              <Typography variant="body1" color="text.secondary">
+            <Box textAlign='center' py={4}>
+              <Typography variant='body1' color='text.secondary'>
                 {searchQuery
                   ? 'Tidak ada Sales Order yang cocok dengan pencarian'
                   : 'Belum ada Sales Order'}
               </Typography>
             </Box>
           ) : (
-            <TableContainer component={Paper} variant="outlined">
+            <TableContainer component={Paper} variant='outlined'>
               <Table>
                 <TableHead>
                   <TableRow sx={{ bgcolor: 'grey.100' }}>
@@ -210,10 +210,10 @@ const SalesOrdersPage: React.FC = () => {
                     <TableCell><strong>Nomor PO</strong></TableCell>
                     <TableCell><strong>Proyek</strong></TableCell>
                     <TableCell><strong>Customer</strong></TableCell>
-                    <TableCell align="right"><strong>Nilai Kontrak</strong></TableCell>
+                    <TableCell align='right'><strong>Nilai Kontrak</strong></TableCell>
                     <TableCell><strong>TOP</strong></TableCell>
                     <TableCell><strong>Tanggal Order</strong></TableCell>
-                    <TableCell align="center"><strong>Aksi</strong></TableCell>
+                    <TableCell align='center'><strong>Aksi</strong></TableCell>
                   </TableRow>
                 </TableHead>
                 <TableBody>
@@ -222,16 +222,16 @@ const SalesOrdersPage: React.FC = () => {
                       <TableCell>
                         <Chip
                           label={so.so_number}
-                          color="primary"
-                          size="small"
+                          color='primary'
+                          size='small'
                           sx={{ fontWeight: 600 }}
                         />
                       </TableCell>
                       <TableCell>{so.customer_po_number}</TableCell>
                       <TableCell>{so.project.project_name}</TableCell>
                                     <TableCell>{so.project?.customer?.customer_name || so.project?.customer?.name || '-'}</TableCell>
-                      <TableCell align="right">
-                        <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                      <TableCell align='right'>
+                        <Typography variant='body2' sx={{ fontWeight: 600 }}>
                           {formatCurrency(so.contract_value)}
                         </Typography>
                       </TableCell>
@@ -239,24 +239,24 @@ const SalesOrdersPage: React.FC = () => {
                         {so.top_days_agreed ? `${so.top_days_agreed} Hari` : 'Custom'}
                       </TableCell>
                       <TableCell>{formatDate(so.order_date)}</TableCell>
-                      <TableCell align="center">
-                        <Box display="flex" gap={1} justifyContent="center">
-                          <Tooltip title="Lihat Detail">
+                      <TableCell align='center'>
+                        <Box display='flex' gap={1} justifyContent='center'>
+                          <Tooltip title='Lihat Detail'>
                             <IconButton
-                              size="small"
-                              color="primary"
+                              size='small'
+                              color='primary'
                               onClick={() => handleViewDetail(so)}
                             >
                               <ViewIcon />
                             </IconButton>
                           </Tooltip>
                           {so.po_document_url && (
-                            <Tooltip title="Lihat Dokumen PO">
+                            <Tooltip title='Lihat Dokumen PO'>
                               <IconButton
-                                size="small"
-                                color="secondary"
+                                size='small'
+                                color='secondary'
                                 href={so.po_document_url}
-                                target="_blank"
+                                target='_blank'
                               >
                                 <DocIcon />
                               </IconButton>

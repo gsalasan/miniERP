@@ -114,27 +114,27 @@ const DiscountRequestSection: React.FC<DiscountRequestSectionProps> = ({
   if (isPending || isApproved) {
     return (
       <Paper elevation={0} sx={{ p: 2, bgcolor: 'background.default', mb: 2 }}>
-        <Typography variant="subtitle2" gutterBottom>
+        <Typography variant='subtitle2' gutterBottom>
           Status Discount Approval
         </Typography>
 
         {isPending && (
-          <Alert severity="warning" icon={<DiscountIcon />}>
-            <Typography variant="body2">
+          <Alert severity='warning' icon={<DiscountIcon />}>
+            <Typography variant='body2'>
               <strong>Menunggu Approval CEO</strong>
             </Typography>
-            <Typography variant="body2">
+            <Typography variant='body2'>
               Diskon yang diminta: <strong>{requestedDiscount}%</strong>
             </Typography>
           </Alert>
         )}
 
         {isApproved && (
-          <Alert severity="success" icon={<DiscountIcon />}>
-            <Typography variant="body2">
+          <Alert severity='success' icon={<DiscountIcon />}>
+            <Typography variant='body2'>
               <strong>Diskon Disetujui</strong>
             </Typography>
-            <Typography variant="body2">
+            <Typography variant='body2'>
               Diskon yang disetujui: <strong>{currentDiscount}%</strong>
             </Typography>
           </Alert>
@@ -150,35 +150,35 @@ const DiscountRequestSection: React.FC<DiscountRequestSectionProps> = ({
 
   return (
     <Paper elevation={0} sx={{ p: 2, bgcolor: 'background.default', mb: 2 }}>
-      <Typography variant="subtitle2" gutterBottom>
+      <Typography variant='subtitle2' gutterBottom>
         Request Discount Approval
       </Typography>
-      <Typography variant="caption" color="text.secondary" display="block" sx={{ mb: 2 }}>
+      <Typography variant='caption' color='text.secondary' display='block' sx={{ mb: 2 }}>
         Ajukan permintaan diskon untuk estimasi ini. Diskon akan direview oleh CEO.
       </Typography>
 
       {/* If previously rejected, show rejection alert above the form so user can re-submit */}
       {isRejected && (
-        <Alert severity="error" icon={<DiscountIcon />} sx={{ mb: 2 }}>
-          <Typography variant="body2">
+        <Alert severity='error' icon={<DiscountIcon />} sx={{ mb: 2 }}>
+          <Typography variant='body2'>
             <strong>Diskon Ditolak</strong>
           </Typography>
-          <Typography variant="body2" sx={{ mt: 1 }}>
+          <Typography variant='body2' sx={{ mt: 1 }}>
             Anda dapat mengajukan permintaan diskon baru dengan nilai yang berbeda.
           </Typography>
         </Alert>
       )}
 
-      <Box display="flex" gap={2} alignItems="flex-start">
+      <Box display='flex' gap={2} alignItems='flex-start'>
         <TextField
-          size="small"
-          type="number"
-          label="Diskon (%)"
+          size='small'
+          type='number'
+          label='Diskon (%)'
           value={discount}
           onChange={(e) => setDiscount(e.target.value)}
           disabled={loading}
           InputProps={{
-            endAdornment: <InputAdornment position="end">%</InputAdornment>,
+            endAdornment: <InputAdornment position='end'>%</InputAdornment>,
           }}
           inputProps={{
             min: 0,
@@ -189,8 +189,8 @@ const DiscountRequestSection: React.FC<DiscountRequestSectionProps> = ({
         />
         
         <Button
-          variant="contained"
-          color="primary"
+          variant='contained'
+          color='primary'
           onClick={handleRequestDiscount}
           disabled={loading || !discount}
           startIcon={loading ? <CircularProgress size={16} /> : <DiscountIcon />}
@@ -200,13 +200,13 @@ const DiscountRequestSection: React.FC<DiscountRequestSectionProps> = ({
       </Box>
 
       {error && (
-        <Alert severity="error" sx={{ mt: 2 }}>
+        <Alert severity='error' sx={{ mt: 2 }}>
           {error}
         </Alert>
       )}
 
       {success && (
-        <Alert severity="success" sx={{ mt: 2 }}>
+        <Alert severity='success' sx={{ mt: 2 }}>
           {success}
         </Alert>
       )}

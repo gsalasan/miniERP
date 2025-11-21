@@ -264,7 +264,7 @@ const GenerateQuotationWithDiscountButton: React.FC<
     <>
       <Button
         variant={variant}
-        color="primary"
+        color='primary'
         size={size}
         onClick={handleOpenDialog}
         startIcon={<PdfIcon />}
@@ -277,15 +277,15 @@ const GenerateQuotationWithDiscountButton: React.FC<
       </Button>
 
       {/* Dialog for discount input */}
-      <Dialog open={showDialog} onClose={handleCloseDialog} maxWidth="sm" fullWidth>
+      <Dialog open={showDialog} onClose={handleCloseDialog} maxWidth='sm' fullWidth>
         <DialogTitle>
-          <Box display="flex" alignItems="center" gap={1}>
-            <PdfIcon color="primary" />
-            <Typography variant="h6">Generate Penawaran</Typography>
+          <Box display='flex' alignItems='center' gap={1}>
+            <PdfIcon color='primary' />
+            <Typography variant='h6'>Generate Penawaran</Typography>
           </Box>
         </DialogTitle>
         <DialogContent>
-          <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
+          <Typography variant='body2' color='text.secondary' sx={{ mb: 3 }}>
             Project: <strong>{projectName}</strong>
           </Typography>
 
@@ -293,8 +293,8 @@ const GenerateQuotationWithDiscountButton: React.FC<
           <Box sx={{ mb: 3 }}>
             <TextField
               fullWidth
-              type="number"
-              label="Diskon (%)"
+              type='number'
+              label='Diskon (%)'
               value={discount}
               onChange={(e) => setDiscount(e.target.value)}
               disabled={
@@ -302,11 +302,11 @@ const GenerateQuotationWithDiscountButton: React.FC<
               }
               InputProps={{
                 startAdornment: (
-                  <InputAdornment position="start">
+                  <InputAdornment position='start'>
                     <DiscountIcon />
                   </InputAdornment>
                 ),
-                endAdornment: <InputAdornment position="end">%</InputAdornment>,
+                endAdornment: <InputAdornment position='end'>%</InputAdornment>,
               }}
               inputProps={{
                 min: 0,
@@ -323,10 +323,10 @@ const GenerateQuotationWithDiscountButton: React.FC<
 
           {/* Real-time final price */}
           <Box sx={{ mb: 2 }}>
-            <Typography variant="body2">
+            <Typography variant='body2'>
               Harga sebelum diskon: <strong>{new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR' }).format(subtotalValue)}</strong>
             </Typography>
-            <Typography variant="body1" sx={{ mt: 0.5 }}>
+            <Typography variant='body1' sx={{ mt: 0.5 }}>
               Harga Final setelah diskon: <strong>{new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR' }).format(subtotalAfterDiscount)}</strong>
             </Typography>
           </Box>
@@ -346,23 +346,23 @@ const GenerateQuotationWithDiscountButton: React.FC<
               sx={{ mb: 2 }}
             >
               {estimationStatus === 'DISCOUNT_APPROVED' ? (
-                <Typography variant="body2">
+                <Typography variant='body2'>
                   Diskon {discount}% telah <strong>disetujui oleh CEO</strong>.
                   Quotation siap di-generate.
                 </Typography>
               ) : exceedsMax ? (
-                <Typography variant="body2">
+                <Typography variant='body2'>
                   Diskon {discount}% <strong>melebihi batas maksimal</strong> (
                   {discountPolicy.maxDiscountLimit}%). Tidak dapat diproses.
                 </Typography>
               ) : needsApproval ? (
-                <Typography variant="body2">
+                <Typography variant='body2'>
                   Diskon {discount}% <strong>memerlukan approval CEO</strong> karena
                   melebihi wewenang Anda ({discountPolicy.authorityLimit}%). Silakan
                   request approval terlebih dahulu.
                 </Typography>
               ) : (
-                <Typography variant="body2">
+                <Typography variant='body2'>
                   Diskon {discount}% <strong>dalam batas wewenang Anda</strong>.
                   Quotation dapat langsung di-generate.
                 </Typography>
@@ -371,14 +371,14 @@ const GenerateQuotationWithDiscountButton: React.FC<
           )}
 
           {error && (
-            <Alert severity="error" sx={{ mb: 2 }}>
+            <Alert severity='error' sx={{ mb: 2 }}>
               {error}
             </Alert>
           )}
 
-          <Typography variant="caption" color="text.secondary" display="block">
+          <Typography variant='caption' color='text.secondary' display='block'>
             Setelah quotation di-generate, status project akan otomatis berubah menjadi
-            "Proposal Delivered".
+            'Proposal Delivered'.
           </Typography>
         </DialogContent>
         <DialogActions>
@@ -390,8 +390,8 @@ const GenerateQuotationWithDiscountButton: React.FC<
           {estimationStatus !== 'DISCOUNT_APPROVED' && needsApproval && (
             <Button
               onClick={handleRequestApproval}
-              variant="outlined"
-              color="primary"
+              variant='outlined'
+              color='primary'
               disabled={loading}
               startIcon={<DiscountIcon />}
             >
@@ -401,8 +401,8 @@ const GenerateQuotationWithDiscountButton: React.FC<
 
           <Button
             onClick={handleGenerateQuotation}
-            variant="contained"
-            color="primary"
+            variant='contained'
+            color='primary'
             disabled={
               loading ||
               (estimationStatus !== 'DISCOUNT_APPROVED' && (!!discountPolicy ? (exceedsMax || needsApproval) : false))

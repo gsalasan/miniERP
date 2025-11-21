@@ -106,8 +106,8 @@ const MarkAsWonLostButtons: React.FC<MarkAsWonLostButtonsProps> = ({
         }}
       >
         <Button
-          variant="contained"
-          color="success"
+          variant='contained'
+          color='success'
           startIcon={<WonIcon />}
           onClick={() => setShowWonModal(true)}
           fullWidth
@@ -116,8 +116,8 @@ const MarkAsWonLostButtons: React.FC<MarkAsWonLostButtonsProps> = ({
           Tandai sebagai WON
         </Button>
         <Button
-          variant="outlined"
-          color="error"
+          variant='outlined'
+          color='error'
           startIcon={<LostIcon />}
           onClick={() => setShowLostDialog(true)}
           fullWidth
@@ -140,35 +140,35 @@ const MarkAsWonLostButtons: React.FC<MarkAsWonLostButtonsProps> = ({
       <Dialog
         open={showLostDialog}
         onClose={() => !loading && setShowLostDialog(false)}
-        maxWidth="sm"
+        maxWidth='sm'
         fullWidth
       >
         <DialogTitle>
-          <Box display="flex" alignItems="center" gap={1}>
-            <LostIcon color="error" />
-            <Typography variant="h6">Tandai sebagai LOST</Typography>
+          <Box display='flex' alignItems='center' gap={1}>
+            <LostIcon color='error' />
+            <Typography variant='h6'>Tandai sebagai LOST</Typography>
           </Box>
         </DialogTitle>
         <DialogContent>
           {error && (
-            <Alert severity="error" sx={{ mb: 2 }} onClose={() => setError(null)}>
+            <Alert severity='error' sx={{ mb: 2 }} onClose={() => setError(null)}>
               {error}
             </Alert>
           )}
-          <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+          <Typography variant='body2' color='text.secondary' sx={{ mb: 2 }}>
             Proyek: <strong>{projectName}</strong>
           </Typography>
           <TextField
             fullWidth
             multiline
             rows={4}
-            label="Alasan Proyek LOST"
+            label='Alasan Proyek LOST'
             value={lostReason}
             onChange={(e) => setLostReason(e.target.value)}
-            placeholder="contoh: Harga tidak kompetitif, pelanggan memilih vendor lain, dll"
+            placeholder='contoh: Harga tidak kompetitif, pelanggan memilih vendor lain, dll'
             disabled={loading}
             required
-            helperText="Jelaskan mengapa proyek ini tidak berhasil dimenangkan"
+            helperText='Jelaskan mengapa proyek ini tidak berhasil dimenangkan'
           />
         </DialogContent>
         <DialogActions>
@@ -176,8 +176,8 @@ const MarkAsWonLostButtons: React.FC<MarkAsWonLostButtonsProps> = ({
             Batal
           </Button>
           <Button
-            variant="contained"
-            color="error"
+            variant='contained'
+            color='error'
             onClick={handleMarkAsLost}
             disabled={loading || !lostReason.trim()}
           >

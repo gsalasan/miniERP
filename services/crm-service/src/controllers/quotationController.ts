@@ -120,6 +120,10 @@ class QuotationController {
     }
   }
 
+  /**
+   * GET /quotations/project/:projectId
+   * Get all quotations for a specific project
+   */
   async getQuotationsByProject(req: Request, res: Response): Promise<void> {
     try {
       const { projectId } = req.params;

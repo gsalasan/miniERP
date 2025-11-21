@@ -1,5 +1,5 @@
-import axios from "axios";
-import { config, auth } from "../config";
+import axios from 'axios';
+import { config, auth } from '../config';
 
 /**
  * Upload a single file to a configured upload endpoint.
@@ -8,7 +8,7 @@ import { config, auth } from "../config";
  * - Otherwise, fall back to returning a fake placeholder URL (useful for local/dev without an upload service).
  */
 
-const uploadEndpoint = (import.meta as any)?.env?.VITE_STORAGE_UPLOAD_URL || "";
+const uploadEndpoint = (import.meta as any)?.env?.VITE_STORAGE_UPLOAD_URL || '';
 
 /**
  * Upload helper supporting two modes:
@@ -25,12 +25,12 @@ export const storageApi = {
     // Mode A: direct upload endpoint (upload service)
     if (uploadEndpoint) {
       const form = new FormData();
-      form.append("file", file);
-      if (projectId) form.append("projectId", projectId);
+      form.append('file', file);
+      if (projectId) form.append('projectId', projectId);
 
       const res = await axios.post(uploadEndpoint, form, {
         headers: {
-          "Content-Type": "multipart/form-data",
+          'Content-Type': 'multipart/form-data',
           Authorization:
             localStorage.getItem(auth.TOKEN_KEY) || localStorage.getItem(auth.LEGACY_TOKEN_KEY)
               ? `Bearer ${
@@ -51,7 +51,7 @@ export const storageApi = {
         return data[0].url;
       }
 
-      throw new Error("Upload gagal: respons tidak valid dari server upload");
+      throw new Error('Upload gagal: respons tidak valid dari server upload');
     }
 
     // Mode B: use CRM presign endpoint + PUT to signed URL
@@ -78,12 +78,12 @@ export const storageApi = {
       );
 
       const { uploadUrl, publicUrl, readUrl } = presignRes.data || {};
-      if (!uploadUrl) throw new Error("Presign gagal: tidak menerima uploadUrl");
+      if (!uploadUrl) throw new Error('Presign gagal: tidak menerima uploadUrl');
 
       // Upload file bytes to signed URL using axios so we can report progress
       await axios.put(uploadUrl, file, {
         headers: {
-          "Content-Type": file.type || "application/octet-stream",
+          'Content-Type': file.type || 'application/octet-stream',
         },
         onUploadProgress: (progressEvent) => {
           if (onProgress && progressEvent.total) {
@@ -98,10 +98,10 @@ export const storageApi = {
       if (publicUrl) return publicUrl;
       if (readUrl) return readUrl;
       // As fallback construct canonical GCS url (may be private)
-      const fallback = uploadUrl.split("?")[0] || uploadUrl;
+      const fallback = uploadUrl.split('?')[0] || uploadUrl;
       return fallback;
     } catch (err: any) {
-      console.error("storageApi.uploadFile error", err);
+      console.error('storageApi.uploadFile error', err);
       throw err;
     }
   },

@@ -10,7 +10,7 @@ export async function getAllCustomers(req: Request, res: Response) {
       data: customers,
     });
   } catch (error) {
-    
+    console.error('Error fetching customers:', error);
     res.status(500).json({ success: false, message: 'Server error' });
   }
 }

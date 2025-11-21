@@ -1,9 +1,9 @@
-import React, { useState, useCallback } from "react";
-import { Box, Alert, Snackbar, CircularProgress, Typography } from "@mui/material";
-import { DragDropContext, Droppable, Draggable, DropResult } from "@hello-pangea/dnd";
-import { Pipeline, Project, ProjectStatus, MovePipelineRequest } from "../../types/pipeline";
-import { pipelineApi } from "../../api/pipeline";
-import KanbanColumn from "./KanbanColumn";
+import React, { useState, useCallback } from 'react';
+import { Box, Alert, Snackbar, CircularProgress, Typography } from '@mui/material';
+import { DragDropContext, Droppable, Draggable, DropResult } from '@hello-pangea/dnd';
+import { Pipeline, Project, ProjectStatus, MovePipelineRequest } from '../../types/pipeline';
+import { pipelineApi } from '../../api/pipeline';
+import KanbanColumn from './KanbanColumn';
 
 interface KanbanBoardProps {
   pipeline: Pipeline;
@@ -47,8 +47,8 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({
 }) => {
   const [dragLoading, setDragLoading] = useState(false);
   const [snackbarOpen, setSnackbarOpen] = useState(false);
-  const [snackbarMessage, setSnackbarMessage] = useState("");
-  const [snackbarSeverity, setSnackbarSeverity] = useState<"success" | "error">("success");
+  const [snackbarMessage, setSnackbarMessage] = useState('');
+  const [snackbarSeverity, setSnackbarSeverity] = useState<'success' | 'error'>('success');
 
   // Delete a project card from the pipeline state (called after backend deletion)
   const handleDeleteCard = (projectId: string, status: string) => {
@@ -67,12 +67,12 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({
       };
       const nextPipeline = { ...pipeline, [status]: nextCol };
       onPipelineUpdate(nextPipeline);
-      setSnackbarMessage("Opportunity berhasil dihapus");
-      setSnackbarSeverity("success");
+      setSnackbarMessage('Opportunity berhasil dihapus');
+      setSnackbarSeverity('success');
       setSnackbarOpen(true);
     } catch (err) {
-      setSnackbarMessage("Gagal memperbarui UI setelah penghapusan");
-      setSnackbarSeverity("error");
+      setSnackbarMessage('Gagal memperbarui UI setelah penghapusan');
+      setSnackbarSeverity('error');
       setSnackbarOpen(true);
     }
   };
@@ -91,7 +91,7 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({
       }
 
       // Handle board reordering (column reordering)
-      if (type === "BOARD") {
+      if (type === 'BOARD') {
         const newBoards = Array.from(boards);
         const [reorderedBoard] = newBoards.splice(source.index, 1);
         newBoards.splice(destination.index, 0, reorderedBoard);
@@ -100,8 +100,8 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({
           onBoardsReorder(newBoards);
         }
 
-        setSnackbarMessage("Urutan board berhasil diubah");
-        setSnackbarSeverity("success");
+        setSnackbarMessage('Urutan board berhasil diubah');
+        setSnackbarSeverity('success');
         setSnackbarOpen(true);
         return;
       }
@@ -119,11 +119,11 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({
 
       // Helper: coerce contract/estimated values to numbers (strip formatting)
       const toNumber = (v: any) => {
-        if (typeof v === "number") return v;
+        if (typeof v === 'number') return v;
         if (v === null || v === undefined) return 0;
         try {
           // strip non-numeric (e.g., formatting like 'Rp', dots, commas)
-          const cleaned = String(v).replace(/[^0-9.-]+/g, "");
+          const cleaned = String(v).replace(/[^0-9.-]+/g, '');
           const n = Number(cleaned);
           return Number.isFinite(n) ? n : 0;
         } catch {
@@ -180,17 +180,17 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({
 
         // Show success message
         setSnackbarMessage(
-          `Berhasil memindahkan "${project.project_name}" ke ${destinationStatus}`,
+          `Berhasil memindahkan '${project.project_name}' ke ${destinationStatus}`,
         );
-        setSnackbarSeverity("success");
+        setSnackbarSeverity('success');
         setSnackbarOpen(true);
       } catch (error: any) {
         // Revert optimistic update on error
         onPipelineUpdate(pipeline);
 
         // Show error message
-        setSnackbarMessage(error.message || "Gagal memindahkan kartu");
-        setSnackbarSeverity("error");
+        setSnackbarMessage(error.message || 'Gagal memindahkan kartu');
+        setSnackbarSeverity('error');
         setSnackbarOpen(true);
       } finally {
         setDragLoading(false);
@@ -206,9 +206,9 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({
 
   if (loading) {
     return (
-      <Box display="flex" justifyContent="center" alignItems="center" height="400px">
+      <Box display='flex' justifyContent='center' alignItems='center' height='400px'>
         <CircularProgress />
-        <Typography variant="body1" sx={{ ml: 2 }}>
+        <Typography variant='body1' sx={{ ml: 2 }}>
           Memuat data pipeline...
         </Typography>
       </Box>
@@ -218,29 +218,29 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({
   return (
     <>
       <DragDropContext onDragEnd={handleDragEnd}>
-        <Droppable droppableId="all-boards" direction="horizontal" type="BOARD">
+        <Droppable droppableId='all-boards' direction='horizontal' type='BOARD'>
           {(provided) => (
             <Box
               ref={provided.innerRef}
               {...provided.droppableProps}
               sx={{
-                display: "flex",
-                overflowX: "auto",
-                overflowY: "hidden",
+                display: 'flex',
+                overflowX: 'auto',
+                overflowY: 'hidden',
                 height: `calc(100vh - ${viewportOffset}px)`,
                 pb: 2,
-                "&::-webkit-scrollbar": {
-                  height: "8px",
+                '&::-webkit-scrollbar': {
+                  height: '8px',
                 },
-                "&::-webkit-scrollbar-track": {
-                  background: "#f1f1f1",
-                  borderRadius: "4px",
+                '&::-webkit-scrollbar-track': {
+                  background: '#f1f1f1',
+                  borderRadius: '4px',
                 },
-                "&::-webkit-scrollbar-thumb": {
-                  background: "#c1c1c1",
-                  borderRadius: "4px",
-                  "&:hover": {
-                    background: "#a1a1a1",
+                '&::-webkit-scrollbar-thumb': {
+                  background: '#c1c1c1',
+                  borderRadius: '4px',
+                  '&:hover': {
+                    background: '#a1a1a1',
                   },
                 },
               }}
@@ -289,16 +289,16 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({
                   height: `calc(100vh - ${viewportOffset}px)`,
                   mr: 2,
                   borderRadius: 2,
-                  border: "2px dashed #90CAF9",
-                  color: "#1976d2",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  cursor: "pointer",
-                  bgcolor: "rgba(25,118,210,0.04)",
+                  border: '2px dashed #90CAF9',
+                  color: '#1976d2',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  cursor: 'pointer',
+                  bgcolor: 'rgba(25,118,210,0.04)',
                 }}
               >
-                <Typography variant="body2" fontWeight={600}>
+                <Typography variant='body2' fontWeight={600}>
                   + Add another list
                 </Typography>
               </Box>
@@ -311,25 +311,25 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({
       {dragLoading && (
         <Box
           sx={{
-            position: "fixed",
+            position: 'fixed',
             top: 0,
             left: 0,
-            width: "100%",
-            height: "100%",
-            backgroundColor: "rgba(0,0,0,0.3)",
-            display: "flex",
-            justifyContent: "center",
-            alignItems: "center",
+            width: '100%',
+            height: '100%',
+            backgroundColor: 'rgba(0,0,0,0.3)',
+            display: 'flex',
+            justifyContent: 'center',
+            alignItems: 'center',
             zIndex: 9999,
           }}
         >
           <Box
             sx={{
-              backgroundColor: "white",
+              backgroundColor: 'white',
               p: 3,
               borderRadius: 2,
-              display: "flex",
-              alignItems: "center",
+              display: 'flex',
+              alignItems: 'center',
               boxShadow: 3,
             }}
           >
@@ -344,9 +344,9 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({
         open={snackbarOpen}
         autoHideDuration={4000}
         onClose={handleSnackbarClose}
-        anchorOrigin={{ vertical: "bottom", horizontal: "center" }}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
       >
-        <Alert onClose={handleSnackbarClose} severity={snackbarSeverity} sx={{ width: "100%" }}>
+        <Alert onClose={handleSnackbarClose} severity={snackbarSeverity} sx={{ width: '100%' }}>
           {snackbarMessage}
         </Alert>
       </Snackbar>

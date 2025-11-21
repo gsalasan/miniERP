@@ -1,5 +1,5 @@
-import React, { createContext, useContext, useState, useEffect, ReactNode } from "react";
-import { AuthService } from "../utils/mockAuth";
+import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import { AuthService } from '../utils/mockAuth';
 
 interface UserData {
   id: string;
@@ -34,17 +34,17 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       setIsLoading(true);
       // Accept cross-app token via URL for first-time entry
       const params = new URLSearchParams(window.location.search);
-      const urlToken = params.get("cross_app_token");
+      const urlToken = params.get('cross_app_token');
       if (urlToken) {
-        localStorage.setItem("authToken", urlToken);
+        localStorage.setItem('authToken', urlToken);
         // Clean token from URL
         const url = new URL(window.location.href);
-        url.searchParams.delete("cross_app_token");
-        window.history.replaceState({}, "", url.toString());
+        url.searchParams.delete('cross_app_token');
+        window.history.replaceState({}, '', url.toString());
       }
 
       // Get token from localStorage (after possible URL set)
-      let authToken = localStorage.getItem("authToken");
+      let authToken = localStorage.getItem('authToken');
 
       if (!authToken) {
         setUser(null);
@@ -56,26 +56,26 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
       // Check if token is valid (not expired)
       try {
-        const payload = JSON.parse(atob(authToken.split(".")[1]));
+        const payload = JSON.parse(atob(authToken.split('.')[1]));
         const now = Math.floor(Date.now() / 1000);
         const isExpired = payload.exp <= now;
 
         if (isExpired) {
           setUser(null);
           setToken(null);
-          localStorage.removeItem("authToken");
+          localStorage.removeItem('authToken');
           return;
         }
       } catch {
         setUser(null);
         setToken(null);
-        localStorage.removeItem("authToken");
+        localStorage.removeItem('authToken');
         return;
       }
 
       // Verify token with server
       try {
-        const response = await fetch("http://localhost:4000/api/v1/auth/me", {
+        const response = await fetch('http://localhost:4000/api/v1/auth/me', {
           headers: {
             Authorization: `Bearer ${authToken}`,
           },
@@ -88,12 +88,12 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         } else {
           setUser(null);
           setToken(null);
-          localStorage.removeItem("authToken");
+          localStorage.removeItem('authToken');
         }
       } catch {
         // Fallback: decode token manually
         try {
-          const payload = JSON.parse(atob(authToken.split(".")[1]));
+          const payload = JSON.parse(atob(authToken.split('.')[1]));
           const userData: UserData = {
             id: payload.id,
             email: payload.email,
@@ -104,13 +104,13 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         } catch {
           setUser(null);
           setToken(null);
-          localStorage.removeItem("authToken");
+          localStorage.removeItem('authToken');
         }
       }
     } catch {
       setUser(null);
       setToken(null);
-      localStorage.removeItem("authToken");
+      localStorage.removeItem('authToken');
     } finally {
       setIsLoading(false);
     }
@@ -149,7 +149,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 export const useAuth = (): AuthContextType => {
   const context = useContext(AuthContext);
   if (context === undefined) {
-    throw new Error("useAuth must be used within an AuthProvider");
+    throw new Error('useAuth must be used within an AuthProvider');
   }
   return context;
 };
@@ -165,16 +165,16 @@ export const withAuth = <P extends object>(
       return (
         <div
           style={{
-            display: "flex",
-            justifyContent: "center",
-            alignItems: "center",
-            height: "100vh",
-            flexDirection: "column",
-            gap: "16px",
+            display: 'flex',
+            justifyContent: 'center',
+            alignItems: 'center',
+            height: '100vh',
+            flexDirection: 'column',
+            gap: '16px',
           }}
         >
           <div>Loading authentication...</div>
-          <div style={{ fontSize: "12px", color: "#666" }}>
+          <div style={{ fontSize: '12px', color: '#666' }}>
             Checking token and verifying with server...
           </div>
         </div>
@@ -183,7 +183,7 @@ export const withAuth = <P extends object>(
 
     if (!isAuthenticated) {
       // Redirect ke main frontend login
-      window.location.href = "http://localhost:3000/login";
+      window.location.href = 'http://localhost:3000/login';
       return null;
     }
 

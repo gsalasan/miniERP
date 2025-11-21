@@ -4,6 +4,7 @@ import { verifyToken } from '../middlewares/authMiddleware';
 
 const router = Router();
 
+// Apply auth middleware to all discount approval routes
 router.use(verifyToken);
 
 /**
@@ -28,9 +29,6 @@ router.put('/:id/decide-discount', discountApprovalController.decideDiscount);
  * @desc Get discount policies for current user
  * @access Private
  */
-router.get(
-  '/discount-policies',
-  discountApprovalController.getDiscountPolicies
-);
+router.get('/discount-policies', discountApprovalController.getDiscountPolicies);
 
 export default router;

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect } from 'react';
 import {
   Dialog,
   DialogTitle,
@@ -17,11 +17,11 @@ import {
   Alert,
   CircularProgress,
   Box,
-} from "@mui/material";
-import { Star as StarIcon } from "@mui/icons-material";
-import { CreateProjectRequest } from "../../types/pipeline";
-import { Customer } from "../../types/customer";
-import { customersApi } from "../../api/customers";
+} from '@mui/material';
+import { Star as StarIcon } from '@mui/icons-material';
+import { CreateProjectRequest } from '../../types/pipeline';
+import { Customer } from '../../types/customer';
+import { customersApi } from '../../api/customers';
 
 interface AddOpportunityModalProps {
   open: boolean;
@@ -37,20 +37,20 @@ const AddOpportunityModal: React.FC<AddOpportunityModalProps> = ({
   loading = false,
 }) => {
   const [formData, setFormData] = useState<CreateProjectRequest>({
-    project_name: "",
-    description: "",
-    customer_id: "",
+    project_name: '',
+    description: '',
+    customer_id: '',
     estimated_value: 0,
     lead_score: 0,
-    priority: "MEDIUM",
+    priority: 'MEDIUM',
     expected_close_date: null,
-    notes: "",
+    notes: '',
   });
 
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
   const [loadingCustomers, setLoadingCustomers] = useState(false);
-  const [error, setError] = useState<string>("");
+  const [error, setError] = useState<string>('');
 
   // Load customers when modal opens
   useEffect(() => {
@@ -62,11 +62,11 @@ const AddOpportunityModal: React.FC<AddOpportunityModalProps> = ({
   const loadCustomers = async () => {
     try {
       setLoadingCustomers(true);
-      setError("");
+      setError('');
       const customerList = await customersApi.getCustomers();
       setCustomers(customerList);
     } catch {
-      setError("Gagal memuat data customer");
+      setError('Gagal memuat data customer');
     } finally {
       setLoadingCustomers(false);
     }
@@ -84,51 +84,51 @@ const AddOpportunityModal: React.FC<AddOpportunityModalProps> = ({
 
   const handleCustomerChange = (customer: Customer | null) => {
     setSelectedCustomer(customer);
-    handleInputChange("customer_id", customer?.id || "");
+    handleInputChange('customer_id', customer?.id || '');
   };
 
   const handleSubmit = async () => {
     try {
-      setError("");
+      setError('');
 
       // Validation
       if (!formData.project_name.trim()) {
-        setError("Nama project harus diisi");
+        setError('Nama project harus diisi');
         return;
       }
       if (!formData.customer_id) {
-        setError("Customer harus dipilih");
+        setError('Customer harus dipilih');
         return;
       }
 
       await onSubmit(formData);
       handleClose();
     } catch (error: unknown) {
-      setError(error instanceof Error ? error.message : "Gagal membuat opportunity");
+      setError(error instanceof Error ? error.message : 'Gagal membuat opportunity');
     }
   };
 
   const handleClose = () => {
     // Reset form
     setFormData({
-      project_name: "",
-      description: "",
-      customer_id: "",
+      project_name: '',
+      description: '',
+      customer_id: '',
       estimated_value: 0,
       lead_score: 0,
-      priority: "MEDIUM",
+      priority: 'MEDIUM',
       expected_close_date: null,
-      notes: "",
+      notes: '',
     });
     setSelectedCustomer(null);
-    setError("");
+    setError('');
     onClose();
   };
 
   const formatCurrency = (amount: number): string => {
-    return new Intl.NumberFormat("id-ID", {
-      style: "currency",
-      currency: "IDR",
+    return new Intl.NumberFormat('id-ID', {
+      style: 'currency',
+      currency: 'IDR',
       minimumFractionDigits: 0,
       maximumFractionDigits: 0,
     }).format(amount);
@@ -138,19 +138,19 @@ const AddOpportunityModal: React.FC<AddOpportunityModalProps> = ({
     <Dialog
       open={open}
       onClose={handleClose}
-      maxWidth="md"
+      maxWidth='md'
       fullWidth
       disableEscapeKeyDown={loading}
     >
       <DialogTitle>
-        <Typography variant="h6" fontWeight="bold" color="primary" component="div">
+        <Typography variant='h6' fontWeight='bold' color='primary' component='div'>
           Tambah Opportunity Baru
         </Typography>
       </DialogTitle>
 
       <DialogContent>
         {error && (
-          <Alert severity="error" sx={{ mb: 2 }}>
+          <Alert severity='error' sx={{ mb: 2 }}>
             {error}
           </Alert>
         )}
@@ -159,12 +159,12 @@ const AddOpportunityModal: React.FC<AddOpportunityModalProps> = ({
           {/* Project Name */}
           <Grid item xs={12}>
             <TextField
-              label="Nama Project / Opportunity *"
+              label='Nama Project / Opportunity *'
               fullWidth
               value={formData.project_name}
-              onChange={(e) => handleInputChange("project_name", e.target.value)}
+              onChange={(e) => handleInputChange('project_name', e.target.value)}
               disabled={loading}
-              placeholder="Contoh: Pemasangan CCTV di PT. Maju Jaya"
+              placeholder='Contoh: Pemasangan CCTV di PT. Maju Jaya'
             />
           </Grid>
 
@@ -180,13 +180,13 @@ const AddOpportunityModal: React.FC<AddOpportunityModalProps> = ({
               renderInput={(params) => (
                 <TextField
                   {...params}
-                  label="Customer *"
-                  placeholder="Pilih atau cari customer"
+                  label='Customer *'
+                  placeholder='Pilih atau cari customer'
                   InputProps={{
                     ...params.InputProps,
                     endAdornment: (
                       <>
-                        {loadingCustomers ? <CircularProgress color="inherit" size={20} /> : null}
+                        {loadingCustomers ? <CircularProgress color='inherit' size={20} /> : null}
                         {params.InputProps.endAdornment}
                       </>
                     ),
@@ -196,12 +196,12 @@ const AddOpportunityModal: React.FC<AddOpportunityModalProps> = ({
               renderOption={(props, option) => {
                 const { key, ...otherProps } = props;
                 return (
-                  <Box component="li" key={key} {...otherProps}>
+                  <Box component='li' key={key} {...otherProps}>
                     <div>
-                      <Typography variant="body2" fontWeight="bold">
+                      <Typography variant='body2' fontWeight='bold'>
                         {option.customer_name}
                       </Typography>
-                      <Typography variant="caption" color="text.secondary">
+                      <Typography variant='caption' color='text.secondary'>
                         {option.city}
                       </Typography>
                     </div>
@@ -214,30 +214,30 @@ const AddOpportunityModal: React.FC<AddOpportunityModalProps> = ({
           {/* Description */}
           <Grid item xs={12}>
             <TextField
-              label="Deskripsi"
+              label='Deskripsi'
               fullWidth
               multiline
               rows={3}
               value={formData.description}
-              onChange={(e) => handleInputChange("description", e.target.value)}
+              onChange={(e) => handleInputChange('description', e.target.value)}
               disabled={loading}
-              placeholder="Jelaskan detail kebutuhan atau scope project"
+              placeholder='Jelaskan detail kebutuhan atau scope project'
             />
           </Grid>
 
           {/* Estimated Value */}
           <Grid item xs={12} sm={6}>
             <TextField
-              label="Estimasi Nilai Project"
+              label='Estimasi Nilai Project'
               fullWidth
-              type="number"
+              type='number'
               value={formData.estimated_value}
-              onChange={(e) => handleInputChange("estimated_value", Number(e.target.value))}
+              onChange={(e) => handleInputChange('estimated_value', Number(e.target.value))}
               disabled={loading}
               InputProps={{
-                startAdornment: <InputAdornment position="start">Rp</InputAdornment>,
+                startAdornment: <InputAdornment position='start'>Rp</InputAdornment>,
               }}
-              placeholder="0"
+              placeholder='0'
               helperText={
                 formData.estimated_value ? formatCurrency(formData.estimated_value) : undefined
               }
@@ -247,19 +247,19 @@ const AddOpportunityModal: React.FC<AddOpportunityModalProps> = ({
           {/* Skor Lead */}
           <Grid item xs={12} sm={6}>
             <TextField
-              label="Skor Lead"
+              label='Skor Lead'
               fullWidth
-              type="number"
+              type='number'
               value={formData.lead_score}
-              onChange={(e) => handleInputChange("lead_score", Number(e.target.value))}
+              onChange={(e) => handleInputChange('lead_score', Number(e.target.value))}
               disabled={loading}
               inputProps={{ min: 0, max: 100 }}
-              placeholder="0-100"
-              helperText="Skala 0-100, tingkat kemungkinan closing"
+              placeholder='0-100'
+              helperText='Skala 0-100, tingkat kemungkinan closing'
               InputProps={{
                 startAdornment: (
-                  <InputAdornment position="start">
-                    <StarIcon sx={{ color: "gold" }} />
+                  <InputAdornment position='start'>
+                    <StarIcon sx={{ color: 'gold' }} />
                   </InputAdornment>
                 ),
               }}
@@ -272,13 +272,13 @@ const AddOpportunityModal: React.FC<AddOpportunityModalProps> = ({
               <InputLabel>Prioritas</InputLabel>
               <Select
                 value={formData.priority}
-                label="Prioritas"
-                onChange={(e) => handleInputChange("priority", e.target.value)}
+                label='Prioritas'
+                onChange={(e) => handleInputChange('priority', e.target.value)}
               >
-                <MenuItem value="LOW">Low</MenuItem>
-                <MenuItem value="MEDIUM">Medium</MenuItem>
-                <MenuItem value="HIGH">High</MenuItem>
-                <MenuItem value="URGENT">Urgent</MenuItem>
+                <MenuItem value='LOW'>Low</MenuItem>
+                <MenuItem value='MEDIUM'>Medium</MenuItem>
+                <MenuItem value='HIGH'>High</MenuItem>
+                <MenuItem value='URGENT'>Urgent</MenuItem>
               </Select>
             </FormControl>
           </Grid>
@@ -286,53 +286,53 @@ const AddOpportunityModal: React.FC<AddOpportunityModalProps> = ({
           {/* Expected Close Date */}
           <Grid item xs={12} sm={6}>
             <TextField
-              label="Target Closing"
+              label='Target Closing'
               fullWidth
-              type="date"
+              type='date'
               value={
                 formData.expected_close_date
-                  ? new Date(formData.expected_close_date).toISOString().split("T")[0]
-                  : ""
+                  ? new Date(formData.expected_close_date).toISOString().split('T')[0]
+                  : ''
               }
               onChange={(e) => {
                 const dateValue = e.target.value ? new Date(e.target.value) : null;
-                handleInputChange("expected_close_date", dateValue);
+                handleInputChange('expected_close_date', dateValue);
               }}
               disabled={loading}
               InputLabelProps={{
                 shrink: true,
               }}
-              helperText="Perkiraan tanggal closing deal"
+              helperText='Perkiraan tanggal closing deal'
             />
           </Grid>
 
           {/* Notes */}
           <Grid item xs={12}>
             <TextField
-              label="Catatan Tambahan"
+              label='Catatan Tambahan'
               fullWidth
               multiline
               rows={2}
               value={formData.notes}
-              onChange={(e) => handleInputChange("notes", e.target.value)}
+              onChange={(e) => handleInputChange('notes', e.target.value)}
               disabled={loading}
-              placeholder="Catatan internal, kontak person, dll"
+              placeholder='Catatan internal, kontak person, dll'
             />
           </Grid>
         </Grid>
       </DialogContent>
 
       <DialogActions sx={{ p: 3 }}>
-        <Button onClick={handleClose} disabled={loading} color="inherit">
+        <Button onClick={handleClose} disabled={loading} color='inherit'>
           Batal
         </Button>
         <Button
           onClick={handleSubmit}
-          variant="contained"
+          variant='contained'
           disabled={loading}
           startIcon={loading ? <CircularProgress size={20} /> : undefined}
         >
-          {loading ? "Menyimpan..." : "Simpan Opportunity"}
+          {loading ? 'Menyimpan...' : 'Simpan Opportunity'}
         </Button>
       </DialogActions>
     </Dialog>

@@ -3,24 +3,24 @@
  * Generate quotation PDF using jsPDF and autoTable
  */
 
-import jsPDF from "jspdf";
-import autoTable from "jspdf-autotable";
-import { QuotationData } from "../types/quotation";
+import jsPDF from 'jspdf';
+import autoTable from 'jspdf-autotable';
+import { QuotationData } from '../types/quotation';
 
 export interface QuotationGenerateOptions {
   includeCompanyLogo?: boolean;
   includeSignature?: boolean;
-  language?: "id" | "en";
-  paperSize?: "a4" | "letter";
+  language?: 'id' | 'en';
+  paperSize?: 'a4' | 'letter';
 }
 
 /**
  * Format currency to Indonesian Rupiah
  */
 const formatCurrency = (amount: number): string => {
-  return new Intl.NumberFormat("id-ID", {
-    style: "currency",
-    currency: "IDR",
+  return new Intl.NumberFormat('id-ID', {
+    style: 'currency',
+    currency: 'IDR',
     minimumFractionDigits: 0,
     maximumFractionDigits: 0,
   }).format(amount);
@@ -31,10 +31,10 @@ const formatCurrency = (amount: number): string => {
  */
 const formatDate = (dateString: string): string => {
   const date = new Date(dateString);
-  return new Intl.DateTimeFormat("id-ID", {
-    day: "2-digit",
-    month: "long",
-    year: "numeric",
+  return new Intl.DateTimeFormat('id-ID', {
+    day: '2-digit',
+    month: 'long',
+    year: 'numeric',
   }).format(date);
 };
 
@@ -45,12 +45,12 @@ export const generateQuotationPDF = (
   data: QuotationData,
   options: QuotationGenerateOptions = {},
 ): void => {
-  const { language = "id", paperSize = "a4" } = options;
+  const { language = 'id', paperSize = 'a4' } = options;
 
   // Create new PDF document
   const doc = new jsPDF({
-    orientation: "portrait",
-    unit: "mm",
+    orientation: 'portrait',
+    unit: 'mm',
     format: paperSize,
   });
 
@@ -60,27 +60,27 @@ export const generateQuotationPDF = (
 
   // ===== HEADER SECTION =====
   doc.setFontSize(20);
-  doc.setFont("helvetica", "bold");
-  doc.text("QUOTATION", pageWidth / 2, yPosition, { align: "center" });
+  doc.setFont('helvetica', 'bold');
+  doc.text('QUOTATION', pageWidth / 2, yPosition, { align: 'center' });
 
   yPosition += 10;
   doc.setFontSize(10);
-  doc.setFont("helvetica", "normal");
-  doc.text(data.quotationNumber, pageWidth / 2, yPosition, { align: "center" });
+  doc.setFont('helvetica', 'normal');
+  doc.text(data.quotationNumber, pageWidth / 2, yPosition, { align: 'center' });
 
   yPosition += 15;
 
   // ===== COMPANY & CUSTOMER INFO SECTION =====
   doc.setFontSize(11);
-  doc.setFont("helvetica", "bold");
-  doc.text("PT. Unais Creaasindo Multiverse", 14, yPosition);
+  doc.setFont('helvetica', 'bold');
+  doc.text('PT. Unais Creaasindo Multiverse', 14, yPosition);
 
   doc.setFontSize(9);
-  doc.setFont("helvetica", "normal");
+  doc.setFont('helvetica', 'normal');
   yPosition += 5;
-  doc.text("Jl. ", 14, yPosition);
+  doc.text('Jl. ', 14, yPosition);
   yPosition += 4;
-  doc.text("Email:  | Phone: +62 ", 14, yPosition);
+  doc.text('Email:  | Phone: +62 ', 14, yPosition);
 
   yPosition += 10;
 
@@ -89,34 +89,34 @@ export const generateQuotationPDF = (
   let customerY = 45;
 
   doc.setFontSize(11);
-  doc.setFont("helvetica", "bold");
-  doc.text("Kepada:", customerX, customerY, { align: "right" });
+  doc.setFont('helvetica', 'bold');
+  doc.text('Kepada:', customerX, customerY, { align: 'right' });
 
   doc.setFontSize(10);
-  doc.setFont("helvetica", "normal");
+  doc.setFont('helvetica', 'normal');
   customerY += 5;
-  doc.text(data.customer.name, customerX, customerY, { align: "right" });
+  doc.text(data.customer.name, customerX, customerY, { align: 'right' });
 
   if (data.customer.address) {
     customerY += 4;
     const fullAddress = `${data.customer.address}, ${data.customer.city}`;
     const addressLines = doc.splitTextToSize(fullAddress, 80);
     addressLines.forEach((line: string) => {
-      doc.text(line, customerX, customerY, { align: "right" });
+      doc.text(line, customerX, customerY, { align: 'right' });
       customerY += 4;
     });
   }
 
   if (data.customer.picName) {
     customerY += 4;
-    doc.text(`PIC: ${data.customer.picName}`, customerX, customerY, { align: "right" });
+    doc.text(`PIC: ${data.customer.picName}`, customerX, customerY, { align: 'right' });
   }
 
   yPosition = Math.max(yPosition, customerY + 10);
 
   // ===== QUOTATION DETAILS =====
   doc.setFontSize(9);
-  doc.setFont("helvetica", "normal");
+  doc.setFont('helvetica', 'normal');
 
   const detailsY = yPosition;
   doc.text(`Tanggal: ${formatDate(data.quotationDate)}`, 14, detailsY);
@@ -130,7 +130,7 @@ export const generateQuotationPDF = (
   const tableData = data.items.map((item, index) => [
     (index + 1).toString(),
     item.itemName,
-    item.description || "-",
+    item.description || '-',
     item.quantity.toString(),
     item.unit,
     formatCurrency(item.unitPrice),
@@ -139,27 +139,27 @@ export const generateQuotationPDF = (
 
   autoTable(doc, {
     startY: yPosition,
-    head: [["No", "Item", "Deskripsi", "Qty", "Unit", "Harga Satuan", "Total"]],
+    head: [['No', 'Item', 'Deskripsi', 'Qty', 'Unit', 'Harga Satuan', 'Total']],
     body: tableData,
-    theme: "striped",
+    theme: 'striped',
     headStyles: {
       fillColor: [41, 128, 185],
       textColor: 255,
       fontSize: 9,
-      fontStyle: "bold",
-      halign: "center",
+      fontStyle: 'bold',
+      halign: 'center',
     },
     bodyStyles: {
       fontSize: 8,
     },
     columnStyles: {
-      0: { halign: "center", cellWidth: 10 },
+      0: { halign: 'center', cellWidth: 10 },
       1: { cellWidth: 35 },
       2: { cellWidth: 45 },
-      3: { halign: "center", cellWidth: 15 },
-      4: { halign: "center", cellWidth: 15 },
-      5: { halign: "right", cellWidth: 30 },
-      6: { halign: "right", cellWidth: 30 },
+      3: { halign: 'center', cellWidth: 15 },
+      4: { halign: 'center', cellWidth: 15 },
+      5: { halign: 'right', cellWidth: 30 },
+      6: { halign: 'right', cellWidth: 30 },
     },
     margin: { left: 14, right: 14 },
   });
@@ -172,41 +172,41 @@ export const generateQuotationPDF = (
   const summaryLabelX = summaryX - 60;
 
   doc.setFontSize(9);
-  doc.setFont("helvetica", "normal");
+  doc.setFont('helvetica', 'normal');
 
-  doc.text("Subtotal:", summaryLabelX, yPosition);
-  doc.text(formatCurrency(data.pricing.subtotal), summaryX, yPosition, { align: "right" });
+  doc.text('Subtotal:', summaryLabelX, yPosition);
+  doc.text(formatCurrency(data.pricing.subtotal), summaryX, yPosition, { align: 'right' });
 
   yPosition += 5;
   const discountLabel = data.pricing.discountPercentage
     ? `Diskon (${data.pricing.discountPercentage}%):`
-    : "Diskon:";
+    : 'Diskon:';
   doc.text(discountLabel, summaryLabelX, yPosition);
   doc.text(`- ${formatCurrency(data.pricing.discountAmount)}`, summaryX, yPosition, {
-    align: "right",
+    align: 'right',
   });
 
   yPosition += 5;
-  const taxLabel = data.pricing.taxPercentage ? `PPN (${data.pricing.taxPercentage}%):` : "PPN:";
+  const taxLabel = data.pricing.taxPercentage ? `PPN (${data.pricing.taxPercentage}%):` : 'PPN:';
   doc.text(taxLabel, summaryLabelX, yPosition);
-  doc.text(formatCurrency(data.pricing.taxAmount), summaryX, yPosition, { align: "right" });
+  doc.text(formatCurrency(data.pricing.taxAmount), summaryX, yPosition, { align: 'right' });
 
   yPosition += 7;
-  doc.setFont("helvetica", "bold");
+  doc.setFont('helvetica', 'bold');
   doc.setFontSize(11);
-  doc.text("TOTAL:", summaryLabelX, yPosition);
-  doc.text(formatCurrency(data.pricing.grandTotal), summaryX, yPosition, { align: "right" });
+  doc.text('TOTAL:', summaryLabelX, yPosition);
+  doc.text(formatCurrency(data.pricing.grandTotal), summaryX, yPosition, { align: 'right' });
 
   yPosition += 15;
 
   // ===== NOTES SECTION =====
   if (data.terms?.notes) {
     doc.setFontSize(9);
-    doc.setFont("helvetica", "bold");
-    doc.text("Catatan:", 14, yPosition);
+    doc.setFont('helvetica', 'bold');
+    doc.text('Catatan:', 14, yPosition);
 
     yPosition += 5;
-    doc.setFont("helvetica", "normal");
+    doc.setFont('helvetica', 'normal');
     const notesLines = doc.splitTextToSize(data.terms.notes, pageWidth - 28);
     doc.text(notesLines, 14, yPosition);
     yPosition += notesLines.length * 4 + 10;
@@ -221,12 +221,12 @@ export const generateQuotationPDF = (
     }
 
     doc.setFontSize(10);
-    doc.setFont("helvetica", "bold");
-    doc.text("Syarat dan Ketentuan:", 14, yPosition);
+    doc.setFont('helvetica', 'bold');
+    doc.text('Syarat dan Ketentuan:', 14, yPosition);
 
     yPosition += 6;
     doc.setFontSize(8);
-    doc.setFont("helvetica", "normal");
+    doc.setFont('helvetica', 'normal');
 
     if (data.terms.paymentTerms) {
       doc.text(`Pembayaran: ${data.terms.paymentTerms}`, 14, yPosition);
@@ -249,18 +249,18 @@ export const generateQuotationPDF = (
     }
 
     doc.setFontSize(10);
-    doc.setFont("helvetica", "bold");
-    doc.text("Syarat dan Ketentuan:", 14, yPosition);
+    doc.setFont('helvetica', 'bold');
+    doc.text('Syarat dan Ketentuan:', 14, yPosition);
 
     yPosition += 6;
     doc.setFontSize(8);
-    doc.setFont("helvetica", "normal");
+    doc.setFont('helvetica', 'normal');
 
     const defaultTerms = [
-      "1. Harga berlaku sesuai dengan periode validitas yang tertera.",
-      "2. Pembayaran dilakukan sesuai dengan termin yang disepakati.",
-      "3. Quotation ini tidak mengikat hingga Purchase Order diterbitkan.",
-      "4. Perubahan scope akan mengubah harga dan timeline.",
+      '1. Harga berlaku sesuai dengan periode validitas yang tertera.',
+      '2. Pembayaran dilakukan sesuai dengan termin yang disepakati.',
+      '3. Quotation ini tidak mengikat hingga Purchase Order diterbitkan.',
+      '4. Perubahan scope akan mengubah harga dan timeline.',
     ];
 
     defaultTerms.forEach((term) => {
@@ -277,21 +277,21 @@ export const generateQuotationPDF = (
   }
 
   doc.setFontSize(9);
-  doc.setFont("helvetica", "normal");
+  doc.setFont('helvetica', 'normal');
 
   const signatureY = yPosition;
-  doc.text("Hormat kami,", 14, signatureY);
-  doc.text("Menyetujui,", pageWidth - 60, signatureY);
+  doc.text('Hormat kami,', 14, signatureY);
+  doc.text('Menyetujui,', pageWidth - 60, signatureY);
 
   yPosition += 20;
-  doc.setFont("helvetica", "bold");
+  doc.setFont('helvetica', 'bold');
   doc.text(data.salesPerson.name, 14, yPosition);
-  doc.text("(................................)", pageWidth - 60, yPosition);
+  doc.text('(................................)', pageWidth - 60, yPosition);
 
   yPosition += 4;
-  doc.setFont("helvetica", "normal");
+  doc.setFont('helvetica', 'normal');
   doc.setFontSize(8);
-  doc.text("PT. MiniERP Indonesia", 14, yPosition);
+  doc.text('PT. MiniERP Indonesia', 14, yPosition);
 
   const customerContactName = data.customer.picName || data.customer.name;
   doc.text(customerContactName, pageWidth - 60, yPosition);
@@ -300,10 +300,10 @@ export const generateQuotationPDF = (
   const footerY = pageHeight - 10;
   doc.setFontSize(7);
   doc.setTextColor(128, 128, 128);
-  doc.text("Document generated by MiniERP CRM System", pageWidth / 2, footerY, { align: "center" });
+  doc.text('Document generated by MiniERP CRM System', pageWidth / 2, footerY, { align: 'center' });
 
   // ===== SAVE PDF =====
-  const fileName = `Quotation_${data.quotationNumber}_${data.customer.name.replace(/\s+/g, "_")}.pdf`;
+  const fileName = `Quotation_${data.quotationNumber}_${data.customer.name.replace(/\s+/g, '_')}.pdf`;
   doc.save(fileName);
 };
 

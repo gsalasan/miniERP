@@ -1,7 +1,11 @@
-import axios from "axios";
-import { QuotationData } from "../types/quotation";
+/**
+ * Quotation API Service
+ * Handles communication with CRM service for quotation generation
+ */
+import axios from 'axios';
+import { QuotationData } from '../types/quotation';
 
-const API_BASE_URL = import.meta.env.VITE_CRM_SERVICE_URL || "http://localhost:4002";
+const API_BASE_URL = import.meta.env.VITE_CRM_SERVICE_URL || 'http://localhost:4002';
 
 interface QuotationResponse {
   success: boolean;
@@ -26,13 +30,13 @@ export const getQuotationData = async (
       {
         headers: {
           Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
+          'Content-Type': 'application/json',
         },
       },
     );
 
     if (!response.data.success || !response.data.data) {
-      throw new Error(response.data.message || "Failed to fetch quotation data");
+      throw new Error(response.data.message || 'Failed to fetch quotation data');
     }
 
     return response.data.data;

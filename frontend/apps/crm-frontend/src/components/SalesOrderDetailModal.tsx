@@ -70,14 +70,14 @@ const SalesOrderDetailModal: React.FC<SalesOrderDetailModalProps> = ({
   };
 
   return (
-    <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth>
+    <Dialog open={open} onClose={onClose} maxWidth='md' fullWidth>
       <DialogTitle>
-        <Box display="flex" alignItems="center" justifyContent="space-between">
-          <Box display="flex" alignItems="center" gap={1}>
-            <CheckIcon color="success" />
-            <Typography variant="h6">Detail Sales Order</Typography>
+        <Box display='flex' alignItems='center' justifyContent='space-between'>
+          <Box display='flex' alignItems='center' gap={1}>
+            <CheckIcon color='success' />
+            <Typography variant='h6'>Detail Sales Order</Typography>
           </Box>
-          <IconButton onClick={onClose} size="small">
+          <IconButton onClick={onClose} size='small'>
             <CloseIcon />
           </IconButton>
         </Box>
@@ -88,8 +88,8 @@ const SalesOrderDetailModal: React.FC<SalesOrderDetailModalProps> = ({
         <Box sx={{ mb: 3, textAlign: 'center' }}>
           <Chip
             label={salesOrder.so_number}
-            color="primary"
-            size="large"
+            color='primary'
+            size='large'
             sx={{ fontSize: '1.2rem', fontWeight: 700, px: 3, py: 2 }}
           />
         </Box>
@@ -97,53 +97,53 @@ const SalesOrderDetailModal: React.FC<SalesOrderDetailModalProps> = ({
         <Divider sx={{ mb: 3 }} />
 
         {/* Sales Order Information */}
-        <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 2 }}>
+        <Typography variant='subtitle1' sx={{ fontWeight: 600, mb: 2 }}>
           Informasi Sales Order
         </Typography>
         <Grid container spacing={2} sx={{ mb: 3 }}>
           <Grid item xs={6}>
-            <Box display="flex" alignItems="center" gap={1} sx={{ mb: 1 }}>
-              <DescriptionIcon fontSize="small" color="action" />
-              <Typography variant="caption" color="text.secondary">
+            <Box display='flex' alignItems='center' gap={1} sx={{ mb: 1 }}>
+              <DescriptionIcon fontSize='small' color='action' />
+              <Typography variant='caption' color='text.secondary'>
                 Nomor PO Pelanggan
               </Typography>
             </Box>
-            <Typography variant="body1" sx={{ fontWeight: 600 }}>
+            <Typography variant='body1' sx={{ fontWeight: 600 }}>
               {salesOrder.customer_po_number}
             </Typography>
           </Grid>
           <Grid item xs={6}>
-            <Box display="flex" alignItems="center" gap={1} sx={{ mb: 1 }}>
-              <CalendarIcon fontSize="small" color="action" />
-              <Typography variant="caption" color="text.secondary">
+            <Box display='flex' alignItems='center' gap={1} sx={{ mb: 1 }}>
+              <CalendarIcon fontSize='small' color='action' />
+              <Typography variant='caption' color='text.secondary'>
                 Tanggal Order
               </Typography>
             </Box>
-            <Typography variant="body1" sx={{ fontWeight: 600 }}>
+            <Typography variant='body1' sx={{ fontWeight: 600 }}>
               {formatDate(salesOrder.order_date)}
             </Typography>
           </Grid>
           <Grid item xs={6}>
-            <Box display="flex" alignItems="center" gap={1} sx={{ mb: 1 }}>
-              <MoneyIcon fontSize="small" color="action" />
-              <Typography variant="caption" color="text.secondary">
+            <Box display='flex' alignItems='center' gap={1} sx={{ mb: 1 }}>
+              <MoneyIcon fontSize='small' color='action' />
+              <Typography variant='caption' color='text.secondary'>
                 Termin Pembayaran (TOP)
               </Typography>
             </Box>
-            <Typography variant="body1" sx={{ fontWeight: 600 }}>
+            <Typography variant='body1' sx={{ fontWeight: 600 }}>
               {salesOrder.top_days_agreed
                 ? `${salesOrder.top_days_agreed} Hari`
                 : 'Custom / DP + Sisa'}
             </Typography>
           </Grid>
           <Grid item xs={6}>
-            <Box display="flex" alignItems="center" gap={1} sx={{ mb: 1 }}>
-              <CalendarIcon fontSize="small" color="action" />
-              <Typography variant="caption" color="text.secondary">
+            <Box display='flex' alignItems='center' gap={1} sx={{ mb: 1 }}>
+              <CalendarIcon fontSize='small' color='action' />
+              <Typography variant='caption' color='text.secondary'>
                 Tanggal Dibuat
               </Typography>
             </Box>
-            <Typography variant="body1" sx={{ fontWeight: 600 }}>
+            <Typography variant='body1' sx={{ fontWeight: 600 }}>
               {formatDate(salesOrder.created_at)}
             </Typography>
           </Grid>
@@ -152,29 +152,29 @@ const SalesOrderDetailModal: React.FC<SalesOrderDetailModalProps> = ({
         <Divider sx={{ mb: 3 }} />
 
         {/* Project Information */}
-        <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 2 }}>
+        <Typography variant='subtitle1' sx={{ fontWeight: 600, mb: 2 }}>
           Informasi Proyek
         </Typography>
         <Grid container spacing={2} sx={{ mb: 3 }}>
           <Grid item xs={12}>
-            <Box display="flex" alignItems="center" gap={1} sx={{ mb: 1 }}>
-              <DescriptionIcon fontSize="small" color="action" />
-              <Typography variant="caption" color="text.secondary">
+            <Box display='flex' alignItems='center' gap={1} sx={{ mb: 1 }}>
+              <DescriptionIcon fontSize='small' color='action' />
+              <Typography variant='caption' color='text.secondary'>
                 Nama Proyek
               </Typography>
             </Box>
-            <Typography variant="body1" sx={{ fontWeight: 600 }}>
+            <Typography variant='body1' sx={{ fontWeight: 600 }}>
               {salesOrder.project.project_name}
             </Typography>
           </Grid>
           <Grid item xs={12}>
-            <Box display="flex" alignItems="center" gap={1} sx={{ mb: 1 }}>
-              <BusinessIcon fontSize="small" color="action" />
-              <Typography variant="caption" color="text.secondary">
+            <Box display='flex' alignItems='center' gap={1} sx={{ mb: 1 }}>
+              <BusinessIcon fontSize='small' color='action' />
+              <Typography variant='caption' color='text.secondary'>
                 Customer
               </Typography>
             </Box>
-            <Typography variant="body1" sx={{ fontWeight: 600 }}>
+            <Typography variant='body1' sx={{ fontWeight: 600 }}>
               {salesOrder.project.customer?.customer_name || salesOrder.project.customer?.name || 'N/A'}
             </Typography>
           </Grid>
@@ -191,11 +191,11 @@ const SalesOrderDetailModal: React.FC<SalesOrderDetailModalProps> = ({
             textAlign: 'center',
           }}
         >
-          <Typography variant="caption" color="text.secondary" sx={{ mb: 1 }}>
+          <Typography variant='caption' color='text.secondary' sx={{ mb: 1 }}>
             Nilai Kontrak
           </Typography>
           <Typography
-            variant="h4"
+            variant='h4'
             sx={{ fontWeight: 700, color: 'success.main' }}
           >
             {formatCurrency(salesOrder.contract_value)}
@@ -206,14 +206,14 @@ const SalesOrderDetailModal: React.FC<SalesOrderDetailModalProps> = ({
         {salesOrder.po_document_url && (
           <Box sx={{ mt: 3 }}>
             <Divider sx={{ mb: 2 }} />
-            <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 2 }}>
+            <Typography variant='subtitle1' sx={{ fontWeight: 600, mb: 2 }}>
               Dokumen PO/Kontrak
             </Typography>
             <Button
-              variant="outlined"
+              variant='outlined'
               startIcon={<DescriptionIcon />}
               href={salesOrder.po_document_url}
-              target="_blank"
+              target='_blank'
               fullWidth
             >
               Lihat Dokumen PO
@@ -223,7 +223,7 @@ const SalesOrderDetailModal: React.FC<SalesOrderDetailModalProps> = ({
       </DialogContent>
 
       <DialogActions>
-        <Button onClick={onClose} variant="contained">
+        <Button onClick={onClose} variant='contained'>
           Tutup
         </Button>
       </DialogActions>

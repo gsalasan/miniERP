@@ -101,19 +101,19 @@ const DiscountDecisionSection: React.FC<DiscountDecisionSectionProps> = ({
           mb: 2,
         }}
       >
-        <Box display="flex" alignItems="center" gap={1} mb={1}>
+        <Box display='flex' alignItems='center' gap={1} mb={1}>
           {isApproved ? (
-            <ApproveIcon color="success" />
+            <ApproveIcon color='success' />
           ) : (
-            <RejectIcon color="error" />
+            <RejectIcon color='error' />
           )}
-          <Typography variant="subtitle2" fontWeight="bold">
+          <Typography variant='subtitle2' fontWeight='bold'>
             {isApproved ? 'Diskon Disetujui' : 'Diskon Ditolak'}
           </Typography>
         </Box>
         
         {isApproved && (
-          <Typography variant="body2">
+          <Typography variant='body2'>
             Diskon yang disetujui: <strong>{approvedDiscount}%</strong>
           </Typography>
         )}
@@ -137,28 +137,28 @@ const DiscountDecisionSection: React.FC<DiscountDecisionSectionProps> = ({
         mb: 2,
       }}
     >
-      <Box display="flex" alignItems="center" gap={1} mb={1}>
-        <DiscountIcon color="warning" />
-        <Typography variant="subtitle2" fontWeight="bold">
+      <Box display='flex' alignItems='center' gap={1} mb={1}>
+        <DiscountIcon color='warning' />
+        <Typography variant='subtitle2' fontWeight='bold'>
           CEO Approval Required
         </Typography>
       </Box>
 
-      <Typography variant="body2" sx={{ mb: 2 }}>
+      <Typography variant='body2' sx={{ mb: 2 }}>
         Sales telah mengajukan permintaan diskon:{' '}
         <strong>{requestedDiscount}%</strong>
       </Typography>
 
       <Divider sx={{ my: 2 }} />
 
-      <Typography variant="caption" color="text.secondary" display="block" sx={{ mb: 2 }}>
+      <Typography variant='caption' color='text.secondary' display='block' sx={{ mb: 2 }}>
         Sebagai CEO, Anda dapat menyetujui atau menolak permintaan diskon ini.
       </Typography>
 
-      <Box display="flex" gap={2}>
+      <Box display='flex' gap={2}>
         <Button
-          variant="contained"
-          color="success"
+          variant='contained'
+          color='success'
           onClick={() => handleDecision('APPROVED')}
           disabled={loading}
           startIcon={loading ? <CircularProgress size={16} /> : <ApproveIcon />}
@@ -167,8 +167,8 @@ const DiscountDecisionSection: React.FC<DiscountDecisionSectionProps> = ({
         </Button>
 
         <Button
-          variant="outlined"
-          color="error"
+          variant='outlined'
+          color='error'
           onClick={() => handleDecision('REJECTED')}
           disabled={loading}
           startIcon={loading ? <CircularProgress size={16} /> : <RejectIcon />}
@@ -178,13 +178,13 @@ const DiscountDecisionSection: React.FC<DiscountDecisionSectionProps> = ({
       </Box>
 
       {error && (
-        <Alert severity="error" sx={{ mt: 2 }}>
+        <Alert severity='error' sx={{ mt: 2 }}>
           {error}
         </Alert>
       )}
 
       {success && (
-        <Alert severity="success" sx={{ mt: 2 }}>
+        <Alert severity='success' sx={{ mt: 2 }}>
           {success}
         </Alert>
       )}

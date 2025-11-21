@@ -222,30 +222,30 @@ const CreateSalesOrderModal: React.FC<CreateSalesOrderModalProps> = ({
   };
 
   return (
-    <Dialog open={open} onClose={handleClose} maxWidth="sm" fullWidth>
+    <Dialog open={open} onClose={handleClose} maxWidth='sm' fullWidth>
       <DialogTitle>
-        <Box display="flex" alignItems="center" gap={1}>
-          <CheckIcon color="success" />
-          <Typography variant="h6">Konfirmasi WON & Buat Sales Order</Typography>
+        <Box display='flex' alignItems='center' gap={1}>
+          <CheckIcon color='success' />
+          <Typography variant='h6'>Konfirmasi WON & Buat Sales Order</Typography>
         </Box>
       </DialogTitle>
 
       <DialogContent>
         {error && (
-          <Alert severity="error" sx={{ mb: 2 }} onClose={() => setError(null)}>
+          <Alert severity='error' sx={{ mb: 2 }} onClose={() => setError(null)}>
             {error}
           </Alert>
         )}
 
         {/* Project Info (non-editable) */}
         <Box sx={{ mb: 3, p: 2, bgcolor: 'success.50', borderRadius: 1 }}>
-          <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 1 }}>
+          <Typography variant='subtitle2' sx={{ fontWeight: 600, mb: 1 }}>
             Informasi Proyek
           </Typography>
-          <Typography variant="body2" color="text.secondary">
+          <Typography variant='body2' color='text.secondary'>
             <strong>Nama Proyek:</strong> {projectName}
           </Typography>
-          <Typography variant="body2" color="text.secondary">
+          <Typography variant='body2' color='text.secondary'>
             <strong>Nilai Kontrak:</strong> {formatCurrency(
               computedContractValue ?? contractValue
             )}
@@ -256,37 +256,37 @@ const CreateSalesOrderModal: React.FC<CreateSalesOrderModalProps> = ({
         <TextField
           fullWidth
           required
-          label="Nomor PO Pelanggan"
+          label='Nomor PO Pelanggan'
           value={customerPoNumber}
           onChange={(e) => setCustomerPoNumber(e.target.value)}
-          placeholder="contoh: PO-2025-001"
+          placeholder='contoh: PO-2025-001'
           disabled={loading}
           sx={{ mb: 2 }}
-          helperText="Nomor Purchase Order dari pelanggan"
+          helperText='Nomor Purchase Order dari pelanggan'
         />
 
         <TextField
           fullWidth
           required
-          type="date"
-          label="Tanggal Order"
+          type='date'
+          label='Tanggal Order'
           value={orderDate}
           onChange={(e) => setOrderDate(e.target.value)}
           disabled={loading}
           sx={{ mb: 2 }}
           InputLabelProps={{ shrink: true }}
-          helperText="Tanggal PO atau tanggal kontrak ditandatangani"
+          helperText='Tanggal PO atau tanggal kontrak ditandatangani'
         />
 
         <TextField
           fullWidth
           select
-          label="Termin Pembayaran (TOP)"
+          label='Termin Pembayaran (TOP)'
           value={topDaysAgreed}
           onChange={(e) => setTopDaysAgreed(e.target.value)}
           disabled={loading}
           sx={{ mb: 2 }}
-          helperText="Pilih termin pembayaran yang disepakati"
+          helperText='Pilih termin pembayaran yang disepakati'
         >
           {topOptions.map((option) => (
             <MenuItem key={option.value} value={option.value}>
@@ -297,12 +297,12 @@ const CreateSalesOrderModal: React.FC<CreateSalesOrderModalProps> = ({
 
         {/* File Upload */}
         <Box sx={{ mb: 2 }}>
-          <Typography variant="body2" sx={{ mb: 1, fontWeight: 600 }}>
+          <Typography variant='body2' sx={{ mb: 1, fontWeight: 600 }}>
             Upload Dokumen PO/Kontrak <span style={{ color: 'red' }}>*</span>
           </Typography>
           <Button
-            variant="outlined"
-            component="label"
+            variant='outlined'
+            component='label'
             startIcon={<UploadIcon />}
             disabled={loading}
             fullWidth
@@ -310,27 +310,27 @@ const CreateSalesOrderModal: React.FC<CreateSalesOrderModalProps> = ({
           >
             {uploadedFileName || 'Pilih File (PDF, Image, Scan)'}
             <input
-              type="file"
+              type='file'
               hidden
-              accept=".pdf,.jpg,.jpeg,.png,.doc,.docx"
+              accept='.pdf,.jpg,.jpeg,.png,.doc,.docx'
               onChange={handleFileUpload}
             />
           </Button>
           {uploadedFileName && (
-            <Box display="flex" alignItems="center" gap={1} sx={{ mt: 1 }}>
-              <DocIcon fontSize="small" color="primary" />
-              <Typography variant="caption" color="primary">
+            <Box display='flex' alignItems='center' gap={1} sx={{ mt: 1 }}>
+              <DocIcon fontSize='small' color='primary' />
+              <Typography variant='caption' color='primary'>
                 {uploadedFileName}
               </Typography>
             </Box>
           )}
-          <Typography variant="caption" color="text.secondary">
+          <Typography variant='caption' color='text.secondary'>
             File wajib diupload untuk keperluan legal & tracking
           </Typography>
         </Box>
 
-        <Alert severity="info" sx={{ mt: 2 }}>
-          <Typography variant="body2">
+        <Alert severity='info' sx={{ mt: 2 }}>
+          <Typography variant='body2'>
             Setelah Sales Order dibuat, proyek akan otomatis berpindah ke status{' '}
             <strong>WON</strong> dan tim Operasional akan menerima notifikasi untuk
             memulai pekerjaan.
@@ -343,8 +343,8 @@ const CreateSalesOrderModal: React.FC<CreateSalesOrderModalProps> = ({
           Batal
         </Button>
         <Button
-          variant="contained"
-          color="success"
+          variant='contained'
+          color='success'
           onClick={handleSubmit}
           disabled={loading || !customerPoNumber || !orderDate || !poDocumentUrl}
           startIcon={loading ? <CircularProgress size={20} /> : <CheckIcon />}

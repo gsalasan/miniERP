@@ -110,7 +110,7 @@ export const generateQuotationPDF = (data: QuotationData) => {
   try {
     // getTextDimensions may accept a string; use capital M as typical height
     // @ts-expect-error: method may not exist on older jspdf types
-    const dims = doc.getTextDimensions("M");
+    const dims = doc.getTextDimensions('M');
     if (dims && (dims as any).h) estimatedLineHeight = (dims as any).h + 2;
   } catch {
     // ignore, use fallback
