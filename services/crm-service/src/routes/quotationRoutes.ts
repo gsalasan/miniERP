@@ -29,4 +29,3 @@ router.post('/generate', quotationController.generateQuotation);
 router.get('/project/:projectId', quotationController.getQuotationsByProject);
 
 export default router;
-

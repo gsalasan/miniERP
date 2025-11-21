@@ -2,10 +2,6 @@ import { Request, Response } from 'express';
 import salesOrderServices from '../services/salesOrderServices';
 
 class SalesOrderController {
-  /**
-   * POST /api/v1/sales-orders
-   * Create Sales Order and mark project as WON
-   */
   async createSalesOrder(req: Request, res: Response): Promise<void> {
     try {
       const {
@@ -96,11 +92,6 @@ class SalesOrderController {
       });
     }
   }
-
-  /**
-   * GET /api/v1/sales-orders/project/:projectId
-   * Get Sales Order by project ID
-   */
   async getSalesOrderByProject(req: Request, res: Response): Promise<void> {
     try {
       const { projectId } = req.params;
@@ -130,11 +121,6 @@ class SalesOrderController {
       });
     }
   }
-
-  /**
-   * GET /api/v1/sales-orders/:id
-   * Get Sales Order by ID
-   */
   async getSalesOrderById(req: Request, res: Response): Promise<void> {
     try {
       const { id } = req.params;
@@ -164,11 +150,6 @@ class SalesOrderController {
       });
     }
   }
-
-  /**
-   * GET /api/v1/sales-orders
-   * Get all Sales Orders
-   */
   async getAllSalesOrders(req: Request, res: Response): Promise<void> {
     try {
       const salesOrders = await salesOrderServices.getAllSalesOrders();
@@ -179,7 +160,10 @@ class SalesOrderController {
       });
     } catch (error) {
       const err = error as Error;
-      console.error('[SalesOrderController] Error fetching all sales orders:', err);
+      console.error(
+        '[SalesOrderController] Error fetching all sales orders:',
+        err
+      );
       res.status(500).json({
         success: false,
         message: 'Failed to fetch Sales Orders',
@@ -187,30 +171,35 @@ class SalesOrderController {
       });
     }
   }
-
-  /**
-   * PATCH /api/v1/sales-orders/:id/document
-   * Update PO document URL for a Sales Order
-   */
   async updateDocument(req: Request, res: Response): Promise<void> {
     try {
       const { id } = req.params as { id: string };
       const { poDocumentUrl } = req.body as { poDocumentUrl?: string };
 
       if (!poDocumentUrl || typeof poDocumentUrl !== 'string') {
-        res.status(400).json({ success: false, message: 'poDocumentUrl is required' });
+        res
+          .status(400)
+          .json({ success: false, message: 'poDocumentUrl is required' });
         return;
       }
 
       const userId = (req as any).user?.id;
       if (!userId) {
-        res.status(401).json({ success: false, message: 'User authentication required' });
+        res
+          .status(401)
+          .json({ success: false, message: 'User authentication required' });
         return;
       }
 
-      const updated = await salesOrderServices.updateSalesOrderDocument(id, poDocumentUrl, userId);
+      const updated = await salesOrderServices.updateSalesOrderDocument(
+        id,
+        poDocumentUrl,
+        userId
+      );
 
-      res.status(200).json({ success: true, message: 'PO document updated', data: updated });
+      res
+        .status(200)
+        .json({ success: true, message: 'PO document updated', data: updated });
     } catch (error) {
       const err = error as Error;
       if (err.message === 'Sales Order not found') {
@@ -218,7 +207,11 @@ class SalesOrderController {
         return;
       }
       console.error('[SalesOrderController] Error updating document:', err);
-      res.status(500).json({ success: false, message: 'Failed to update document', error: err.message });
+      res.status(500).json({
+        success: false,
+        message: 'Failed to update document',
+        error: err.message,
+      });
     }
   }
 }

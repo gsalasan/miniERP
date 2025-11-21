@@ -128,8 +128,6 @@ export const movePipelineCard = async (req: AuthenticatedRequest, res: Response)
         message: 'Invalid status provided'
       });
     }
-    
-    // Handle all validation errors from validateStatusTransition with 422 status
     if (error.message.includes('Transisi status tidak valid') || 
         error.message.includes('Tidak bisa') ||
         error.message.includes('hanya bisa')) {

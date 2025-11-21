@@ -10,10 +10,6 @@ interface AuthenticatedRequest extends Request {
 }
 
 class DiscountApprovalController {
-  /**
-   * POST /api/v1/estimations/:id/request-discount-approval
-   * Sales request discount approval from CEO
-   */
   async requestDiscountApproval(req: AuthenticatedRequest, res: Response): Promise<void> {
     try {
       const { id } = req.params;

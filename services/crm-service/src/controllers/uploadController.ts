@@ -1,7 +1,5 @@
 import { Request, Response } from 'express';
 import { Storage } from '@google-cloud/storage';
-import path from 'path';
-import fs from 'fs';
 
 // Generates a signed URL for uploading a single file to GCS (v4 signed URL)
 export const presignUpload = async (req: Request, res: Response) => {

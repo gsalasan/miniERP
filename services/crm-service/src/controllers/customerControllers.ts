@@ -26,7 +26,6 @@ export async function getAllCustomers(
 
     let message = 'Terjadi kesalahan saat mengambil data.';
 
-    // Jika error berasal dari Prisma dan tabel tidak ditemukan
     if (error instanceof Error && error.message.includes('does not exist')) {
       message = 'Data belum tersedia di database.';
     }

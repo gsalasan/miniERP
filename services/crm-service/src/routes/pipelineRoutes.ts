@@ -11,7 +11,10 @@ import {
   deleteProject,
   getProjectById,
 } from '../controllers/pipelineController';
-import { presignUpload, uploadFileLocal } from '../controllers/uploadController';
+import {
+  presignUpload,
+  uploadFileLocal,
+} from '../controllers/uploadController';
 import { verifyToken } from '../middlewares/authMiddleware';
 
 const router = express.Router();
@@ -24,11 +27,11 @@ const storage = multer.diskStorage({
   },
   filename: (req, file, cb) => {
     // Generate unique filename: timestamp-originalname
-    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
     const ext = path.extname(file.originalname);
     const basename = path.basename(file.originalname, ext);
     cb(null, `${basename}-${uniqueSuffix}${ext}`);
-  }
+  },
 });
 
 // Filter file types
@@ -39,13 +42,17 @@ const fileFilter = (req: any, file: any, cb: any) => {
     'image/jpg',
     'image/png',
     'application/msword',
-    'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+    'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
   ];
-  
   if (allowedMimes.includes(file.mimetype)) {
     cb(null, true);
   } else {
-    cb(new Error('Invalid file type. Only PDF, JPG, PNG, DOC, DOCX are allowed.'), false);
+    cb(
+      new Error(
+        'Invalid file type. Only PDF, JPG, PNG, DOC, DOCX are allowed.'
+      ),
+      false
+    );
   }
 };
 
@@ -53,11 +60,10 @@ const upload = multer({
   storage: storage,
   fileFilter: fileFilter,
   limits: {
-    fileSize: 10 * 1024 * 1024 // 10MB max
-  }
+    fileSize: 10 * 1024 * 1024, // 10MB max
+  },
 });
 
-// Public routes (tanpa auth untuk development)
 // POST /api/v1/pipeline/uploads/local - Upload file ke local storage
 router.post('/uploads/local', upload.single('file'), uploadFileLocal);
 
