@@ -1,6 +1,21 @@
 version: '3.8'
 
 services:
+  redis:
+    image: redis:7-alpine
+    container_name: redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+    networks:
+      - mini-net
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
   identity-service:
     build:
       context: ./services/identity-service
@@ -13,12 +28,15 @@ services:
     environment:
       NODE_ENV: development
       DATABASE_URL: postgresql://postgres:postgres@host.docker.internal:5432/minierp
+      REDIS_URL: redis://redis:6379
       PORT: 4000
     volumes:
       - ./services/identity-service:/usr/src/app
       - /usr/src/app/node_modules
     networks:
       - mini-net
+    depends_on:
+      - redis
 
   engineering-service:
     build:
@@ -32,12 +50,15 @@ services:
     environment:
       NODE_ENV: development
       DATABASE_URL: postgresql://postgres:postgres@host.docker.internal:5432/minierp
+      REDIS_URL: redis://redis:6379
       PORT: 4001
     volumes:
       - ./services/engineering-service:/usr/src/app
       - /usr/src/app/node_modules
     networks:
       - mini-net
+    depends_on:
+      - redis
 
   crm-service:
     build:
@@ -51,12 +72,15 @@ services:
     environment:
       NODE_ENV: development
       DATABASE_URL: postgresql://postgres:postgres@host.docker.internal:5432/minierp
+      REDIS_URL: redis://redis:6379
       PORT: 4002
     volumes:
       - ./services/crm-service:/usr/src/app
       - /usr/src/app/node_modules
     networks:
       - mini-net
+    depends_on:
+      - redis
 
   finance-service:
     build:
@@ -70,12 +94,15 @@ services:
     environment:
       NODE_ENV: development
       DATABASE_URL: postgresql://postgres:postgres@host.docker.internal:5432/minierp
+      REDIS_URL: redis://redis:6379
       PORT: 4003
     volumes:
       - ./services/finance-service:/usr/src/app
       - /usr/src/app/node_modules
     networks:
       - mini-net
+    depends_on:
+      - redis
 
   hr-service:
     build:
@@ -89,12 +116,15 @@ services:
     environment:
       NODE_ENV: development
       DATABASE_URL: postgresql://postgres:postgres@host.docker.internal:5432/minierp
+      REDIS_URL: redis://redis:6379
       PORT: 4004
     volumes:
       - ./services/hr-service:/usr/src/app
       - /usr/src/app/node_modules
     networks:
       - mini-net
+    depends_on:
+      - redis
 
   inventory-service:
     build:
@@ -171,6 +201,9 @@ services:
       - project-service
     networks:
       - mini-net
+
+volumes:
+  redis-data:
 
 networks:
   mini-net:
