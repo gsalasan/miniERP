@@ -22,6 +22,9 @@ interface ProjectOverviewTabProps {
 }
 
 const ProjectOverviewTab: React.FC<ProjectOverviewTabProps> = ({ project }) => {
+  // Use same contract value calculation as header for consistency
+  const contractValue = project.sales_orders?.[0]?.contract_value ?? project.contract_value ?? 0;
+
   const InfoCard = ({ icon, label, value }: { icon: React.ReactNode; label: string; value: string | number | React.ReactNode }) => (
     <Card sx={{ height: '100%' }}>
       <CardContent>
@@ -90,8 +93,8 @@ const ProjectOverviewTab: React.FC<ProjectOverviewTabProps> = ({ project }) => {
               icon={<AttachMoneyIcon />}
               label="Nilai Kontrak"
               value={
-                project.contract_value
-                  ? `Rp ${Number(project.contract_value).toLocaleString('id-ID')}`
+                contractValue > 0
+                  ? `Rp ${Number(contractValue).toLocaleString('id-ID')}`
                   : 'Belum Ditentukan'
               }
             />
