@@ -14,11 +14,11 @@ model ServiceType {
 }
 
 model FinanceCostType {
-  cost_type_code   String   @id
-  cost_type_name   String
+  cost_type_code    String   @id
+  cost_type_name    String
   markup_percentage Decimal? @db.Decimal(5, 2)
-  is_active        Boolean  @default(true)
-  created_at       DateTime @default(now())
+  is_active         Boolean  @default(true)
+  created_at        DateTime @default(now())
 
   @@map("cost_types")
 }
@@ -58,11 +58,11 @@ model HRPosition {
 }
 
 model OrganizationSBU {
-  sbu_code   String   @id
-  sbu_name   String
+  sbu_code    String   @id
+  sbu_name    String
   description String?
-  is_active  Boolean  @default(true)
-  created_at DateTime @default(now())
+  is_active   Boolean  @default(true)
+  created_at  DateTime @default(now())
 
   @@map("sbus")
 }
@@ -99,13 +99,13 @@ model UnitOfMeasure {
 }
 
 model ApprovalAuthority {
-  authority_code String   @id
-  authority_name String
+  authority_code      String   @id
+  authority_name      String
   min_approval_amount Decimal? @db.Decimal(18, 2)
   max_approval_amount Decimal? @db.Decimal(18, 2)
-  required_roles  String[]
-  is_active       Boolean  @default(true)
-  created_at      DateTime @default(now())
+  required_roles      String[]
+  is_active           Boolean  @default(true)
+  created_at          DateTime @default(now())
 
   @@map("approval_authorities")
 }
@@ -113,14 +113,6 @@ model ApprovalAuthority {
 datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
-}
-
-enum UserRole {
-  ADMIN
-  EMPLOYEE
-  MANAGER
-  HR
-  FINANCE
 }
 
 model users {
@@ -134,6 +126,8 @@ model users {
   roles                 UserRole[]    @default([EMPLOYEE])
   estimations_assigned  estimations[] @relation("EstimationAssignee")
   estimations_requested estimations[] @relation("EstimationRequester")
+  projects_as_pm        Project[]     @relation("ProjectManager")
+  projects_as_sales     Project[]     @relation("SalesUser")
   employee              employees?    @relation(fields: [employee_id], references: [id])
 }
 
@@ -159,6 +153,7 @@ model employees {
   education_level     EducationLevel?
   users               users?
 }
+
 model Material {
   id                 String                  @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   system             String?
@@ -662,6 +657,7 @@ model Project {
   notes               String?
   priority            ProjectPriority    @default(MEDIUM)
   sales_user_id       String?
+  pm_user_id          String?
   start_date          DateTime?
   updated_at          DateTime           @updatedAt
   updated_by          String?
@@ -670,9 +666,32 @@ model Project {
   activities          ProjectActivity[]
   project_boms        ProjectBOM[]
   project_milestones  ProjectMilestone[]
+  project_tasks       ProjectTask[]
+  sales_orders        sales_orders[]
   customer            customers          @relation(fields: [customer_id], references: [id])
+  pm_user             users?             @relation("ProjectManager", fields: [pm_user_id], references: [id])
+  sales_user          users?             @relation("SalesUser", fields: [sales_user_id], references: [id])
 
   @@map("projects")
+}
+
+model sales_orders {
+  id                 String        @id @default(uuid())
+  so_number          String        @unique
+  project_id         String
+  customer_po_number String
+  order_date         DateTime
+  top_days_agreed    Int?
+  contract_value     Decimal       @db.Decimal(18, 2)
+  po_document_url    String?
+  created_by_user_id String
+  created_at         DateTime      @default(now())
+  updated_at         DateTime      @updatedAt
+  project            Project       @relation(fields: [project_id], references: [id])
+  estimations        estimations[]
+
+  @@index([project_id])
+  @@index([so_number])
 }
 
 model ProjectActivity {
@@ -705,6 +724,9 @@ model estimations {
   attachments               Json?
   ce_number                 String?            @unique @db.VarChar(50)
   ce_date                   DateTime?          @default(now()) @db.Timestamptz(6)
+  so_number                 String?            @db.VarChar(50) // Sales Order reference
+  so_date                   DateTime?          @db.Date // Sales Order date (DATE only)
+  sales_order_id            String?
   ce_period_start           DateTime?          @db.Timestamptz(6)
   ce_period_end             DateTime?          @db.Timestamptz(6)
   client_name               String?            @db.VarChar(255)
@@ -724,6 +746,7 @@ model estimations {
   project                   Project            @relation(fields: [project_id], references: [id])
   requested_by              users?             @relation("EstimationRequester", fields: [requested_by_user_id], references: [id])
   client                    customers?         @relation(fields: [client_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_estimations_client_id")
+  sales_order               sales_orders?      @relation(fields: [sales_order_id], references: [id])
 
   @@unique([project_id, version], map: "estimations_project_version_unique")
   @@unique([project_id, version], map: "ux_estimations_project_id_version")
@@ -830,8 +853,29 @@ model ProjectMilestone {
   end_date   DateTime?
   status     MilestoneStatus
   project    Project         @relation(fields: [project_id], references: [id])
+  tasks      ProjectTask[]
 
   @@map("project_milestones")
+}
+
+model ProjectTask {
+  id           String      @id @default(uuid())
+  project_id   String
+  milestone_id String?
+  name         String
+  description  String?
+  assignee_id  String?
+  start_date   DateTime?
+  due_date     DateTime?
+  status       TaskStatus  @default(TODO)
+  progress     Int         @default(0)
+  created_at   DateTime    @default(now())
+  updated_at   DateTime    @updatedAt
+  project      Project     @relation(fields: [project_id], references: [id])
+  milestone    ProjectMilestone? @relation(fields: [milestone_id], references: [id])
+  assignee     users?      @relation("TaskAssignee", fields: [assignee_id], references: [id])
+
+  @@map("project_tasks")
 }
 
 model VendorCategoryLookup {
@@ -905,6 +949,7 @@ enum UserRole {
   PROCUREMENT_ADMIN
   ASSET_ADMIN
   SYSTEM_ADMIN
+  OPERATIONAL_MANAGER
 }
 
 enum MaterialStatus {
@@ -1064,8 +1109,12 @@ enum ActivityType {
 enum EstimationStatus {
   PENDING
   IN_PROGRESS
+  PENDING_APPROVAL
+  PENDING_DISCOUNT_APPROVAL
   APPROVED
+  DISCOUNT_APPROVED
   REJECTED
+  REVISION_REQUIRED
   DRAFT
   ARCHIVED
 }
@@ -1082,6 +1131,12 @@ enum SourceType {
 
 enum MilestoneStatus {
   PLANNED
+  IN_PROGRESS
+  DONE
+}
+
+enum TaskStatus {
+  TODO
   IN_PROGRESS
   DONE
 }
