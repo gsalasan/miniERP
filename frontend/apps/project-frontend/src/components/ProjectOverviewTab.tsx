@@ -23,15 +23,33 @@ interface ProjectOverviewTabProps {
 
 const ProjectOverviewTab: React.FC<ProjectOverviewTabProps> = ({ project }) => {
   // Use same contract value calculation as header for consistency
-  const contractValue = project.sales_orders?.[0]?.contract_value ?? project.contract_value ?? 0;
+  const contractValue =
+    project.sales_orders?.[0]?.contract_value ?? project.contract_value ?? 0;
 
-  const InfoCard = ({ icon, label, value }: { icon: React.ReactNode; label: string; value: string | number | React.ReactNode }) => (
+  const InfoCard = ({
+    icon,
+    label,
+    value,
+  }: {
+    icon: React.ReactNode;
+    label: string;
+    value: string | number | React.ReactNode;
+  }) => (
     <Card sx={{ height: '100%' }}>
       <CardContent>
         <Stack spacing={1}>
-          <Box sx={{ display: 'flex', alignItems: 'center', color: 'primary.main' }}>
+          <Box
+            sx={{
+              display: 'flex',
+              alignItems: 'center',
+              color: 'primary.main',
+            }}
+          >
             {icon}
-            <Typography variant="caption" sx={{ ml: 1, color: 'text.secondary' }}>
+            <Typography
+              variant="caption"
+              sx={{ ml: 1, color: 'text.secondary' }}
+            >
               {label}
             </Typography>
           </Box>
@@ -51,7 +69,7 @@ const ProjectOverviewTab: React.FC<ProjectOverviewTabProps> = ({ project }) => {
           Informasi Proyek
         </Typography>
         <Divider sx={{ mb: 2 }} />
-        
+
         <Grid container spacing={3}>
           <Grid item xs={12} md={6}>
             <InfoCard
@@ -60,7 +78,7 @@ const ProjectOverviewTab: React.FC<ProjectOverviewTabProps> = ({ project }) => {
               value={project.customer?.customer_name || 'N/A'}
             />
           </Grid>
-          
+
           <Grid item xs={12} md={6}>
             <InfoCard
               icon={<PersonIcon />}
@@ -68,10 +86,14 @@ const ProjectOverviewTab: React.FC<ProjectOverviewTabProps> = ({ project }) => {
               value={
                 project.pm_user ? (
                   <Stack direction="row" spacing={1} alignItems="center">
-                    <Typography>{project.pm_user.employee?.full_name || project.pm_user.email}</Typography>
-                    {project.pm_user.roles && project.pm_user.roles.includes('PROJECT_MANAGER') && (
-                      <Chip label="PM" size="small" color="primary" />
-                    )}
+                    <Typography>
+                      {project.pm_user.employee?.full_name ||
+                        project.pm_user.email}
+                    </Typography>
+                    {project.pm_user.roles &&
+                      project.pm_user.roles.includes('PROJECT_MANAGER') && (
+                        <Chip label="PM" size="small" color="primary" />
+                      )}
                   </Stack>
                 ) : (
                   <Chip label="Belum Ditugaskan" size="small" color="warning" />
@@ -84,7 +106,11 @@ const ProjectOverviewTab: React.FC<ProjectOverviewTabProps> = ({ project }) => {
             <InfoCard
               icon={<PersonIcon />}
               label="Sales"
-              value={project.sales_user?.employee?.full_name || project.sales_user?.email || 'N/A'}
+              value={
+                project.sales_user?.employee?.full_name ||
+                project.sales_user?.email ||
+                'N/A'
+              }
             />
           </Grid>
 
@@ -118,11 +144,14 @@ const ProjectOverviewTab: React.FC<ProjectOverviewTabProps> = ({ project }) => {
               label="Target Selesai"
               value={
                 project.expected_close_date
-                  ? new Date(project.expected_close_date).toLocaleDateString('id-ID', {
-                      year: 'numeric',
-                      month: 'long',
-                      day: 'numeric',
-                    })
+                  ? new Date(project.expected_close_date).toLocaleDateString(
+                      'id-ID',
+                      {
+                        year: 'numeric',
+                        month: 'long',
+                        day: 'numeric',
+                      }
+                    )
                   : 'Belum Ditentukan'
               }
             />
@@ -140,7 +169,11 @@ const ProjectOverviewTab: React.FC<ProjectOverviewTabProps> = ({ project }) => {
             </Typography>
           </Stack>
           <Divider sx={{ mb: 2 }} />
-          <Typography variant="body1" color="text.secondary" sx={{ whiteSpace: 'pre-wrap' }}>
+          <Typography
+            variant="body1"
+            color="text.secondary"
+            sx={{ whiteSpace: 'pre-wrap' }}
+          >
             {project.description}
           </Typography>
         </Paper>

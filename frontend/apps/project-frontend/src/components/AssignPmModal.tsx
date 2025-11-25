@@ -52,7 +52,9 @@ const AssignPmModal: React.FC<AssignPmModalProps> = ({
       const pms = await projectApi.getProjectManagers();
       setProjectManagers(pms);
     } catch (err: any) {
-      setError(err.response?.data?.message || 'Failed to fetch project managers');
+      setError(
+        err.response?.data?.message || 'Failed to fetch project managers'
+      );
     } finally {
       setFetchingPMs(false);
     }
@@ -72,7 +74,9 @@ const AssignPmModal: React.FC<AssignPmModalProps> = ({
       onSuccess();
       handleClose();
     } catch (err: any) {
-      setError(err.response?.data?.message || 'Failed to assign Project Manager');
+      setError(
+        err.response?.data?.message || 'Failed to assign Project Manager'
+      );
     } finally {
       setLoading(false);
     }
@@ -126,7 +130,9 @@ const AssignPmModal: React.FC<AssignPmModalProps> = ({
                       sx={{ width: 32, height: 32 }}
                       alt={pm.employee?.full_name || pm.email}
                     >
-                      {(pm.employee?.full_name || pm.email).charAt(0).toUpperCase()}
+                      {(pm.employee?.full_name || pm.email)
+                        .charAt(0)
+                        .toUpperCase()}
                     </Avatar>
                     <Box>
                       <Typography variant="body2">

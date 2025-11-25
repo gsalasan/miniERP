@@ -26,6 +26,7 @@ import { projectApi } from '../api/projectApi';
 import AssignPmModal from '../components/AssignPmModal';
 import BoqVsBomTab from '../components/BoqVsBomTab';
 import ProjectOverviewTab from '../components/ProjectOverviewTab';
+import TimelineTab from '../components/TimelineTab';
 import MainLayout from '../layouts/MainLayout';
 import type { Project } from '../types';
 import { useAuth } from '../contexts/AuthContext';
@@ -100,10 +101,20 @@ const ProjectDetailPage: React.FC = () => {
   // Permission check - PM can edit BOM
   const canEditBom = project?.pm_user_id === user?.id;
 
+  // Check if user is PM
+  const isPM = project?.pm_user_id === user?.id;
+
   if (loading) {
     return (
       <MainLayout>
-        <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: 400 }}>
+        <Box
+          sx={{
+            display: 'flex',
+            justifyContent: 'center',
+            alignItems: 'center',
+            minHeight: 400,
+          }}
+        >
           <CircularProgress />
         </Box>
       </MainLayout>
@@ -120,13 +131,15 @@ const ProjectDetailPage: React.FC = () => {
     );
   }
 
-  const latestEstimation = project.estimations && project.estimations.length > 0
-    ? project.estimations[project.estimations.length - 1]
-    : null;
+  const latestEstimation =
+    project.estimations && project.estimations.length > 0
+      ? project.estimations[project.estimations.length - 1]
+      : null;
 
   const estimationItems = latestEstimation?.items || [];
   const bomItems = project.project_boms || [];
-  const contractValue = (project.sales_orders?.[0]?.contract_value ?? project.contract_value ?? 0);
+  const contractValue =
+    project.sales_orders?.[0]?.contract_value ?? project.contract_value ?? 0;
 
   return (
     <MainLayout>
@@ -161,65 +174,125 @@ const ProjectDetailPage: React.FC = () => {
             borderColor: 'divider',
           }}
         >
-          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 2 }}>
+          <Box
+            sx={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'flex-start',
+              gap: 2,
+            }}
+          >
             <Box sx={{ flex: 1 }}>
               {/* Title with Project Number and Status */}
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 1, flexWrap: 'wrap' }}>
+              <Box
+                sx={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 2,
+                  mb: 1,
+                  flexWrap: 'wrap',
+                }}
+              >
                 <Typography variant="h4" fontWeight={700}>
                   {project.project_number} - {project.project_name}
                 </Typography>
-                <Chip 
-                  label={project.status || 'New'} 
-                  color={project.status === 'Planning' ? 'primary' : project.status === 'WON' ? 'success' : 'default'}
+                <Chip
+                  label={project.status || 'New'}
+                  color={
+                    project.status === 'Planning'
+                      ? 'primary'
+                      : project.status === 'WON'
+                        ? 'success'
+                        : 'default'
+                  }
                   sx={{ fontWeight: 600 }}
                 />
                 {project.customer && (
-                  <Chip 
-                    label={project.customer.customer_name} 
+                  <Chip
+                    label={project.customer.customer_name}
                     variant="outlined"
                     sx={{ fontWeight: 500 }}
                   />
                 )}
               </Box>
               {project.description && (
-                <Typography variant="body1" color="text.secondary" sx={{ mb: 2, lineHeight: 1.6 }}>
+                <Typography
+                  variant="body1"
+                  color="text.secondary"
+                  sx={{ mb: 2, lineHeight: 1.6 }}
+                >
                   {project.description}
                 </Typography>
               )}
-              
+
               {/* Project Meta Info */}
-              <Box sx={{ display: 'flex', gap: 3, flexWrap: 'wrap', mt: 2, pt: 2, borderTop: '1px solid', borderColor: 'divider' }}>
+              <Box
+                sx={{
+                  display: 'flex',
+                  gap: 3,
+                  flexWrap: 'wrap',
+                  mt: 2,
+                  pt: 2,
+                  borderTop: '1px solid',
+                  borderColor: 'divider',
+                }}
+              >
                 {project.sales_user && (
                   <Box>
-                    <Typography variant="caption" color="text.secondary" display="block" sx={{ mb: 0.5 }}>
+                    <Typography
+                      variant="caption"
+                      color="text.secondary"
+                      display="block"
+                      sx={{ mb: 0.5 }}
+                    >
                       Sales PIC
                     </Typography>
                     <Typography variant="body2" fontWeight={600}>
-                      {project.sales_user.employee?.full_name || project.sales_user.email}
+                      {project.sales_user.employee?.full_name ||
+                        project.sales_user.email}
                     </Typography>
                   </Box>
                 )}
-                
+
                 <Box>
-                  <Typography variant="caption" color="text.secondary" display="block" sx={{ mb: 0.5 }}>
+                  <Typography
+                    variant="caption"
+                    color="text.secondary"
+                    display="block"
+                    sx={{ mb: 0.5 }}
+                  >
                     Project Manager
                   </Typography>
                   {project.pm_user ? (
                     <Typography variant="body2" fontWeight={600}>
-                      {project.pm_user.employee?.full_name || project.pm_user.email}
+                      {project.pm_user.employee?.full_name ||
+                        project.pm_user.email}
                     </Typography>
                   ) : (
-                    <Typography variant="body2" color="warning.main" fontWeight={600}>
+                    <Typography
+                      variant="body2"
+                      color="warning.main"
+                      fontWeight={600}
+                    >
                       Belum Ditugaskan
                     </Typography>
                   )}
                 </Box>
-                
+
                 <Box>
-                  <Typography variant="caption" color="text.secondary" display="block" sx={{ mb: 0.5 }}>
+                  <Typography
+                    variant="caption"
+                    color="text.secondary"
+                    display="block"
+                    sx={{ mb: 0.5 }}
+                  >
                     Nilai Kontrak (SO)
                   </Typography>
-                  <Typography variant="body2" fontWeight={700} color="success.main">
+                  <Typography
+                    variant="body2"
+                    fontWeight={700}
+                    color="success.main"
+                  >
                     Rp {Number(contractValue).toLocaleString('id-ID')}
                   </Typography>
                 </Box>
@@ -272,12 +345,36 @@ const ProjectDetailPage: React.FC = () => {
                 },
               }}
             >
-              <Tab icon={<DashboardIcon />} iconPosition="start" label="Ringkasan" />
-              <Tab icon={<TimelineIcon />} iconPosition="start" label="Timeline & Tugas" />
-              <Tab icon={<CompareArrowsIcon />} iconPosition="start" label="BoQ vs. BoM" />
-              <Tab icon={<DescriptionIcon />} iconPosition="start" label="Dokumen" />
-              <Tab icon={<AssessmentIcon />} iconPosition="start" label="Laporan" />
-              <Tab icon={<GroupIcon />} iconPosition="start" label="Tim & Kinerja" />
+              <Tab
+                icon={<DashboardIcon />}
+                iconPosition="start"
+                label="Ringkasan"
+              />
+              <Tab
+                icon={<TimelineIcon />}
+                iconPosition="start"
+                label="Timeline & Tugas"
+              />
+              <Tab
+                icon={<CompareArrowsIcon />}
+                iconPosition="start"
+                label="BoQ vs. BoM"
+              />
+              <Tab
+                icon={<DescriptionIcon />}
+                iconPosition="start"
+                label="Dokumen"
+              />
+              <Tab
+                icon={<AssessmentIcon />}
+                iconPosition="start"
+                label="Laporan"
+              />
+              <Tab
+                icon={<GroupIcon />}
+                iconPosition="start"
+                label="Tim & Kinerja"
+              />
             </Tabs>
           </Box>
 
@@ -288,9 +385,7 @@ const ProjectDetailPage: React.FC = () => {
             </TabPanel>
 
             <TabPanel value={currentTab} index={1}>
-              <Alert severity="info">
-                Fitur timeline dan tugas sedang dalam pengembangan
-              </Alert>
+              <TimelineTab projectId={project.id} isPM={isPM} />
             </TabPanel>
 
             <TabPanel value={currentTab} index={2}>

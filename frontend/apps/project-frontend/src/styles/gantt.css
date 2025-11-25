@@ -1,0 +1,87 @@
+/* Frappe Gantt CSS - Custom styles for miniERP */
+/* IMPORTANT: This file must be loaded AFTER frappe-gantt-vendor.css */
+
+.gantt-container {
+  position: relative;
+  overflow-x: auto;
+  overflow-y: visible;
+  font-size: 12px;
+  font-family: 'Roboto', 'Helvetica', 'Arial', sans-serif;
+  padding: 20px 10px;
+  min-height: 500px;
+  width: 100%;
+  height: auto;
+}
+
+.gantt-container svg {
+  width: 100%;
+  height: auto !important;
+  overflow: visible;
+}
+
+.gantt-container .gantt {
+  overflow: visible !important;
+}
+
+/* Override default bar color - Frappe Gantt uses CSS variables */
+.gantt-container {
+  --g-bar-color: #1976d2;
+  --g-bar-border: #0d47a1;
+}
+
+/* Milestone styles - Target bar-wrapper with custom class */
+.gantt .bar-wrapper.gantt-milestone-planned .bar {
+  fill: #5d4037 !important;
+  stroke: #3e2723 !important;
+}
+
+.gantt .bar-wrapper.gantt-milestone-in-progress .bar {
+  fill: #6d4c41 !important;
+  stroke: #4e342e !important;
+}
+
+.gantt .bar-wrapper.gantt-milestone-done .bar {
+  fill: #8d6e63 !important;
+  stroke: #5d4037 !important;
+}
+
+/* Task status colors - Target bar-wrapper with custom class */
+.gantt .bar-wrapper.gantt-task-todo .bar {
+  fill: #90caf9 !important;
+  stroke: #42a5f5 !important;
+}
+
+.gantt .bar-wrapper.gantt-task-in-progress .bar {
+  fill: #4caf50 !important;
+  stroke: #388e3c !important;
+}
+
+.gantt .bar-wrapper.gantt-task-done .bar {
+  fill: #9e9e9e !important;
+  stroke: #757575 !important;
+}
+
+/* Placeholder */
+.gantt .bar-wrapper.gantt-placeholder .bar {
+  fill: transparent !important;
+  stroke: #e0e0e0 !important;
+  stroke-width: 1;
+  stroke-dasharray: 5, 5;
+}
+
+/* Popup customization */
+.gantt-container .popup-wrapper {
+  background: #212121 !important;
+  color: #fff !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3) !important;
+}
+
+.gantt-container .popup-wrapper .title {
+  color: #fff !important;
+  font-weight: 600;
+}
+
+.gantt-container .popup-wrapper .subtitle,
+.gantt-container .popup-wrapper .details {
+  color: rgba(255, 255, 255, 0.8) !important;
+}

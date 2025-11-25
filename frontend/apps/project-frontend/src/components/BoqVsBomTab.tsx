@@ -196,7 +196,9 @@ const BoqVsBomTab: React.FC<BoqVsBomTabProps> = ({
 
   const handleSaveBom = async () => {
     // Validation
-    const emptyItems = bomRows.filter((row) => !row.itemId || row.itemId.trim() === '');
+    const emptyItems = bomRows.filter(
+      (row) => !row.itemId || row.itemId.trim() === ''
+    );
     if (emptyItems.length > 0) {
       setError('Semua item harus memiliki Item ID yang valid');
       return;
@@ -214,7 +216,9 @@ const BoqVsBomTab: React.FC<BoqVsBomTabProps> = ({
       }));
 
       await projectApi.createOrUpdateBom(projectId, items);
-      setSuccess(`✅ Bill of Materials berhasil disimpan (${items.length} item)!`);
+      setSuccess(
+        `✅ Bill of Materials berhasil disimpan (${items.length} item)!`
+      );
       setHasChanges(false);
       onBomSaved();
     } catch (err: any) {
@@ -251,11 +255,13 @@ const BoqVsBomTab: React.FC<BoqVsBomTabProps> = ({
             Bill of Quantity (BoQ) vs Bill of Materials (BoM)
           </Typography>
           <Typography variant="body2" color="text.secondary">
-            BoQ adalah data dari estimasi (read-only). BoM adalah rencana material/service yang dapat Anda edit.
+            BoQ adalah data dari estimasi (read-only). BoM adalah rencana
+            material/service yang dapat Anda edit.
           </Typography>
           {!canEdit && (
             <Alert severity="warning" icon={<WarningAmberOutlinedIcon />}>
-              Anda hanya dapat mengedit BoM jika Anda adalah Project Manager yang ditugaskan.
+              Anda hanya dapat mengedit BoM jika Anda adalah Project Manager
+              yang ditugaskan.
             </Alert>
           )}
         </Stack>
@@ -268,7 +274,12 @@ const BoqVsBomTab: React.FC<BoqVsBomTabProps> = ({
         </Alert>
       )}
       {success && (
-        <Alert severity="success" onClose={() => setSuccess(null)} sx={{ mb: 2 }} icon={<CheckCircleOutlineIcon />}>
+        <Alert
+          severity="success"
+          onClose={() => setSuccess(null)}
+          sx={{ mb: 2 }}
+          icon={<CheckCircleOutlineIcon />}
+        >
           {success}
         </Alert>
       )}
@@ -280,14 +291,23 @@ const BoqVsBomTab: React.FC<BoqVsBomTabProps> = ({
           <Paper sx={{ p: 2, height: '100%' }}>
             <Stack spacing={2}>
               <Box>
-                <Stack direction="row" spacing={1} alignItems="center" sx={{ mb: 1 }}>
+                <Stack
+                  direction="row"
+                  spacing={1}
+                  alignItems="center"
+                  sx={{ mb: 1 }}
+                >
                   <DescriptionOutlinedIcon color="primary" />
                   <Typography variant="h6" sx={{ fontWeight: 'bold' }}>
                     Bill of Quantity (BoQ)
                   </Typography>
                 </Stack>
                 <Chip label="Read-Only" size="small" color="default" />
-                <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
+                <Typography
+                  variant="body2"
+                  color="text.secondary"
+                  sx={{ mt: 1 }}
+                >
                   Data dari estimasi penjualan
                 </Typography>
               </Box>
@@ -319,9 +339,18 @@ const BoqVsBomTab: React.FC<BoqVsBomTabProps> = ({
           <Paper sx={{ p: 2, height: '100%' }}>
             <Stack spacing={2}>
               <Box>
-                <Stack direction="row" justifyContent="space-between" alignItems="center">
+                <Stack
+                  direction="row"
+                  justifyContent="space-between"
+                  alignItems="center"
+                >
                   <Box>
-                    <Stack direction="row" spacing={1} alignItems="center" sx={{ mb: 1 }}>
+                    <Stack
+                      direction="row"
+                      spacing={1}
+                      alignItems="center"
+                      sx={{ mb: 1 }}
+                    >
                       <BuildOutlinedIcon color="success" />
                       <Typography variant="h6" sx={{ fontWeight: 'bold' }}>
                         Bill of Materials (BoM)
@@ -332,7 +361,11 @@ const BoqVsBomTab: React.FC<BoqVsBomTabProps> = ({
                     ) : (
                       <Chip label="View Only" size="small" color="default" />
                     )}
-                    <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
+                    <Typography
+                      variant="body2"
+                      color="text.secondary"
+                      sx={{ mt: 1 }}
+                    >
                       Rencana material & service untuk proyek
                     </Typography>
                   </Box>
@@ -385,15 +418,36 @@ const BoqVsBomTab: React.FC<BoqVsBomTabProps> = ({
                   }}
                 />
               </Box>
-              <Stack direction="row" spacing={2} justifyContent="space-between" alignItems="center">
-                <Alert severity={bomRows.length > 0 ? 'success' : 'warning'} sx={{ flex: 1 }}>
+              <Stack
+                direction="row"
+                spacing={2}
+                justifyContent="space-between"
+                alignItems="center"
+              >
+                <Alert
+                  severity={bomRows.length > 0 ? 'success' : 'warning'}
+                  sx={{ flex: 1 }}
+                >
                   Total Items: <strong>{bomRows.length}</strong>
-                  {hasChanges && canEdit && <Chip label="Belum Disimpan" size="small" color="warning" sx={{ ml: 1 }} />}
+                  {hasChanges && canEdit && (
+                    <Chip
+                      label="Belum Disimpan"
+                      size="small"
+                      color="warning"
+                      sx={{ ml: 1 }}
+                    />
+                  )}
                 </Alert>
                 {canEdit && (
                   <Button
                     variant="contained"
-                    startIcon={loading ? <CircularProgress size={20} /> : <SaveOutlinedIcon />}
+                    startIcon={
+                      loading ? (
+                        <CircularProgress size={20} />
+                      ) : (
+                        <SaveOutlinedIcon />
+                      )
+                    }
                     onClick={handleSaveBom}
                     disabled={loading || bomRows.length === 0 || !hasChanges}
                     size="large"

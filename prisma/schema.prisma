@@ -128,6 +128,7 @@ model users {
   estimations_requested estimations[] @relation("EstimationRequester")
   projects_as_pm        Project[]     @relation("ProjectManager")
   projects_as_sales     Project[]     @relation("SalesUser")
+  tasks_assigned        ProjectTask[] @relation("TaskAssignee")
   employee              employees?    @relation(fields: [employee_id], references: [id])
 }
 
@@ -666,6 +667,7 @@ model Project {
   activities          ProjectActivity[]
   project_boms        ProjectBOM[]
   project_milestones  ProjectMilestone[]
+  project_tasks       ProjectTask[]
   sales_orders        sales_orders[]
   customer            customers          @relation(fields: [customer_id], references: [id])
   pm_user             users?             @relation("ProjectManager", fields: [pm_user_id], references: [id])
@@ -852,8 +854,29 @@ model ProjectMilestone {
   end_date   DateTime?
   status     MilestoneStatus
   project    Project         @relation(fields: [project_id], references: [id])
+  tasks      ProjectTask[]
 
   @@map("project_milestones")
+}
+
+model ProjectTask {
+  id           String      @id @default(uuid())
+  project_id   String
+  milestone_id String?
+  name         String
+  description  String?
+  assignee_id  String?
+  start_date   DateTime?
+  due_date     DateTime?
+  status       TaskStatus  @default(TODO)
+  progress     Int         @default(0)
+  created_at   DateTime    @default(now())
+  updated_at   DateTime    @updatedAt
+  project      Project     @relation(fields: [project_id], references: [id])
+  milestone    ProjectMilestone? @relation(fields: [milestone_id], references: [id])
+  assignee     users?      @relation("TaskAssignee", fields: [assignee_id], references: [id])
+
+  @@map("project_tasks")
 }
 
 model VendorCategoryLookup {
@@ -1109,6 +1132,12 @@ enum SourceType {
 
 enum MilestoneStatus {
   PLANNED
+  IN_PROGRESS
+  DONE
+}
+
+enum TaskStatus {
+  TODO
   IN_PROGRESS
   DONE
 }

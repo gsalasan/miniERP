@@ -93,7 +93,7 @@ interface MenuItem {
 
 const menuItems: MenuItem[] = [
   {
-    text: 'Project Queue',
+    text: 'Project Workspace',
     icon: <ProjectIcon />,
     path: '/',
   },
