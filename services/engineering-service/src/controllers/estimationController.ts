@@ -1293,10 +1293,36 @@ export const decideOnEstimation = async (req: Request, res: Response) => {
 
     // TODO: NotificationService integration placeholder
     
-    // If APPROVED, prepare for CRM integration (create quotation draft)
+    // If APPROVED, publish estimation:approved event
     if (finalDecision === 'APPROVED') {
-      // TODO: Auto-create quotation in CRM service or set flag for manual send
-      console.log(`✓ Estimation ${id} approved - ready to send to CRM as quotation`);
+      try {
+        // Calculate total amount from estimation (use total_sell_price if available, otherwise calculate from items)
+        let totalAmount = 0;
+        if (updated.total_sell_price) {
+          totalAmount = Number(updated.total_sell_price);
+        } else {
+          // Fallback: calculate from items
+          const estimationItems = await prisma.estimation_items.findMany({
+            where: { estimation_id: id },
+          });
+          totalAmount = estimationItems.reduce((sum, item) => {
+            return sum + (Number(item.sell_price_at_estimation || 0) * Number(item.quantity || 0));
+          }, 0);
+        }
+
+        await eventBus.publish<EstimationApprovedPayload>(EventNames.ESTIMATION_APPROVED, {
+          estimationId: updated.id,
+          projectId: updated.project_id,
+          projectName: updated.project?.project_name || 'Unknown',
+          approvedBy: approverId || 'system',
+          approvedAt: updated.approved_at || new Date(),
+          totalAmount,
+        });
+        console.log(`✓ Estimation ${id} approved - event published`);
+      } catch (error) {
+        console.error('[EventBus] Error publishing estimation:approved event:', error);
+        // Don't throw - event publishing failure shouldn't break the operation
+      }
     }
 
     return res.status(200).json({ success: true, data: updated });

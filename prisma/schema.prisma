@@ -128,7 +128,6 @@ model users {
   estimations_requested estimations[] @relation("EstimationRequester")
   projects_as_pm        Project[]     @relation("ProjectManager")
   projects_as_sales     Project[]     @relation("SalesUser")
-  tasks_assigned        ProjectTask[] @relation("TaskAssignee")
   employee              employees?    @relation(fields: [employee_id], references: [id])
 }
 
