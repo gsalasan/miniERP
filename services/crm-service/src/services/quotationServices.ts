@@ -64,7 +64,7 @@ class QuotationServices {
    */
   async getQuotationData(opportunityId: string): Promise<QuotationData> {
     // Get project with customer and estimation
-    const projectResult = await prisma.projects.findUnique({
+    const projectResult = await prisma.project.findUnique({
       where: { id: opportunityId },
       include: {
         customer: {
@@ -80,7 +80,7 @@ class QuotationServices {
           orderBy: { version: 'desc' },
           take: 1,
           include: {
-            estimation_items: true,
+            items: true,
           },
         },
       },
@@ -104,7 +104,7 @@ class QuotationServices {
         id: string;
         version: number;
         status: string;
-        estimation_items: Array<{
+        items: Array<{
           id: string;
           item_id: string;
           item_type: string;
@@ -140,7 +140,7 @@ class QuotationServices {
 
     // Get estimation items with details
     const items = await Promise.all(
-      estimation.estimation_items.map(async item => {
+      estimation.items.map(async item => {
         let itemDetails: {
           name: string;
           description?: string;
@@ -265,8 +265,8 @@ class QuotationServices {
     const estimation = await prisma.estimations.findUnique({
       where: { id: estimationId },
       include: {
-        estimation_items: true,
-        projects: {
+        items: true,
+        project: {
           include: {
             customer: {
               include: {
@@ -285,7 +285,7 @@ class QuotationServices {
     }
 
     // Get project with customer
-    const projectResult = await prisma.projects.findUnique({
+    const projectResult = await prisma.project.findUnique({
       where: { id: estimation.project_id },
       include: {
         customer: {
@@ -304,7 +304,7 @@ class QuotationServices {
           orderBy: { version: 'desc' },
           take: 1,
           include: {
-            estimation_items: true,
+            items: true,
           },
         },
       },
@@ -361,7 +361,7 @@ class QuotationServices {
         maxDiscountLimit: discountPolicy?.max_discount_limit,
       });
 
-      if (discountPolicy && discountPercentage > Number(discountPolicy.authority_limit)) {
+      if (discountPolicy && discountPercentage > Number(discountPolicy.authority_limit || discountPolicy.max_discount_limit)) {
         throw new Error(
           `Discount ${discountPercentage}% exceeds your authority limit. Please request approval.`
         );
@@ -389,7 +389,7 @@ class QuotationServices {
 
     // Get estimation items with details
     const items = await Promise.all(
-      estimation.estimation_items.map(async item => {
+      estimation.items.map(async item => {
         let itemDetails: {
           name: string;
           description?: string;
@@ -481,7 +481,7 @@ class QuotationServices {
     // const savedQuotation = await prisma.quotations.create({ data: quotationData });
 
     // Update project status to "Proposal Delivered"
-    await prisma.projects.update({
+    await prisma.project.update({
       where: { id: estimation.project_id },
       data: {
         status: 'PROPOSAL_DELIVERED',
@@ -550,7 +550,7 @@ class QuotationServices {
     const prefix = `QT-${year}${month}`;
 
     // Use project_number if available, otherwise generate random
-    const project = await prisma.projects.findUnique({
+    const project = await prisma.project.findUnique({
       where: { id: projectId },
       select: { project_number: true },
     });
@@ -570,24 +570,27 @@ class QuotationServices {
 
   /**
    * Get all quotations for a specific project
+   * TODO: Uncomment when quotations table is created
    */
-  async getQuotationsByProject(projectId: string) {
-    const quotations = await prisma.quotations.findMany({
-      where: { project_id: projectId },
-      orderBy: { created_at: 'desc' },
-      select: {
-        id: true,
-        quotation_number: true,
-        discount_percentage: true,
-        total_amount: true,
-        created_at: true,
-        valid_until: true,
-      },
-    });
+  async getQuotationsByProject(_projectId: string) {
+    // const quotations = await prisma.quotations.findMany({
+    //   where: { project_id: projectId },
+    //   orderBy: { created_at: 'desc' },
+    //   select: {
+    //     id: true,
+    //     quotation_number: true,
+    //     discount_percentage: true,
+    //     total_amount: true,
+    //     created_at: true,
+    //     valid_until: true,
+    //   },
+    // });
 
-    return quotations;
+    // return quotations;
+    return []; // Return empty array until quotations table is created
   }
 }
 
 export default new QuotationServices();
+
 

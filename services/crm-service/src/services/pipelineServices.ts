@@ -90,7 +90,7 @@ export class PipelineService {
       const rand = String(Math.floor(Math.random() * 10000)).padStart(4, '0');
       const candidate = `PRJ-${y}${m}-${rand}`;
 
-      const exists = await prisma.projects.findUnique({
+      const exists = await prisma.project.findUnique({
         where: { project_number: candidate }
       });
       if (!exists) return candidate;
@@ -165,7 +165,7 @@ export class PipelineService {
       status: { in: selectedStatuses },
     };
     
-    const projects = await prisma.projects.findMany({
+    const projects = await prisma.project.findMany({
       where: whereClause,
       include: {
         customer: {
@@ -187,7 +187,7 @@ export class PipelineService {
     if (queryFilter.sales_user_id) {
       roleOnlyFilter.sales_user_id = queryFilter.sales_user_id;
     }
-    const allUserProjects = await prisma.projects.findMany({
+    const allUserProjects = await prisma.project.findMany({
       where: roleOnlyFilter,
       select: { status: true },
     });
@@ -309,7 +309,7 @@ export class PipelineService {
     const oldStatus = project.status;
 
     // Update project status (now accepts any valid VARCHAR value)
-    const updatedProject = await prisma.projects.update({
+    const updatedProject = await prisma.project.update({
       where: { id: projectId },
       data: { 
         status: newStatus.toUpperCase(), // Normalize to uppercase
@@ -349,7 +349,7 @@ export class PipelineService {
    * Get project by ID
    */
   private async getProjectById(projectId: string): Promise<any> {
-    return await prisma.projects.findUnique({
+    return await prisma.project.findUnique({
       where: { id: projectId },
       include: {
         customer: {
@@ -365,7 +365,7 @@ export class PipelineService {
    * Public: Get project detail for API consumers with basic authorization
    */
   async getProjectDetail(projectId: string, user: UserInfo): Promise<any> {
-    const project = await prisma.projects.findUnique({
+    const project = await prisma.project.findUnique({
       where: { id: projectId },
       include: {
         customer: { select: { id: true, customer_name: true, city: true } }
@@ -536,7 +536,7 @@ export class PipelineService {
     // Try fetch project name for clearer description
     let projectName: string | null = null;
     try {
-      const p = await prisma.projects.findUnique({ where: { id: projectId }, select: { project_name: true } });
+      const p = await prisma.project.findUnique({ where: { id: projectId }, select: { project_name: true } });
       projectName = p?.project_name || null;
     } catch {
       projectName = null;
@@ -546,7 +546,7 @@ export class PipelineService {
       ? `Project '${projectName}' dipindah dari '${oldStatus}' menjadi '${newStatus}' oleh ${actorName}`
       : `Status diubah dari '${oldStatus}' menjadi '${newStatus}' oleh ${actorName}`;
 
-    await prisma.project_activities.create({
+    await prisma.projectActivity.create({
       data: {
         project_id: projectId,
         activity_type: 'STATUS_CHANGE',
@@ -578,7 +578,7 @@ export class PipelineService {
       throw new Error('You can only view activities of your own projects');
     }
 
-    return await prisma.project_activities.findMany({
+    return await prisma.projectActivity.findMany({
       where: { project_id: projectId },
       orderBy: { performed_at: 'desc' },
       take: 50 // Limit to recent 50 activities
@@ -641,7 +641,7 @@ export class PipelineService {
     ]);
     const normalizedType = activityType && allowedTypes.has(activityType) ? activityType : 'NOTE_ADDED';
 
-    const created = await prisma.project_activities.create({
+    const created = await prisma.projectActivity.create({
       data: {
         project_id: projectId,
         activity_type: normalizedType as any,
@@ -679,7 +679,7 @@ export class PipelineService {
 
     // Try create, handle unique conflict on project_number
     try {
-      return await prisma.projects.create({
+      return await prisma.project.create({
         data: dataToCreate,
         include: {
           customer: {
@@ -703,7 +703,7 @@ export class PipelineService {
           for (let i = 0; i < 3; i++) {
             projectNumber = await this.generateUniqueProjectNumber();
             try {
-              return await prisma.projects.create({
+              return await prisma.project.create({
                 data: { ...dataToCreate, project_number: projectNumber },
                 include: {
                   customer: { select: { id: true, customer_name: true, city: true } }
@@ -738,7 +738,7 @@ export class PipelineService {
       throw new Error('You can only update your own projects');
     }
 
-    return await prisma.projects.update({
+    return await prisma.project.update({
       where: { id: projectId },
       data: {
         ...updateData,
@@ -778,7 +778,7 @@ export class PipelineService {
     try {
       await Promise.all([
         // Delete project activities (has onDelete: Cascade but we delete explicitly for safety)
-        prisma.project_activities.deleteMany({ where: { project_id: projectId } }),
+        prisma.projectActivity.deleteMany({ where: { project_id: projectId } }),
         // Delete project BOMs
         prisma.project_boms.deleteMany({ where: { project_id: projectId } }),
         // Delete project milestones
@@ -812,7 +812,7 @@ export class PipelineService {
 
     // Finally, delete the project row itself
     try {
-      await prisma.projects.delete({ where: { id: projectId } });
+      await prisma.project.delete({ where: { id: projectId } });
     } catch (err) {
       console.error('Failed to delete project:', err);
       throw new Error('Gagal menghapus project: ' + (err as Error).message);

@@ -42,4 +42,11 @@ router.get('/:id', salesOrderController.getSalesOrderById);
  */
 router.patch('/:id/document', salesOrderController.updateDocument);
 
+/**
+ * @route DELETE /api/v1/sales-orders/:id
+ * @desc Delete Sales Order and revert project status
+ * @access Private (requires authentication)
+ */
+router.delete('/:id', salesOrderController.deleteSalesOrder);
+
 export default router;

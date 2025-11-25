@@ -64,7 +64,7 @@ class SalesOrderServices {
     } = input;
 
     // Step 1: Fetch project and validate
-    const project = await prisma.projects.findUnique({
+    const project = await prisma.project.findUnique({
       where: { id: projectId },
       include: {
         customer: true,
@@ -75,7 +75,7 @@ class SalesOrderServices {
           orderBy: { version: 'desc' },
           take: 1,
           include: {
-            estimation_items: true, // Include items untuk hitung subtotal
+            items: true, // Include items untuk hitung subtotal
           },
         },
       },
@@ -106,7 +106,7 @@ class SalesOrderServices {
       const estimation = project.estimations[0];
       
       // Hitung subtotal dari SUM(sell_price_at_estimation) - sudah TOTAL per line item
-      const subtotal = estimation.estimation_items.reduce((sum: number, item: any) => {
+      const subtotal = estimation.items.reduce((sum: number, item: any) => {
         const totalPerLine = Number(item.sell_price_at_estimation || 0);
         return sum + totalPerLine;
       }, 0);
@@ -156,7 +156,7 @@ class SalesOrderServices {
     });
 
     // Step 5: Update project status to WON
-    await prisma.projects.update({
+    await prisma.project.update({
       where: { id: projectId },
       data: {
         status: 'WON',
@@ -166,7 +166,7 @@ class SalesOrderServices {
     });
 
     // Step 6: Create activity log
-    await prisma.project_activities.create({
+    await prisma.projectActivity.create({
       data: {
         project_id: projectId,
         activity_type: 'STATUS_CHANGE',
@@ -186,7 +186,7 @@ class SalesOrderServices {
       salesOrderId: salesOrder.id,
       soNumber,
       projectName: project.project_name,
-      customerName: project.customer.name,
+      customerName: project.customer.customer_name,
       contractValue: contractValue.toString(),
       message: `Proyek '${project.project_name}' telah dimenangkan dan siap dimulai.`,
     });
@@ -206,7 +206,7 @@ class SalesOrderServices {
       message: `Proyek baru '${project.project_name}' telah dimulai.`,
       link: `/projects/${project.id}`,
       soNumber,
-      customerName: project.customer.name,
+      customerName: project.customer.customer_name,
     });
 
     console.log('[NOTIFICATION] Sending to Support Manager:', {
@@ -314,19 +314,89 @@ class SalesOrderServices {
 
     // Optional: create activity log
     try {
-      await prisma.project_activities.create({
+      await prisma.projectActivity.create({
         data: {
           project_id: updated.project_id,
-          activity_type: 'DOCUMENT_UPDATE',
+          activity_type: 'DOCUMENT_UPLOAD',
           description: 'PO document updated for Sales Order',
           performed_by: updatedByUserId,
           metadata: { salesOrderId: id, poDocumentUrl },
         },
       });
-    } catch {}
+    } catch {
+      // Ignore errors
+    }
 
     return updated;
+  }
+
+  /**
+   * Delete Sales Order
+   * - Validates Sales Order exists
+   * - Deletes SO record
+   * - Reverts project status back to PROPOSAL_DELIVERED
+   * - Creates activity log
+   */
+  async deleteSalesOrder(id: string, deletedByUserId: string) {
+    // Step 1: Fetch Sales Order
+    const salesOrder = await prisma.sales_orders.findUnique({
+      where: { id },
+      include: {
+        project: true,
+      },
+    });
+
+    if (!salesOrder) {
+      throw new Error('Sales Order not found');
+    }
+
+    const projectId = salesOrder.project_id;
+    const soNumber = salesOrder.so_number;
+
+    // Step 2: Delete Sales Order
+    await prisma.sales_orders.delete({
+      where: { id },
+    });
+
+    // Step 3: Revert project status back to PROPOSAL_DELIVERED
+    await prisma.project.update({
+      where: { id: projectId },
+      data: {
+        status: 'PROPOSAL_DELIVERED',
+        actual_close_date: null,
+        updated_at: new Date(),
+      },
+    });
+
+    // Step 4: Create activity log
+    await prisma.projectActivity.create({
+      data: {
+        project_id: projectId,
+        activity_type: 'STATUS_CHANGE',
+        description: `Sales Order ${soNumber} deleted. Project status reverted to PROPOSAL_DELIVERED.`,
+        performed_by: deletedByUserId,
+        metadata: {
+          soNumber,
+          deletedSalesOrderId: id,
+        },
+      },
+    });
+
+    console.log('[INFO] Sales Order deleted:', {
+      salesOrderId: id,
+      soNumber,
+      projectId,
+      projectName: salesOrder.project.project_name,
+    });
+
+    return {
+      message: 'Sales Order deleted successfully',
+      salesOrderId: id,
+      soNumber,
+      projectId,
+    };
   }
 }
 
 export default new SalesOrderServices();
+
