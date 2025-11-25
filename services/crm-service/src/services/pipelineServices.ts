@@ -1,6 +1,4 @@
 import { PrismaClient, Prisma } from '@prisma/client';
-import { eventBus } from '../utils/eventBus';
-import { EventNames, ProjectStatusChangedPayload } from '../../../shared-event-bus/src/events';
 
 const prisma = new PrismaClient();
 
@@ -306,7 +304,7 @@ export class PipelineService {
     }
 
     // Business rules validation
-    this.validateStatusTransition(project, newStatus);
+    await this.validateStatusTransition(project, newStatus);
 
     const oldStatus = project.status;
 
@@ -330,22 +328,6 @@ export class PipelineService {
 
     // Create activity log
     await this.createActivityLog(projectId, oldStatus, newStatus, user);
-
-    // Publish project:status:changed event
-    try {
-      await eventBus.publish<ProjectStatusChangedPayload>(EventNames.PROJECT_STATUS_CHANGED, {
-        projectId: updatedProject.id,
-        projectName: updatedProject.project_name,
-        customerId: (updatedProject as any).customer.id,
-        previousStatus: oldStatus,
-        newStatus: updatedProject.status,
-        estimatedValue: updatedProject.estimated_value ? Number(updatedProject.estimated_value) : undefined,
-        contractValue: updatedProject.contract_value ? Number(updatedProject.contract_value) : undefined,
-      });
-    } catch (error) {
-      console.error('[EventBus] Error publishing project:status:changed event:', error);
-      // Don't throw - event publishing failure shouldn't break the operation
-    }
 
     return {
       id: updatedProject.id,
@@ -419,29 +401,110 @@ export class PipelineService {
   }
 
   /**
-   * Validate business rules for status transitions
+   * Get user-friendly display name for status
    */
-  private validateStatusTransition(project: any, newStatus: string): void {
-    // Business rule: Cannot move to PROPOSAL_DELIVERED without approved estimation
-    if (
-      project.status === 'PRE_SALES' &&
-      newStatus === 'PROPOSAL_DELIVERED' &&
-      project.estimation_status !== 'APPROVED'
-    ) {
-      throw new Error('Tidak bisa membuat proposal sebelum estimasi disetujui');
+  private getStatusDisplayName(status: string): string {
+    const statusNames: Record<string, string> = {
+      'PROSPECT': 'Prospek',
+      'MEETING_SCHEDULED': 'Meeting Terjadwal',
+      'PRE_SALES': 'Pre-Sales',
+      'PROPOSAL_DELIVERED': 'Proposal Terkirim',
+      'NEGOTIATION': 'Negosiasi',
+      'WON': 'Menang',
+      'LOST': 'Kalah',
+      'ON_HOLD': 'Ditunda',
+      'DRAFT': 'Draft',
+      'ONGOING': 'Berlangsung',
+      'COMPLETED': 'Selesai',
+      'CANCELLED': 'Dibatalkan'
+    };
+    return statusNames[status] || status;
+  }
+
+  /**
+   * Validate business rules for status transitions
+   * Based on PIPELINE_STATUS_TRANSITIONS.md documentation
+   */
+  private async validateStatusTransition(project: any, newStatus: string): Promise<void> {
+    const currentStatus = project.status;
+    
+    // If status not changing, allow it
+    if (currentStatus === newStatus) {
+      return;
     }
 
-    // Add more business rules here as needed
-    // Example: Cannot move from PROSPECT directly to NEGOTIATION
-    if (project.status === 'PROSPECT' && newStatus === 'NEGOTIATION') {
-      throw new Error('Tidak bisa langsung ke tahap negosiasi dari prospek');
+    // Define allowed transitions map
+    const allowedTransitions: Record<string, string[]> = {
+      'PROSPECT': ['MEETING_SCHEDULED', 'PRE_SALES', 'LOST'],
+      'MEETING_SCHEDULED': ['PROSPECT', 'PRE_SALES', 'LOST'],
+      'PRE_SALES': ['MEETING_SCHEDULED', 'PROPOSAL_DELIVERED', 'LOST'],
+      'PROPOSAL_DELIVERED': ['PRE_SALES', 'NEGOTIATION', 'LOST'],
+      'NEGOTIATION': ['PROPOSAL_DELIVERED', 'WON', 'LOST'],
+      'WON': [], // Final state - no transitions allowed
+      'LOST': [], // Final state - no transitions allowed
+    };
+
+    // Get allowed transitions for current status
+    const allowed = allowedTransitions[currentStatus] || [];
+
+    // Check if transition is in the allowed list
+    if (!allowed.includes(newStatus)) {
+      const statusNames: Record<string, string> = {
+        'PROSPECT': 'Prospek',
+        'MEETING_SCHEDULED': 'Meeting Terjadwal',
+        'PRE_SALES': 'Pre-Sales',
+        'PROPOSAL_DELIVERED': 'Proposal Terkirim',
+        'NEGOTIATION': 'Negosiasi',
+        'WON': 'Menang',
+        'LOST': 'Kalah'
+      };
+
+      const currentName = statusNames[currentStatus] || currentStatus;
+      const newName = statusNames[newStatus] || newStatus;
+      const allowedNames = allowed.map(s => statusNames[s] || s).join(', ');
+
+      if (allowed.length === 0) {
+        throw new Error(
+          `Transisi status tidak valid: Project dengan status "${currentName}" sudah final dan tidak bisa dipindahkan.`
+        );
+      }
+
+      throw new Error(
+        `Transisi status tidak valid: Tidak bisa berpindah dari "${currentName}" ke "${newName}". Status yang diizinkan: ${allowedNames}`
+      );
     }
 
-    // Example: Cannot reopen LOST or WON projects to active statuses
-    const activeStatuses = ['PROSPECT', 'MEETING_SCHEDULED', 'PRE_SALES', 'PROPOSAL_DELIVERED', 'NEGOTIATION'];
-    if (['LOST', 'WON'].includes(project.status) && activeStatuses.includes(newStatus)) {
-      throw new Error('Tidak bisa mengaktifkan kembali project yang sudah selesai');
+    // Special Business Rules
+
+    // Rule 1: Cannot move to PROPOSAL_DELIVERED without approved estimation
+    // Check actual estimation status from estimations table (more reliable)
+    if (currentStatus === 'PRE_SALES' && newStatus === 'PROPOSAL_DELIVERED') {
+      const latestEstimation = await prisma.estimations.findFirst({
+        where: { project_id: project.id },
+        orderBy: { version: 'desc' },
+        select: { status: true },
+      });
+
+      if (!latestEstimation) {
+        throw new Error(
+          'Tidak bisa membuat proposal sebelum estimasi dibuat. Harap buat estimasi terlebih dahulu.'
+        );
+      }
+
+      const validStatuses = ['APPROVED', 'DISCOUNT_APPROVED'];
+      if (!validStatuses.includes(latestEstimation.status)) {
+        throw new Error(
+          `Tidak bisa membuat proposal sebelum estimasi disetujui. Status estimasi saat ini: ${latestEstimation.status}. Harap selesaikan dan approve estimasi terlebih dahulu.`
+        );
+      }
     }
+
+    // Rule 2: Can only mark as WON from NEGOTIATION
+    if (newStatus === 'WON' && currentStatus !== 'NEGOTIATION') {
+      throw new Error('Project hanya bisa dimenangkan (WON) dari tahap negosiasi.');
+    }
+
+    // Rule 3: Final states (WON/LOST) cannot be reopened - already handled above by empty allowed arrays
   }
 
   /**

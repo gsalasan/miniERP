@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from "react";
 import {
   Dialog,
   DialogTitle,
@@ -12,12 +12,8 @@ import {
   Select,
   MenuItem,
   Alert,
-} from '@mui/material';
-import {
-  Customer,
-  CustomerStatus,
-  UpdateCustomerData,
-} from '../types/customer';
+} from "@mui/material";
+import { Customer, CustomerStatus, UpdateCustomerData } from "../types/customer";
 
 interface CustomerEditDialogProps {
   open: boolean;
@@ -33,17 +29,17 @@ const CustomerEditDialog: React.FC<CustomerEditDialogProps> = ({
   onSave,
 }) => {
   const [formData, setFormData] = useState<UpdateCustomerData>({
-    customer_name: '',
-    channel: '',
-    city: '',
-    status: 'ACTIVE' as CustomerStatus,
-    district: '',
-    alamat: '',
+    customer_name: "",
+    channel: "",
+    city: "",
+    status: "ACTIVE" as CustomerStatus,
+    district: "",
+    alamat: "",
     top_days: 30,
-    assigned_sales_id: '',
+    assigned_sales_id: "",
     credit_limit: 0,
-    no_npwp: '',
-    sppkp: '',
+    no_npwp: "",
+    sppkp: "",
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -52,17 +48,17 @@ const CustomerEditDialog: React.FC<CustomerEditDialogProps> = ({
   useEffect(() => {
     if (customer) {
       setFormData({
-        customer_name: customer.customer_name || '',
-        channel: customer.channel || '',
-        city: customer.city || '',
-        district: customer.district || '',
-        alamat: customer.alamat || '',
-        status: customer.status || 'ACTIVE',
+        customer_name: customer.customer_name || "",
+        channel: customer.channel || "",
+        city: customer.city || "",
+        district: customer.district || "",
+        alamat: customer.alamat || "",
+        status: customer.status || "ACTIVE",
         top_days: customer.top_days || 30,
-        assigned_sales_id: customer.assigned_sales_id || '',
+        assigned_sales_id: customer.assigned_sales_id || "",
         credit_limit: customer.credit_limit || 0,
-        no_npwp: customer.no_npwp || '',
-        sppkp: customer.sppkp || '',
+        no_npwp: customer.no_npwp || "",
+        sppkp: customer.sppkp || "",
       });
     }
   }, [customer]);
@@ -72,18 +68,18 @@ const CustomerEditDialog: React.FC<CustomerEditDialogProps> = ({
     (
       event:
         | React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
-        | { target: { value: unknown } }
+        | { target: { value: unknown } },
     ) => {
       const value = event.target.value;
       // Handle numeric fields
-      if (field === 'top_days' || field === 'credit_limit') {
-        const numericValue = value === '' ? 0 : Number(value);
-        setFormData(prev => ({
+      if (field === "top_days" || field === "credit_limit") {
+        const numericValue = value === "" ? 0 : Number(value);
+        setFormData((prev) => ({
           ...prev,
           [field]: numericValue,
         }));
       } else {
-        setFormData(prev => ({
+        setFormData((prev) => ({
           ...prev,
           [field]: value,
         }));
@@ -99,33 +95,30 @@ const CustomerEditDialog: React.FC<CustomerEditDialogProps> = ({
 
       // Validate required fields
       if (!formData.customer_name?.trim()) {
-        setError('Nama customer harus diisi');
+        setError("Nama customer harus diisi");
         return;
       }
 
       // Validate numeric fields
       if (formData.top_days !== undefined && formData.top_days < 0) {
-        setError('TOP days tidak boleh negatif');
+        setError("TOP days tidak boleh negatif");
         return;
       }
 
       if (formData.credit_limit !== undefined && formData.credit_limit < 0) {
-        setError('Credit limit tidak boleh negatif');
+        setError("Credit limit tidak boleh negatif");
         return;
       }
 
       // Clean up data - remove empty strings and convert to proper types
       const cleanData: UpdateCustomerData = {};
-      if (formData.customer_name?.trim())
-        cleanData.customer_name = formData.customer_name.trim();
+      if (formData.customer_name?.trim()) cleanData.customer_name = formData.customer_name.trim();
       if (formData.channel?.trim()) cleanData.channel = formData.channel.trim();
       if (formData.city?.trim()) cleanData.city = formData.city.trim();
-      if (formData.district?.trim())
-        cleanData.district = formData.district.trim();
+      if (formData.district?.trim()) cleanData.district = formData.district.trim();
       if (formData.alamat?.trim()) cleanData.alamat = formData.alamat.trim();
       if (formData.status) cleanData.status = formData.status;
-      if (formData.top_days !== undefined)
-        cleanData.top_days = Number(formData.top_days);
+      if (formData.top_days !== undefined) cleanData.top_days = Number(formData.top_days);
       if (formData.assigned_sales_id?.trim())
         cleanData.assigned_sales_id = formData.assigned_sales_id.trim();
       if (formData.credit_limit !== undefined)
@@ -136,9 +129,7 @@ const CustomerEditDialog: React.FC<CustomerEditDialogProps> = ({
       await onSave(customer.id, cleanData);
       onClose();
     } catch (err) {
-      setError(
-        err instanceof Error ? err.message : 'Gagal mengupdate customer'
-      );
+      setError(err instanceof Error ? err.message : "Gagal mengupdate customer");
     } finally {
       setLoading(false);
     }
@@ -153,7 +144,7 @@ const CustomerEditDialog: React.FC<CustomerEditDialogProps> = ({
     <Dialog
       open={open}
       onClose={handleClose}
-      maxWidth='md'
+      maxWidth="md"
       fullWidth
       PaperProps={{
         sx: { borderRadius: 3 },
@@ -161,8 +152,8 @@ const CustomerEditDialog: React.FC<CustomerEditDialogProps> = ({
     >
       <DialogTitle
         sx={{
-          background: 'linear-gradient(45deg, #1976d2, #42a5f5)',
-          color: 'white',
+          background: "linear-gradient(45deg, #1976d2, #42a5f5)",
+          color: "white",
           fontWeight: 600,
         }}
       >
@@ -171,7 +162,7 @@ const CustomerEditDialog: React.FC<CustomerEditDialogProps> = ({
 
       <DialogContent sx={{ pt: 3 }}>
         {error && (
-          <Alert severity='error' sx={{ mb: 2 }}>
+          <Alert severity="error" sx={{ mb: 2 }}>
             {error}
           </Alert>
         )}
@@ -180,45 +171,41 @@ const CustomerEditDialog: React.FC<CustomerEditDialogProps> = ({
           <Grid item xs={12} sm={6}>
             <TextField
               fullWidth
-              label='Nama Customer'
+              label="Nama Customer"
               value={formData.customer_name}
-              onChange={handleInputChange('customer_name')}
+              onChange={handleInputChange("customer_name")}
               required
-              variant='outlined'
+              variant="outlined"
             />
           </Grid>
 
           <Grid item xs={12} sm={6}>
             <TextField
               fullWidth
-              label='Channel'
+              label="Channel"
               value={formData.channel}
-              onChange={handleInputChange('channel')}
-              variant='outlined'
+              onChange={handleInputChange("channel")}
+              variant="outlined"
             />
           </Grid>
 
           <Grid item xs={12} sm={6}>
             <TextField
               fullWidth
-              label='Kota'
+              label="Kota"
               value={formData.city}
-              onChange={handleInputChange('city')}
-              variant='outlined'
+              onChange={handleInputChange("city")}
+              variant="outlined"
             />
           </Grid>
 
           <Grid item xs={12} sm={6}>
             <FormControl fullWidth>
               <InputLabel>Status</InputLabel>
-              <Select
-                value={formData.status}
-                label='Status'
-                onChange={handleInputChange('status')}
-              >
-                <MenuItem value='ACTIVE'>Active</MenuItem>
-                <MenuItem value='INACTIVE'>Inactive</MenuItem>
-                <MenuItem value='PROSPECT'>Prospect</MenuItem>
+              <Select value={formData.status} label="Status" onChange={handleInputChange("status")}>
+                <MenuItem value="ACTIVE">Active</MenuItem>
+                <MenuItem value="INACTIVE">Inactive</MenuItem>
+                <MenuItem value="PROSPECT">Prospect</MenuItem>
               </Select>
             </FormControl>
           </Grid>
@@ -226,68 +213,63 @@ const CustomerEditDialog: React.FC<CustomerEditDialogProps> = ({
           <Grid item xs={12} sm={6}>
             <TextField
               fullWidth
-              label='TOP (Hari)'
-              type='number'
+              label="TOP (Hari)"
+              type="number"
               value={formData.top_days}
-              onChange={handleInputChange('top_days')}
-              variant='outlined'
+              onChange={handleInputChange("top_days")}
+              variant="outlined"
             />
           </Grid>
 
           <Grid item xs={12} sm={6}>
             <TextField
               fullWidth
-              label='Credit Limit'
-              type='number'
+              label="Credit Limit"
+              type="number"
               value={formData.credit_limit}
-              onChange={handleInputChange('credit_limit')}
-              variant='outlined'
+              onChange={handleInputChange("credit_limit")}
+              variant="outlined"
             />
           </Grid>
 
           <Grid item xs={12} sm={6}>
             <TextField
               fullWidth
-              label='Sales ID'
+              label="Sales ID"
               value={formData.assigned_sales_id}
-              onChange={handleInputChange('assigned_sales_id')}
-              variant='outlined'
+              onChange={handleInputChange("assigned_sales_id")}
+              variant="outlined"
             />
           </Grid>
 
           <Grid item xs={12} sm={6}>
             <TextField
               fullWidth
-              label='No. NPWP'
+              label="No. NPWP"
               value={formData.no_npwp}
-              onChange={handleInputChange('no_npwp')}
-              variant='outlined'
+              onChange={handleInputChange("no_npwp")}
+              variant="outlined"
             />
           </Grid>
 
           <Grid item xs={12}>
             <TextField
               fullWidth
-              label='SPPKP'
+              label="SPPKP"
               value={formData.sppkp}
-              onChange={handleInputChange('sppkp')}
-              variant='outlined'
+              onChange={handleInputChange("sppkp")}
+              variant="outlined"
             />
           </Grid>
         </Grid>
       </DialogContent>
 
       <DialogActions sx={{ p: 3, gap: 2 }}>
-        <Button onClick={handleClose} variant='outlined' sx={{ minWidth: 100 }}>
+        <Button onClick={handleClose} variant="outlined" sx={{ minWidth: 100 }}>
           Batal
         </Button>
-        <Button
-          onClick={handleSave}
-          variant='contained'
-          disabled={loading}
-          sx={{ minWidth: 100 }}
-        >
-          {loading ? 'Menyimpan...' : 'Simpan'}
+        <Button onClick={handleSave} variant="contained" disabled={loading} sx={{ minWidth: 100 }}>
+          {loading ? "Menyimpan..." : "Simpan"}
         </Button>
       </DialogActions>
     </Dialog>

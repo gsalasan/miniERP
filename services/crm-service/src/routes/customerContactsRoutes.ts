@@ -12,7 +12,6 @@ import {
 
 const router = Router();
 
-// GET /api/v1/customer-contacts - Get all customer contacts
 router.get('/', verifyToken, getAllCustomerContacts);
 
 // GET /api/v1/customer-contacts/:id - Get customer contact by ID
