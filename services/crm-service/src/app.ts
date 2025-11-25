@@ -7,6 +7,7 @@ import customerContactRoutes from './routes/customerContactsRoutes';
 import pipelineRoutes from './routes/pipelineRoutes';
 import quotationRoutes from './routes/quotationRoutes';
 import discountApprovalRoutes from './routes/discountApprovalRoutes';
+import discountPolicyRoutes from './routes/discountPolicyRoutes';
 import salesOrderRoutes from './routes/salesOrderRoutes';
 
 dotenv.config();
@@ -61,6 +62,7 @@ app.use('/api/v1/customer-contacts', customerContactRoutes);
 app.use('/api/v1/pipeline', pipelineRoutes);
 app.use('/api/v1/quotations', quotationRoutes);
 app.use('/api/v1/estimations', discountApprovalRoutes);
+app.use('/api/v1/discount-policies', discountPolicyRoutes);
 app.use('/api/v1/sales-orders', salesOrderRoutes);
 
 // Health check

@@ -199,7 +199,7 @@ class DiscountApprovalServices {
 
     const highest = policies[0];
     return {
-      id: highest.id,
+      id: String(highest.id),
       role: highest.role,
       authorityLimit: Number(highest.authority_limit),
       maxDiscountLimit: Number(highest.max_discount_limit),

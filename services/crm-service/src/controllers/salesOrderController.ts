@@ -214,6 +214,46 @@ class SalesOrderController {
       });
     }
   }
+
+  async deleteSalesOrder(req: Request, res: Response): Promise<void> {
+    try {
+      const { id } = req.params;
+
+      const userId = (req as any).user?.id;
+      if (!userId) {
+        res.status(401).json({
+          success: false,
+          message: 'User authentication required',
+        });
+        return;
+      }
+
+      const result = await salesOrderServices.deleteSalesOrder(id, userId);
+
+      res.status(200).json({
+        success: true,
+        message: result.message,
+        data: result,
+      });
+    } catch (error) {
+      const err = error as Error;
+
+      if (err.message === 'Sales Order not found') {
+        res.status(404).json({
+          success: false,
+          message: err.message,
+        });
+        return;
+      }
+
+      console.error('[SalesOrderController] Error deleting sales order:', err);
+      res.status(500).json({
+        success: false,
+        message: 'Failed to delete Sales Order',
+        error: err.message,
+      });
+    }
+  }
 }
 
 export default new SalesOrderController();
