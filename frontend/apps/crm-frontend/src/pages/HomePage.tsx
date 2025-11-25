@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from "react";
 import {
   Box,
   Typography,
@@ -14,7 +14,7 @@ import {
   ListItemText,
   LinearProgress,
   Paper,
-} from '@mui/material';
+} from "@mui/material";
 import {
   People as PeopleIcon,
   TrendingUp as TrendingUpIcon,
@@ -25,10 +25,10 @@ import {
   Today as TodayIcon,
   ArrowUpward as ArrowUpwardIcon,
   ArrowDownward as ArrowDownwardIcon,
-} from '@mui/icons-material';
-import { useNavigate } from 'react-router-dom';
-import { customersApi } from '../api/customers';
-import { Customer } from '../types/customer';
+} from "@mui/icons-material";
+import { useNavigate } from "react-router-dom";
+import { customersApi } from "../api/customers";
+import { Customer } from "../types/customer";
 
 interface StatCardProps {
   title: string;
@@ -36,7 +36,7 @@ interface StatCardProps {
   icon: React.ReactNode;
   color: string;
   subtitle?: string;
-  trend?: 'up' | 'down';
+  trend?: "up" | "down";
   percentage?: string;
 }
 
@@ -52,83 +52,81 @@ const StatCard: React.FC<StatCardProps> = ({
   return (
     <Card
       sx={{
-        height: '100%',
-        background: '#FFFFFF',
+        height: "100%",
+        background: "#FFFFFF",
         border: `1px solid ${color}20`,
-        transition: 'all 0.3s ease-in-out',
-        position: 'relative',
-        overflow: 'hidden',
-        boxShadow: '0 2px 8px rgba(6, 16, 58, 0.08)',
-        '&:hover': {
-          transform: 'translateY(-4px)',
+        transition: "all 0.3s ease-in-out",
+        position: "relative",
+        overflow: "hidden",
+        boxShadow: "0 2px 8px rgba(6, 16, 58, 0.08)",
+        "&:hover": {
+          transform: "translateY(-4px)",
           boxShadow: `0 8px 24px ${color}20`,
           border: `1px solid ${color}40`,
         },
-        '&::before': {
+        "&::before": {
           content: '""',
-          position: 'absolute',
+          position: "absolute",
           top: 0,
           left: 0,
           right: 0,
-          height: '3px',
+          height: "3px",
           background: color,
         },
       }}
     >
       <CardContent sx={{ p: 3 }}>
-        <Box display='flex' alignItems='center' justifyContent='space-between'>
+        <Box display="flex" alignItems="center" justifyContent="space-between">
           <Box flex={1}>
             <Typography
-              variant='body2'
+              variant="body2"
               sx={{
                 fontWeight: 500,
                 mb: 1,
-                color: '#6B6E70',
-                textTransform: 'uppercase',
-                fontSize: '0.75rem',
-                letterSpacing: '0.5px',
+                color: "#6B6E70",
+                textTransform: "uppercase",
+                fontSize: "0.75rem",
+                letterSpacing: "0.5px",
               }}
             >
               {title}
             </Typography>
             <Typography
-              variant='h3'
+              variant="h3"
               sx={{
                 fontWeight: 700,
-                color: '#333333',
+                color: "#333333",
                 mb: 1,
-                fontSize: '2rem',
+                fontSize: "2rem",
               }}
             >
               {value}
             </Typography>
-            <Box display='flex' alignItems='center' gap={1}>
+            <Box display="flex" alignItems="center" gap={1}>
               {trend && percentage && (
                 <Chip
-                  icon={
-                    trend === 'up' ? <ArrowUpwardIcon /> : <ArrowDownwardIcon />
-                  }
+                  icon={trend === "up" ? <ArrowUpwardIcon /> : <ArrowDownwardIcon />}
                   label={percentage}
-                  size='small'
+                  size="small"
                   sx={
-                    trend === 'up'
+                    trend === "up"
                       ? {
-                          backgroundColor: '#5CB85C',
-                          color: 'white',
+                          backgroundColor: "#5CB85C",
+                          color: "white",
                           fontWeight: 600,
-                          fontSize: '0.7rem',
+                          fontSize: "0.7rem",
                         }
                       : {
-                          backgroundColor: '#D9534F',
-                          color: 'white',
+                          backgroundColor: "#D9534F",
+                          color: "white",
                           fontWeight: 600,
-                          fontSize: '0.7rem',
+                          fontSize: "0.7rem",
                         }
                   }
                 />
               )}
               {subtitle && (
-                <Typography variant='caption' sx={{ color: '#6B6E70' }}>
+                <Typography variant="caption" sx={{ color: "#6B6E70" }}>
                   {subtitle}
                 </Typography>
               )}
@@ -138,15 +136,15 @@ const StatCard: React.FC<StatCardProps> = ({
             sx={{
               width: 56,
               height: 56,
-              borderRadius: '12px',
+              borderRadius: "12px",
               background: `${color}15`,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
               color: color,
-              transition: 'transform 0.3s ease',
-              '&:hover': {
-                transform: 'scale(1.1)',
+              transition: "transform 0.3s ease",
+              "&:hover": {
+                transform: "scale(1.1)",
               },
             }}
           >
@@ -172,7 +170,7 @@ const HomePage: React.FC = () => {
         setCustomers(data);
       } catch (error) {
         // eslint-disable-next-line no-console
-        console.error('Error loading customers:', error);
+        console.error("Error loading customers:", error);
       } finally {
         setLoading(false);
       }
@@ -183,141 +181,119 @@ const HomePage: React.FC = () => {
 
   // Calculate statistics from real data
   const totalCustomers = customers.length;
-  const activeCustomers = customers.filter(c => c.status === 'ACTIVE').length;
-  const prospectCustomers = customers.filter(
-    c => c.status === 'PROSPECT'
-  ).length;
-  const inactiveCustomers = customers.filter(
-    c => c.status === 'INACTIVE'
-  ).length;
+  const activeCustomers = customers.filter((c) => c.status === "ACTIVE").length;
+  const prospectCustomers = customers.filter((c) => c.status === "PROSPECT").length;
+  const inactiveCustomers = customers.filter((c) => c.status === "INACTIVE").length;
 
   // Calculate total contacts
   const totalContacts = customers.reduce(
     (sum, customer) => sum + (customer.customer_contacts?.length || 0),
-    0
+    0,
   );
 
   // Get recent customers (last 3 added)
   const recentCustomers = [...customers]
-    .sort(
-      (a, b) =>
-        new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-    )
+    .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
     .slice(0, 3);
 
   const stats = [
     {
-      title: 'Total Customers',
-      value: totalCustomers.toLocaleString('id-ID'),
-      icon: <PeopleIcon fontSize='large' />,
-      color: '#06103A', // Primary Dark
+      title: "Total Customers",
+      value: totalCustomers.toLocaleString("id-ID"),
+      icon: <PeopleIcon fontSize="large" />,
+      color: "#06103A", // Primary Dark
       subtitle: `${activeCustomers} active`,
-      trend: 'up' as const,
+      trend: "up" as const,
       percentage:
-        activeCustomers > 0
-          ? `${Math.round((activeCustomers / totalCustomers) * 100)}%`
-          : '0%',
+        activeCustomers > 0 ? `${Math.round((activeCustomers / totalCustomers) * 100)}%` : "0%",
     },
     {
-      title: 'Sales Orders',
-      value: '0',
-      icon: <AssignmentIcon fontSize='large' />,
-      color: '#F0AD4E', // Warning
-      subtitle: 'bulan ini',
-      trend: 'down' as const,
-      percentage: '0%',
+      title: "Sales Orders",
+      value: "0",
+      icon: <AssignmentIcon fontSize="large" />,
+      color: "#F0AD4E", // Warning
+      subtitle: "bulan ini",
+      trend: "down" as const,
+      percentage: "0%",
     },
     {
-      title: 'Total Kontak',
-      value: totalContacts.toLocaleString('id-ID'),
-      icon: <MoneyIcon fontSize='large' />,
-      color: '#C8A870', // Accent Gold
-      subtitle: 'kontak customer',
-      trend: totalContacts > 0 ? ('up' as const) : ('down' as const),
+      title: "Total Kontak",
+      value: totalContacts.toLocaleString("id-ID"),
+      icon: <MoneyIcon fontSize="large" />,
+      color: "#C8A870", // Accent Gold
+      subtitle: "kontak customer",
+      trend: totalContacts > 0 ? ("up" as const) : ("down" as const),
       percentage: `${totalContacts}`,
     },
   ];
 
   const recentActivities = recentCustomers.map((customer, index) => ({
     id: customer.id,
-    type: 'customer',
-    title: 'Customer ditambahkan',
+    type: "customer",
+    title: "Customer ditambahkan",
     description: `${customer.customer_name} - ${customer.city}`,
-    time: new Date(customer.createdAt).toLocaleDateString('id-ID', {
-      day: 'numeric',
-      month: 'long',
-      year: 'numeric',
+    time: new Date(customer.createdAt).toLocaleDateString("id-ID", {
+      day: "numeric",
+      month: "long",
+      year: "numeric",
     }),
     avatar: customer.customer_name.charAt(0).toUpperCase(),
-    color: index === 0 ? '#06103A' : index === 1 ? '#4E88BE' : '#C8A870',
+    color: index === 0 ? "#06103A" : index === 1 ? "#4E88BE" : "#C8A870",
   }));
 
   const quickActions = [
     {
-      title: 'Tambah Customer',
-      description: 'Buat customer baru',
+      title: "Tambah Customer",
+      description: "Buat customer baru",
       icon: <AddIcon />,
-      color: '#C8A870', // Accent Gold
-      action: () => navigate('/customers/new'),
+      color: "#C8A870", // Accent Gold
+      action: () => navigate("/customers/new"),
     },
     {
-      title: 'Lihat Customers',
-      description: 'Kelola semua customer',
+      title: "Lihat Customers",
+      description: "Kelola semua customer",
       icon: <VisibilityIcon />,
-      color: '#06103A', // Primary Dark
-      action: () => navigate('/customers'),
+      color: "#06103A", // Primary Dark
+      action: () => navigate("/customers"),
     },
     {
-      title: 'Pipeline',
-      description: 'Kelola sales pipeline',
+      title: "Pipeline",
+      description: "Kelola sales pipeline",
       icon: <TrendingUpIcon />,
-      color: '#4E88BE', // Primary Light
-      action: () => navigate('/pipeline'),
+      color: "#4E88BE", // Primary Light
+      action: () => navigate("/pipeline"),
     },
   ];
 
   const salesProgress = [
     {
-      name: 'Active Customers',
-      current:
-        totalCustomers > 0
-          ? Math.round((activeCustomers / totalCustomers) * 100)
-          : 0,
+      name: "Active Customers",
+      current: totalCustomers > 0 ? Math.round((activeCustomers / totalCustomers) * 100) : 0,
       target: 100,
-      color: '#06103A',
+      color: "#06103A",
     },
     {
-      name: 'Prospect Conversion',
-      current:
-        totalCustomers > 0
-          ? Math.round((prospectCustomers / totalCustomers) * 100)
-          : 0,
+      name: "Prospect Conversion",
+      current: totalCustomers > 0 ? Math.round((prospectCustomers / totalCustomers) * 100) : 0,
       target: 100,
-      color: '#4E88BE',
+      color: "#4E88BE",
     },
     {
-      name: 'Customer Retention',
+      name: "Customer Retention",
       current:
         totalCustomers > 0
-          ? Math.round(
-              ((totalCustomers - inactiveCustomers) / totalCustomers) * 100
-            )
+          ? Math.round(((totalCustomers - inactiveCustomers) / totalCustomers) * 100)
           : 0,
       target: 100,
-      color: '#C8A870',
+      color: "#C8A870",
     },
   ];
 
   return (
     <Box>
       {loading ? (
-        <Box
-          display='flex'
-          justifyContent='center'
-          alignItems='center'
-          minHeight='400px'
-        >
-          <Typography variant='h6' color='text.secondary'>
+        <Box display="flex" justifyContent="center" alignItems="center" minHeight="400px">
+          <Typography variant="h6" color="text.secondary">
             Memuat data...
           </Typography>
         </Box>
@@ -327,43 +303,42 @@ const HomePage: React.FC = () => {
           <Paper
             elevation={0}
             sx={{
-              background: 'linear-gradient(135deg, #06103A 0%, #4E88BE 100%)',
-              color: 'white',
+              background: "linear-gradient(135deg, #06103A 0%, #4E88BE 100%)",
+              color: "white",
               p: 4,
               mb: 4,
               borderRadius: 3,
-              position: 'relative',
-              overflow: 'hidden',
-              boxShadow: '0 4px 20px rgba(6, 16, 58, 0.15)',
-              '&::before': {
+              position: "relative",
+              overflow: "hidden",
+              boxShadow: "0 4px 20px rgba(6, 16, 58, 0.15)",
+              "&::before": {
                 content: '""',
-                position: 'absolute',
+                position: "absolute",
                 top: 0,
                 right: 0,
-                width: '200px',
-                height: '200px',
-                background: 'rgba(200, 168, 112, 0.1)',
-                borderRadius: '50%',
-                transform: 'translate(60px, -100px)',
+                width: "200px",
+                height: "200px",
+                background: "rgba(200, 168, 112, 0.1)",
+                borderRadius: "50%",
+                transform: "translate(60px, -100px)",
               },
             }}
           >
-            <Box position='relative' zIndex={1}>
-              <Typography variant='h3' sx={{ mb: 1, fontWeight: 700 }}>
+            <Box position="relative" zIndex={1}>
+              <Typography variant="h3" sx={{ mb: 1, fontWeight: 700 }}>
                 Dashboard CRM ✨
               </Typography>
-              <Typography variant='h6' sx={{ mb: 2, opacity: 0.9 }}>
-                Selamat datang di sistem Customer Relationship Management
-                miniERP
+              <Typography variant="h6" sx={{ mb: 2, opacity: 0.9 }}>
+                Selamat datang di sistem Customer Relationship Management miniERP
               </Typography>
-              <Box display='flex' alignItems='center' gap={1}>
-                <TodayIcon fontSize='small' />
-                <Typography variant='body1'>
-                  {new Date().toLocaleDateString('id-ID', {
-                    weekday: 'long',
-                    year: 'numeric',
-                    month: 'long',
-                    day: 'numeric',
+              <Box display="flex" alignItems="center" gap={1}>
+                <TodayIcon fontSize="small" />
+                <Typography variant="body1">
+                  {new Date().toLocaleDateString("id-ID", {
+                    weekday: "long",
+                    year: "numeric",
+                    month: "long",
+                    day: "numeric",
                   })}
                 </Typography>
               </Box>
@@ -393,25 +368,25 @@ const HomePage: React.FC = () => {
             <Grid item xs={12} md={8}>
               <Card
                 sx={{
-                  height: '100%',
-                  backgroundColor: '#FFFFFF',
-                  boxShadow: '0 2px 8px rgba(6, 16, 58, 0.08)',
+                  height: "100%",
+                  backgroundColor: "#FFFFFF",
+                  boxShadow: "0 2px 8px rgba(6, 16, 58, 0.08)",
                 }}
               >
                 <CardContent sx={{ p: 3 }}>
-                  <Typography variant='h5' sx={{ mb: 3, fontWeight: 600 }}>
+                  <Typography variant="h5" sx={{ mb: 3, fontWeight: 600 }}>
                     Recent Activities
                   </Typography>
                   <List>
-                    {recentActivities.map(activity => (
+                    {recentActivities.map((activity) => (
                       <ListItem
                         key={activity.id}
                         sx={{
                           mb: 1,
                           borderRadius: 2,
-                          transition: 'background-color 0.2s',
-                          '&:hover': {
-                            backgroundColor: 'rgba(0,0,0,0.02)',
+                          transition: "background-color 0.2s",
+                          "&:hover": {
+                            backgroundColor: "rgba(0,0,0,0.02)",
                           },
                         }}
                       >
@@ -427,25 +402,25 @@ const HomePage: React.FC = () => {
                         </ListItemAvatar>
                         <ListItemText
                           primary={
-                            <Typography variant='subtitle1' fontWeight={600}>
+                            <Typography variant="subtitle1" fontWeight={600}>
                               {activity.title}
                             </Typography>
                           }
                           secondary={
                             <React.Fragment>
                               <Typography
-                                variant='body2'
-                                color='text.secondary'
-                                component='span'
-                                display='block'
+                                variant="body2"
+                                color="text.secondary"
+                                component="span"
+                                display="block"
                               >
                                 {activity.description}
                               </Typography>
                               <Typography
-                                variant='caption'
-                                color='text.disabled'
-                                component='span'
-                                display='block'
+                                variant="caption"
+                                color="text.disabled"
+                                component="span"
+                                display="block"
                               >
                                 {activity.time}
                               </Typography>
@@ -461,45 +436,42 @@ const HomePage: React.FC = () => {
 
             {/* Sidebar */}
             <Grid item xs={12} md={4}>
-              <Box display='flex' flexDirection='column' gap={3}>
+              <Box display="flex" flexDirection="column" gap={3}>
                 {/* Quick Actions */}
                 <Card
                   sx={{
-                    backgroundColor: '#FFFFFF',
-                    boxShadow: '0 2px 8px rgba(6, 16, 58, 0.08)',
+                    backgroundColor: "#FFFFFF",
+                    boxShadow: "0 2px 8px rgba(6, 16, 58, 0.08)",
                   }}
                 >
                   <CardContent sx={{ p: 3 }}>
-                    <Typography variant='h6' sx={{ mb: 3, fontWeight: 600 }}>
+                    <Typography variant="h6" sx={{ mb: 3, fontWeight: 600 }}>
                       Quick Actions
                     </Typography>
-                    <Box display='flex' flexDirection='column' gap={2}>
+                    <Box display="flex" flexDirection="column" gap={2}>
                       {quickActions.map((action, index) => (
                         <Button
                           key={index}
-                          variant='outlined'
+                          variant="outlined"
                           startIcon={action.icon}
                           onClick={action.action}
                           fullWidth
                           sx={{
                             p: 2,
-                            justifyContent: 'flex-start',
+                            justifyContent: "flex-start",
                             borderColor: `${action.color}30`,
                             color: action.color,
-                            '&:hover': {
+                            "&:hover": {
                               borderColor: action.color,
                               backgroundColor: `${action.color}08`,
                             },
                           }}
                         >
-                          <Box textAlign='left' ml={1}>
-                            <Typography variant='subtitle2' fontWeight={600}>
+                          <Box textAlign="left" ml={1}>
+                            <Typography variant="subtitle2" fontWeight={600}>
                               {action.title}
                             </Typography>
-                            <Typography
-                              variant='caption'
-                              color='text.secondary'
-                            >
+                            <Typography variant="caption" color="text.secondary">
                               {action.description}
                             </Typography>
                           </Box>
@@ -512,51 +484,39 @@ const HomePage: React.FC = () => {
                 {/* Sales Progress */}
                 <Card
                   sx={{
-                    backgroundColor: '#FFFFFF',
-                    boxShadow: '0 2px 8px rgba(6, 16, 58, 0.08)',
+                    backgroundColor: "#FFFFFF",
+                    boxShadow: "0 2px 8px rgba(6, 16, 58, 0.08)",
                   }}
                 >
                   <CardContent sx={{ p: 3 }}>
-                    <Typography variant='h6' sx={{ mb: 3, fontWeight: 600 }}>
+                    <Typography variant="h6" sx={{ mb: 3, fontWeight: 600 }}>
                       Sales Progress
                     </Typography>
-                    <Box display='flex' flexDirection='column' gap={3}>
+                    <Box display="flex" flexDirection="column" gap={3}>
                       {salesProgress.map((item, index) => (
                         <Box key={index}>
-                          <Box
-                            display='flex'
-                            justifyContent='space-between'
-                            mb={1}
-                          >
-                            <Typography variant='subtitle2' fontWeight={600}>
+                          <Box display="flex" justifyContent="space-between" mb={1}>
+                            <Typography variant="subtitle2" fontWeight={600}>
                               {item.name}
                             </Typography>
-                            <Typography
-                              variant='body2'
-                              color={item.color}
-                              fontWeight={600}
-                            >
+                            <Typography variant="body2" color={item.color} fontWeight={600}>
                               {item.current}%
                             </Typography>
                           </Box>
                           <LinearProgress
-                            variant='determinate'
+                            variant="determinate"
                             value={item.current}
                             sx={{
                               height: 8,
                               borderRadius: 4,
                               backgroundColor: `${item.color}20`,
-                              '& .MuiLinearProgress-bar': {
+                              "& .MuiLinearProgress-bar": {
                                 borderRadius: 4,
                                 backgroundColor: item.color,
                               },
                             }}
                           />
-                          <Typography
-                            variant='caption'
-                            color='text.secondary'
-                            mt={0.5}
-                          >
+                          <Typography variant="caption" color="text.secondary" mt={0.5}>
                             Target: {item.target}%
                           </Typography>
                         </Box>

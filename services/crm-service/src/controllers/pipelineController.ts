@@ -128,9 +128,10 @@ export const movePipelineCard = async (req: AuthenticatedRequest, res: Response)
         message: 'Invalid status provided'
       });
     }
-    
-    if (error.message.includes('Tidak bisa')) {
-      return res.status(400).json({ 
+    if (error.message.includes('Transisi status tidak valid') || 
+        error.message.includes('Tidak bisa') ||
+        error.message.includes('hanya bisa')) {
+      return res.status(422).json({ 
         error: 'Business Rule Violation',
         message: error.message
       });
