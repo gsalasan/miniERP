@@ -101,7 +101,40 @@ export interface ProjectMilestone {
   name: string;
   start_date?: string;
   end_date?: string;
-  status: string;
+  status: 'PLANNED' | 'IN_PROGRESS' | 'DONE';
+  tasks?: ProjectTask[];
+}
+
+export interface ProjectTask {
+  id: string;
+  project_id: string;
+  milestone_id?: string;
+  name: string;
+  description?: string;
+  assignee_id?: string;
+  start_date?: string;
+  due_date?: string;
+  status: 'TODO' | 'IN_PROGRESS' | 'DONE';
+  progress: number;
+  created_at: string;
+  updated_at: string;
+  assignee?: User;
+  milestone?: ProjectMilestone;
+}
+
+// Aliases for better semantics
+export type Milestone = ProjectMilestone;
+export type Task = ProjectTask;
+
+export interface MilestoneTemplate {
+  id: number;
+  template_name: string;
+  project_type?: string;
+  milestones: {
+    name: string;
+    duration_days: number;
+    status: 'PLANNED' | 'IN_PROGRESS' | 'DONE';
+  }[];
 }
 
 export interface ProjectActivity {
@@ -143,4 +176,11 @@ export interface ApiResponse<T> {
   success: boolean;
   data?: T;
   message?: string;
+}
+
+// Team member (lightweight for assignment dropdown)
+export interface TeamMember {
+  id: string;
+  name: string;
+  role?: string;
 }

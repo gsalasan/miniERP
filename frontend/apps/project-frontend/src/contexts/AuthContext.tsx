@@ -63,7 +63,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         activeToken = urlToken;
         params.delete('token');
         const cleaned = params.toString();
-        const newUrl = window.location.pathname + (cleaned ? `?${cleaned}` : '');
+        const newUrl =
+          window.location.pathname + (cleaned ? `?${cleaned}` : '');
         window.history.replaceState({}, '', newUrl);
         console.log('[AUTH] URL cleaned');
       } else {
@@ -74,7 +75,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         if (crossToken && crossTs) {
           const age = Date.now() - parseInt(crossTs, 10);
           console.log('[AUTH] Cross-app token age:', age, 'ms');
-          if (age < 30000) { // 30s freshness window
+          if (age < 30000) {
+            // 30s freshness window
             console.log('[AUTH] Using cross-app token');
             localStorage.setItem('token', crossToken);
             activeToken = crossToken;
@@ -110,11 +112,17 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
       if (!activeToken) {
         activeToken = localStorage.getItem('token');
-        console.log('[AUTH] Using stored token:', activeToken ? 'exists' : 'none');
+        console.log(
+          '[AUTH] Using stored token:',
+          activeToken ? 'exists' : 'none'
+        );
       }
 
       if (activeToken) {
-        console.log('[AUTH] Setting token to state, length:', activeToken.length);
+        console.log(
+          '[AUTH] Setting token to state, length:',
+          activeToken.length
+        );
         setToken(activeToken);
         console.log('[AUTH] Token state updated, checking cached user...');
         const cachedUser = localStorage.getItem('user');
@@ -247,19 +255,24 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     const primary = user?.role || (user?.roles && user.roles[0]);
     if (!primary) return false;
     const primaryLower = primary.toLowerCase();
-    return roles.some(r => r.toLowerCase() === primaryLower);
+    return roles.some((r) => r.toLowerCase() === primaryLower);
   };
 
   const hasAllRoles = (roles: string[]): boolean => {
     const primary = user?.role || (user?.roles && user.roles[0]);
     if (!primary) return false;
     const primaryLower = primary.toLowerCase();
-    return roles.every(r => r.toLowerCase() === primaryLower);
+    return roles.every((r) => r.toLowerCase() === primaryLower);
   };
 
   // Project-specific permissions
   const canAssignPm = (): boolean => {
-    return hasAnyRole(['admin', 'ceo', 'operational_manager', 'operations_manager']);
+    return hasAnyRole([
+      'admin',
+      'ceo',
+      'operational_manager',
+      'operations_manager',
+    ]);
   };
 
   const canEditBom = (): boolean => {
@@ -267,7 +280,13 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   };
 
   const canViewProjects = (): boolean => {
-    return hasAnyRole(['admin', 'operations_manager', 'project_manager', 'sales', 'engineer']);
+    return hasAnyRole([
+      'admin',
+      'operations_manager',
+      'project_manager',
+      'sales',
+      'engineer',
+    ]);
   };
 
   const value: AuthContextType = {

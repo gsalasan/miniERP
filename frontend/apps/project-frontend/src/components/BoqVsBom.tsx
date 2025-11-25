@@ -59,15 +59,15 @@ const BoqVsBom: React.FC<BoqVsBomProps> = ({
   }, [existingBomItems]);
 
   const boqColumns: GridColDef[] = [
-    { 
-      field: 'itemId', 
-      headerName: 'Item ID', 
+    {
+      field: 'itemId',
+      headerName: 'Item ID',
       width: 250,
       flex: 1,
     },
-    { 
-      field: 'itemType', 
-      headerName: 'Tipe', 
+    {
+      field: 'itemType',
+      headerName: 'Tipe',
       width: 120,
     },
     {
@@ -90,16 +90,16 @@ const BoqVsBom: React.FC<BoqVsBomProps> = ({
   ];
 
   const bomColumns: GridColDef[] = [
-    { 
-      field: 'itemId', 
-      headerName: 'Item ID', 
+    {
+      field: 'itemId',
+      headerName: 'Item ID',
       width: 250,
       flex: 1,
       editable: canEdit,
     },
-    { 
-      field: 'itemType', 
-      headerName: 'Tipe', 
+    {
+      field: 'itemType',
+      headerName: 'Tipe',
       width: 120,
       editable: canEdit,
       type: 'singleSelect',
@@ -201,7 +201,13 @@ const BoqVsBom: React.FC<BoqVsBomProps> = ({
   }));
 
   return (
-    <Box sx={{ display: 'flex', gap: 3, flexDirection: { xs: 'column', md: 'row' } }}>
+    <Box
+      sx={{
+        display: 'flex',
+        gap: 3,
+        flexDirection: { xs: 'column', md: 'row' },
+      }}
+    >
       {/* Left Panel - BoQ (Read-only) */}
       <Paper sx={{ flex: 1, p: 3 }}>
         <Typography variant="h6" gutterBottom>
@@ -239,13 +245,24 @@ const BoqVsBom: React.FC<BoqVsBomProps> = ({
         )}
 
         {success && (
-          <Alert severity="success" sx={{ mb: 2 }} onClose={() => setSuccess(null)}>
+          <Alert
+            severity="success"
+            sx={{ mb: 2 }}
+            onClose={() => setSuccess(null)}
+          >
             {success}
           </Alert>
         )}
 
         {bomRows.length === 0 ? (
-          <Box sx={{ textAlign: 'center', py: 6, bgcolor: '#f5f5f5', borderRadius: 2 }}>
+          <Box
+            sx={{
+              textAlign: 'center',
+              py: 6,
+              bgcolor: '#f5f5f5',
+              borderRadius: 2,
+            }}
+          >
             <Typography variant="body1" color="text.secondary" sx={{ mb: 3 }}>
               BoM masih kosong
             </Typography>
@@ -284,7 +301,9 @@ const BoqVsBom: React.FC<BoqVsBomProps> = ({
               <Box sx={{ display: 'flex', gap: 2 }}>
                 <Button
                   variant="contained"
-                  startIcon={loading ? <CircularProgress size={20} /> : <SaveIcon />}
+                  startIcon={
+                    loading ? <CircularProgress size={20} /> : <SaveIcon />
+                  }
                   onClick={handleSaveBom}
                   disabled={loading}
                 >

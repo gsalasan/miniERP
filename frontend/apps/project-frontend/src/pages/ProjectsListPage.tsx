@@ -43,9 +43,9 @@ const ProjectsListPage: React.FC = () => {
       const data = await projectApi.getProjects();
       // Client-side filter for WON or projects with sales_orders (indicates they won)
       const wonProjects = data.filter(
-        (p: Project) => 
-          p.status === 'WON' || 
-          p.status === 'Planning' || 
+        (p: Project) =>
+          p.status === 'WON' ||
+          p.status === 'Planning' ||
           p.status === 'New' ||
           (p.sales_orders && p.sales_orders.length > 0)
       );
@@ -58,11 +58,20 @@ const ProjectsListPage: React.FC = () => {
   };
 
   const getStatusColor = (status: string) => {
-    const statusMap: Record<string, 'default' | 'primary' | 'secondary' | 'error' | 'info' | 'success' | 'warning'> = {
-      'New': 'primary',
-      'Planning': 'warning',
+    const statusMap: Record<
+      string,
+      | 'default'
+      | 'primary'
+      | 'secondary'
+      | 'error'
+      | 'info'
+      | 'success'
+      | 'warning'
+    > = {
+      New: 'primary',
+      Planning: 'warning',
       'In Progress': 'info',
-      'Completed': 'success',
+      Completed: 'success',
       'On Hold': 'error',
     };
     return statusMap[status] || 'default';
@@ -101,10 +110,11 @@ const ProjectsListPage: React.FC = () => {
         {/* Header */}
         <Box sx={{ mb: 4 }}>
           <Typography variant="h4" gutterBottom fontWeight={700} sx={{ mb: 1 }}>
-            Project Queue
+            Project Workspace
           </Typography>
           <Typography variant="body1" color="text.secondary">
-            Daftar proyek yang telah WON dan siap untuk di-handover ke Project Management
+            Daftar proyek yang telah WON dan siap untuk di-handover ke Project
+            Management
           </Typography>
         </Box>
 
@@ -191,7 +201,10 @@ const ProjectsListPage: React.FC = () => {
                       </TableCell>
 
                       <TableCell>
-                        <Typography variant="body2" sx={{ fontSize: '0.875rem' }}>
+                        <Typography
+                          variant="body2"
+                          sx={{ fontSize: '0.875rem' }}
+                        >
                           {project.customer?.customer_name || '-'}
                         </Typography>
                       </TableCell>
@@ -207,7 +220,11 @@ const ProjectsListPage: React.FC = () => {
 
                       <TableCell>
                         {project.pm_user ? (
-                          <Stack direction="row" spacing={1} alignItems="center">
+                          <Stack
+                            direction="row"
+                            spacing={1}
+                            alignItems="center"
+                          >
                             <Avatar
                               sx={{
                                 width: 28,
@@ -218,7 +235,10 @@ const ProjectsListPage: React.FC = () => {
                             >
                               <PersonOutlineIcon sx={{ fontSize: 16 }} />
                             </Avatar>
-                            <Typography variant="body2" sx={{ fontSize: '0.875rem' }}>
+                            <Typography
+                              variant="body2"
+                              sx={{ fontSize: '0.875rem' }}
+                            >
                               {project.pm_user.employee?.full_name ||
                                 project.pm_user.email}
                             </Typography>
