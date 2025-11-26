@@ -175,7 +175,7 @@ export default function UserManagement() {
           {/* Error Alert */}
           {error && (
             <div className="mb-6 bg-red-50 border-l-4 border-red-500 p-4 rounded-lg flex gap-3">
-              <AlertCircle size={20} className="text-red-600 flex-shrink-0 mt-0.5" />
+              <AlertCircle size={20} className="text-red-600 shrink-0 mt-0.5" />
               <div className="flex-1">
                 <h3 className="font-semibold text-red-800">Error</h3>
                 <p className="text-red-700 text-sm">{error}</p>
