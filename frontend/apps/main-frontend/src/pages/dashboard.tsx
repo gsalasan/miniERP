@@ -22,6 +22,7 @@ interface Module {
   icon: JSX.Element;
   url: string;
   color: string;
+  category: "business" | "admin";
 }
 
 
@@ -153,6 +154,7 @@ const Dashboard: React.FC = () => {
       ),
       url: "http://localhost:3011", // Engineering frontend URL
       color: "#10B981",
+      category: "business",
     },
     {
       id: "crm",
@@ -168,6 +170,7 @@ const Dashboard: React.FC = () => {
       ),
       url: "http://localhost:3010", // CRM frontend URL
       color: "#3B82F6",
+      category: "business",
     },
     {
       id: "hr",
@@ -183,6 +186,7 @@ const Dashboard: React.FC = () => {
       ),
       url: "http://localhost:3013", // HR frontend URL
       color: "#F59E0B",
+      category: "business",
     },
     {
       id: "finance",
@@ -198,6 +202,7 @@ const Dashboard: React.FC = () => {
       ),
       url: "http://localhost:3012", // Finance frontend URL
       color: "#8B5CF6",
+      category: "business",
     },
     {
       id: "procurement",
@@ -213,6 +218,7 @@ const Dashboard: React.FC = () => {
       ),
       url: "http://localhost:3015", // Procurement frontend URL (placeholder)
       color: "#EF4444",
+      category: "business",
     },
     {
       id: "project",
@@ -228,6 +234,23 @@ const Dashboard: React.FC = () => {
       ),
       url: "http://localhost:3016", // Project frontend URL (placeholder)
       color: "#6B7280",
+      category: "business",
+    },
+    {
+      id: "identity",
+      name: "Identity",
+      description: "User management and access control",
+      icon: (
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+          <path
+            d="M12 12C14.21 12 16 10.21 16 8C16 5.79 14.21 4 12 4C9.79 4 8 5.79 8 8C8 10.21 9.79 12 12 12ZM12 14C9.33 14 4 15.34 4 18V20H20V18C20 15.34 14.67 14 12 14Z"
+            fill="currentColor"
+          />
+        </svg>
+      ),
+      url: "http://localhost:5174", // Identity frontend URL
+      color: "#EC4899",
+      category: "admin",
     },
   ];
 
@@ -261,24 +284,18 @@ const Dashboard: React.FC = () => {
   const handleModuleClick = (module: Module) => {
     // Store current token for cross-app authentication
     const token = localStorage.getItem("token");
+    console.log('📤 Module clicked:', module.name);
+    console.log('🔑 Token available:', token ? '✅ ' + token.substring(0, 20) + '...' : '❌ null');
 
     if (token && user) {
-      // Use localStorage for cross-app sharing (since sessionStorage is tab-specific)
-      localStorage.setItem("cross_app_token", token);
-      localStorage.setItem("cross_app_user", JSON.stringify(user));
-      localStorage.setItem("cross_app_timestamp", Date.now().toString());
+      // Pass token via URL query parameter
+      const url = `${module.url}?token=${encodeURIComponent(token)}`;
+      console.log('✅ Opening module with token in URL');
 
       // Navigate to the module
-      window.open(module.url, '_blank');
-
-      // Clean up cross-app data after a short delay
-      setTimeout(() => {
-        localStorage.removeItem("cross_app_token");
-        localStorage.removeItem("cross_app_user");
-        localStorage.removeItem("cross_app_timestamp");
-      }, 5000); // 5 seconds cleanup
+      window.open(url, '_blank');
     } else {
-      console.error("No token or user data available");
+      console.error("❌ No token or user data available");
     }
   };
 

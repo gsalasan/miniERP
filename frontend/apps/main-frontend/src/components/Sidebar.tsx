@@ -9,6 +9,7 @@ interface Module {
   icon: JSX.Element;
   color: string;
   description: string;
+  category: "business" | "admin";
 }
 
 interface SidebarProps {
@@ -24,6 +25,7 @@ const roleModuleMap: Record<string, string[]> = {
   finance: ["FINANCE_ADMIN", "ASSET_ADMIN", "CEO"],
   procurement: ["PROCUREMENT_ADMIN", "CEO"],
   project: ["PROJECT_MANAGER", "PROJECT_ENGINEER", "CEO"],
+  identity: ["HR_ADMIN", "CEO"], // Only HR_ADMIN and CEO can access identity module
 };
 
 
@@ -39,8 +41,76 @@ const Sidebar: React.FC<SidebarOpenProps> = ({ modules, onModuleClick, userRoles
     (roleModuleMap[m.id]?.includes("*") || userRoles.some((role) => roleModuleMap[m.id]?.includes(role)))
   );
 
+  // Separate modules by category
+  const businessModules = allowedModules.filter(m => m.category === "business");
+  const adminModules = allowedModules.filter(m => m.category === "admin");
+
   // Selalu mode hamburger (overlay), baik desktop maupun mobile
   const isMobile = true;
+
+  const renderModuleButton = (module: Module) => {
+    const isActive = typeof window !== 'undefined' && window.location.pathname.startsWith(module.url);
+    return (
+      <button
+        key={module.id}
+        onClick={() => {
+          onModuleClick(module);
+          if (onClose) onClose();
+        }}
+        style={{
+          display: "flex",
+          alignItems: "center",
+          gap: 16,
+          background: isActive ? "#e0e7ff" : "#fff",
+          border: "none",
+          color: isActive ? "#2563eb" : "#22223b",
+          fontWeight: isActive ? 700 : 500,
+          fontSize: 16,
+          marginBottom: 14,
+          cursor: "pointer",
+          borderRadius: 14,
+          padding: '14px 18px',
+          width: "100%",
+          textAlign: "left",
+          transition: "background 0.16s, color 0.16s, font-weight 0.16s, box-shadow 0.16s",
+          boxShadow: isActive ? "0 2px 12px #2563eb22" : "0 1px 4px #0001",
+          letterSpacing: 0.01,
+          fontFamily: "inherit",
+        }}
+        onMouseEnter={e => {
+          e.currentTarget.style.background = '#dbeafe';
+          e.currentTarget.style.color = '#2563eb';
+          e.currentTarget.style.boxShadow = '0 4px 16px #2563eb22';
+        }}
+        onMouseLeave={e => {
+          e.currentTarget.style.background = isActive ? '#e0e7ff' : '#fff';
+          e.currentTarget.style.color = isActive ? '#2563eb' : '#22223b';
+          e.currentTarget.style.boxShadow = isActive ? '0 2px 12px #2563eb22' : '0 1px 4px #0001';
+        }}
+      >
+        <span style={{
+          background: isActive ? '#2563eb22' : '#e0e7ff',
+          color: isActive ? '#2563eb' : '#2563eb',
+          fontSize: 22,
+          borderRadius: '50%',
+          width: 32,
+          height: 32,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          marginRight: 2,
+          boxShadow: isActive ? '0 2px 8px #2563eb22' : 'none',
+          transition: 'background 0.16s, color 0.16s',
+        }}>{module.icon}</span>
+        <span style={{
+          fontWeight: isActive ? 700 : 500,
+          fontSize: 16,
+          letterSpacing: 0.01,
+          fontFamily: "inherit",
+        }}>{module.name}</span>
+      </button>
+    );
+  };
 
   return (
     <>
@@ -95,72 +165,28 @@ const Sidebar: React.FC<SidebarOpenProps> = ({ modules, onModuleClick, userRoles
             textTransform: 'uppercase',
           }}>Business Modules</h3>
           <div style={{height:2, background:'#e0e7ff', borderRadius:2, marginBottom:22, opacity:0.8}} />
-          {allowedModules.length === 0 && (
-            <div style={{ color: '#aaa', fontSize: 15 }}>No accessible modules</div>
+          {businessModules.length === 0 && (
+            <div style={{ color: '#aaa', fontSize: 15, marginBottom: 20 }}>No accessible modules</div>
           )}
-          {allowedModules.map((module) => {
-            const isActive = typeof window !== 'undefined' && window.location.pathname.startsWith(module.url);
-            return (
-              <button
-                key={module.id}
-                onClick={() => {
-                  onModuleClick(module);
-                  if (onClose) onClose();
-                }}
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 16,
-                  background: isActive ? "#e0e7ff" : "#fff",
-                  border: "none",
-                  color: isActive ? "#2563eb" : "#22223b",
-                  fontWeight: isActive ? 700 : 500,
-                  fontSize: 16,
-                  marginBottom: 14,
-                  cursor: "pointer",
-                  borderRadius: 14,
-                  padding: '14px 18px',
-                  width: "100%",
-                  textAlign: "left",
-                  transition: "background 0.16s, color 0.16s, font-weight 0.16s, box-shadow 0.16s",
-                  boxShadow: isActive ? "0 2px 12px #2563eb22" : "0 1px 4px #0001",
-                  letterSpacing: 0.01,
-                  fontFamily: "inherit",
-                }}
-                onMouseEnter={e => {
-                  e.currentTarget.style.background = '#dbeafe';
-                  e.currentTarget.style.color = '#2563eb';
-                  e.currentTarget.style.boxShadow = '0 4px 16px #2563eb22';
-                }}
-                onMouseLeave={e => {
-                  e.currentTarget.style.background = isActive ? '#e0e7ff' : '#fff';
-                  e.currentTarget.style.color = isActive ? '#2563eb' : '#22223b';
-                  e.currentTarget.style.boxShadow = isActive ? '0 2px 12px #2563eb22' : '0 1px 4px #0001';
-                }}
-              >
-                <span style={{
-                  background: isActive ? '#2563eb22' : '#e0e7ff',
-                  color: isActive ? '#2563eb' : '#2563eb',
-                  fontSize: 22,
-                  borderRadius: '50%',
-                  width: 32,
-                  height: 32,
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  marginRight: 2,
-                  boxShadow: isActive ? '0 2px 8px #2563eb22' : 'none',
-                  transition: 'background 0.16s, color 0.16s',
-                }}>{module.icon}</span>
-                <span style={{
-                  fontWeight: isActive ? 700 : 500,
-                  fontSize: 16,
-                  letterSpacing: 0.01,
-                  fontFamily: "inherit",
-                }}>{module.name}</span>
-              </button>
-            );
-          })}
+          {businessModules.map((module) => renderModuleButton(module))}
+
+          {/* System Admin Section */}
+          {adminModules.length > 0 && (
+            <>
+              <h3 style={{
+                marginBottom: 16,
+                marginTop: 24,
+                color: "#EC4899",
+                fontWeight: 700,
+                fontSize: 15,
+                letterSpacing: 0.08,
+                paddingLeft: 2,
+                textTransform: 'uppercase',
+              }}>System Admin</h3>
+              <div style={{height:2, background:'#fce7f3', borderRadius:2, marginBottom:22, opacity:0.8}} />
+              {adminModules.map((module) => renderModuleButton(module))}
+            </>
+          )}
         </nav>
       )}
     </>

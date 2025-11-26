@@ -362,21 +362,14 @@ export const listDebugEmployees = async (req: Request, res: Response) => {
     const { getPrisma } = await import('../utils/prisma');
     const prisma = getPrisma();
 
-    const [employeesCount, hrEmployeesCount] = await Promise.all([
-      prisma.employees.count().catch(() => 0),
-      prisma.hr_employees.count().catch(() => 0),
-    ]);
-
-    const [employeesSample, hrEmployeesSample] = await Promise.all([
-      prisma.employees.findMany({ take: 10 }).catch(() => []),
-      prisma.hr_employees.findMany({ take: 10 }).catch(() => []),
-    ]);
+    const employeesCount = await prisma.employees.count().catch(() => 0);
+    const employeesSample = await prisma.employees.findMany({ take: 10 }).catch(() => []);
 
     return res.status(200).json({
       success: true,
       message: 'Debug employees data',
-      counts: { employees: employeesCount, hr_employees: hrEmployeesCount },
-      samples: { employees: employeesSample, hr_employees: hrEmployeesSample }
+      count: employeesCount,
+      sample: employeesSample
     });
   } catch (err: any) {
     console.error('Error in listDebugEmployees:', err);

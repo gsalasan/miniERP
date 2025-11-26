@@ -44,7 +44,7 @@ app.get('/api/v1/test-hr-models', async (req, res) => {
   try {
     const prisma = getPrisma();
     // Test HR models are accessible
-    const employeeCount = await prisma.hr_employees.count();
+    const employeeCount = await prisma.employees.count();
     const attendanceCount = await prisma.hr_attendances.count();
     const leaveCount = await prisma.hr_leave_requests.count();
 
@@ -52,7 +52,7 @@ app.get('/api/v1/test-hr-models', async (req, res) => {
       success: true,
       message: 'HR models are working correctly',
       data: {
-        hr_employees: employeeCount,
+        employees: employeeCount,
         hr_attendances: attendanceCount,
         hr_leave_requests: leaveCount,
       },

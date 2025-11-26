@@ -577,6 +577,13 @@ export default function EmployeeNew({ onClose }: Props) {
                 <option value="ASSET_ADMIN">Asset Admin</option>
                 <option value="SYSTEM_ADMIN">System Admin</option>
                 <option value="CEO">CEO</option>
+                <option value="OPERATIONAL_MANAGER">Operational Manager</option>
+                <option value="SUPPORT_MANAGER">Support Manager</option>
+                <option value="ENGINEERING_MANAGER">Engineering Manager</option>
+                <option value="ADMIN_SALES">Admin Sales</option>
+                <option value="ADMIN_PROJECT">Admin Project</option>
+                <option value="SUPERVISOR">Supervisor</option>
+                <option value="TECHNICIAN">Technician</option>
               </select>
               <p className="text-xs text-blue-600 mt-1">Role determines system access for the employee</p>
             </div>
@@ -702,6 +709,13 @@ export default function EmployeeNew({ onClose }: Props) {
                 <option value="ASSET_ADMIN">Asset Admin</option>
                 <option value="SYSTEM_ADMIN">System Admin</option>
                 <option value="CEO">CEO</option>
+                <option value="OPERATIONAL_MANAGER">Operational Manager</option>
+                <option value="SUPPORT_MANAGER">Support Manager</option>
+                <option value="ENGINEERING_MANAGER">Engineering Manager</option>
+                <option value="ADMIN_SALES">Admin Sales</option>
+                <option value="ADMIN_PROJECT">Admin Project</option>
+                <option value="SUPERVISOR">Supervisor</option>
+                <option value="TECHNICIAN">Technician</option>
               </select>
               <p className="text-xs text-blue-600 mt-1">Role determines system access for the employee</p>
             </div>
