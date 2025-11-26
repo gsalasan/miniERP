@@ -29,8 +29,8 @@ export default function Dashboard() {
       
       setStats({
         totalUsers: users.length,
-        activeUsers: users.filter(u => u.is_active !== false).length,
-        admins: users.filter(u => u.roles?.some(r => r.includes('ADMIN'))).length,
+        activeUsers: users.filter((u: any) => u.is_active !== false).length,
+        admins: users.filter((u: any) => u.roles?.some((r: any) => r.includes('ADMIN'))).length,
       });
     } catch (err) {
       console.error('Failed to load stats:', err);
