@@ -22,7 +22,7 @@ export async function getHRStats(req: Request, res: Response) {
           gte: today,
           lt: tomorrow,
         },
-        check_in: {
+        check_in_time: {
           not: null,
         },
       },

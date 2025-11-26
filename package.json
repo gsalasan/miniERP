@@ -11,7 +11,10 @@
   "scripts": {
     "dev:identity": "npm --prefix services/identity-service run dev",
     "dev:crm": "npm --prefix services/crm-service run dev",
+  "dev:hr": "npm --prefix services/hr-service run dev",
     "dev:frontend/crm": "npm --prefix frontend/apps/crm-frontend run dev",
+  "dev:frontend/hr": "npm --prefix frontend/apps/hr-frontend run dev",
+  "dev:frontend/main": "npm --prefix frontend/apps/main-frontend run dev",
     "dev:frontend": "npm --prefix frontend run dev",
     "dev:all": "concurrently \"npm run dev:identity\" \"npm run dev:crm\" \"npm run dev:frontend/crm\"",
     "build:frontend": "npm --prefix frontend run build",
@@ -25,6 +28,7 @@
   },
   "devDependencies": {
     "@eslint/js": "^9.37.0",
+    "@types/leaflet": "^1.9.21",
     "@typescript-eslint/eslint-plugin": "^8.46.0",
     "@typescript-eslint/parser": "^8.46.0",
     "concurrently": "^8.2.2",
@@ -37,6 +41,10 @@
   },
   "dependencies": {
     "@prisma/client": "^6.18.0",
-    "bcryptjs": "^2.4.3"
+    "@react-google-maps/api": "^2.20.7",
+    "bcryptjs": "^2.4.3",
+    "dayjs": "^1.11.19",
+    "leaflet": "^1.9.4",
+    "react-leaflet": "^5.0.0"
   }
 }

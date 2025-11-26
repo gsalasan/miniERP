@@ -16,7 +16,6 @@ interface CreateEmployeeData {
   basic_salary: number | string;
   allowances?: any;
   // Optional extended fields
-  department?: string;
   gender?: string;
   marital_status?: string;
   blood_type?: string;
@@ -27,6 +26,7 @@ interface CreateEmployeeData {
   bank_account_number?: string;
   npwp?: string;
   ptkp?: string;
+  manager_id?: string;
 }
 
 interface CreateUserData {
@@ -82,6 +82,7 @@ export const createEmployeeWithUser = async (data: CreateEmployeeWithUserRequest
       if (employee.bank_account_number) employeeCreateData.bank_account_number = employee.bank_account_number;
       if (employee.npwp) employeeCreateData.npwp = employee.npwp;
       if (employee.ptkp) employeeCreateData.ptkp = employee.ptkp;
+      if (employee.manager_id) employeeCreateData.manager_id = employee.manager_id;
 
       const createdEmployee = await tx.employees.create({
         data: employeeCreateData
@@ -275,6 +276,7 @@ export const getAllEmployees = async () => {
           bank_account_number: true,
           npwp: true,
           ptkp: true,
+          manager_id: true,
           users: {
             select: {
               id: true,
@@ -369,6 +371,13 @@ export const getEmployeeById = async (employeeId: string) => {
           bank_account_number: true,
           npwp: true,
           ptkp: true,
+          manager_id: true,
+          manager: {
+            select: {
+              full_name: true,
+              position: true
+            }
+          },
           users: {
             select: {
               id: true,
@@ -458,6 +467,7 @@ interface UpdateEmployeeData {
   bank_account_number?: string;
   npwp?: string;
   ptkp?: string;
+  manager_id?: string;
 }
 
 export const updateEmployee = async (employeeId: string, updateData: UpdateEmployeeData) => {
@@ -530,6 +540,9 @@ export const updateEmployee = async (employeeId: string, updateData: UpdateEmplo
     if (updateData.ptkp !== undefined) {
       dataToUpdate.ptkp = updateData.ptkp;
     }
+    if (updateData.manager_id !== undefined) {
+      dataToUpdate.manager_id = updateData.manager_id || null;
+    }
 
     // Update employee with fallbacks for client/schema drift
     let updatedEmployee: any;
@@ -555,6 +568,7 @@ export const updateEmployee = async (employeeId: string, updateData: UpdateEmplo
           bank_account_number: true,
           npwp: true,
           ptkp: true,
+          manager_id: true,
           users: {
             select: {
               id: true,

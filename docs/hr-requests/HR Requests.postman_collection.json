@@ -1,0 +1,193 @@
+{
+  "info": {
+    "_postman_id": "3d3e79c2-6a24-4a2b-a8b0-hr-requests",
+    "name": "HR Requests",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "description": "Collection untuk mengetes API pengajuan HR (permission, overtime, reimbursement)."
+  },
+  "item": [
+    {
+      "name": "Auth - Login",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"email\": \"user@domain.com\",\n  \"password\": \"password\"\n}"
+        },
+        "url": {
+          "raw": "http://localhost:3001/api/v1/auth/login",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "3001",
+          "path": ["api", "v1", "auth", "login"]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Permission",
+      "item": [
+        {
+          "name": "Create Permission",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"permission_type\": \"PERSONAL\",\n  \"start_time\": \"2025-11-17T00:00:00.000Z\",\n  \"end_time\": \"2025-11-17T23:59:59.000Z\",\n  \"duration_hours\": 8,\n  \"reason\": \"Keperluan mendesak\"\n}"
+            },
+            "url": {
+              "raw": "http://localhost:4004/api/v1/permissions",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "4004",
+              "path": ["api", "v1", "permissions"]
+            }
+          }
+        },
+        {
+          "name": "My Permissions",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": {
+              "raw": "http://localhost:4004/api/v1/permissions/my",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "4004",
+              "path": ["api", "v1", "permissions", "my"]
+            }
+          }
+        },
+        {
+          "name": "Approve Permission",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"APPROVED\"\n}"
+            },
+            "url": {
+              "raw": "http://localhost:4004/api/v1/permissions/{{permissionId}}/status",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "4004",
+              "path": ["api", "v1", "permissions", "{{permissionId}}", "status"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Overtime",
+      "item": [
+        {
+          "name": "Create Overtime",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"overtime_date\": \"2025-11-18T00:00:00.000Z\",\n  \"start_time\": \"2025-11-18T09:00:00.000Z\",\n  \"end_time\": \"2025-11-18T17:00:00.000Z\",\n  \"duration_hours\": 8,\n  \"overtime_code\": \"L1\",\n  \"description\": \"Deploy patch bugfix\"\n}"
+            },
+            "url": {
+              "raw": "http://localhost:4004/api/v1/overtimes",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "4004",
+              "path": ["api", "v1", "overtimes"]
+            }
+          }
+        },
+        {
+          "name": "My Overtimes",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": {
+              "raw": "http://localhost:4004/api/v1/overtimes/my",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "4004",
+              "path": ["api", "v1", "overtimes", "my"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Reimbursement",
+      "item": [
+        {
+          "name": "Create Reimbursement",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"reimbursement_type\": \"TRANSPORT\",\n  \"claim_date\": \"2025-11-16T00:00:00.000Z\",\n  \"amount\": 150000,\n  \"description\": \"GrabCar meeting client\",\n  \"receipt_file\": \"pending_upload\"\n}"
+            },
+            "url": {
+              "raw": "http://localhost:4004/api/v1/reimbursements",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "4004",
+              "path": ["api", "v1", "reimbursements"]
+            }
+          }
+        },
+        {
+          "name": "My Reimbursements",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": {
+              "raw": "http://localhost:4004/api/v1/reimbursements/my",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "4004",
+              "path": ["api", "v1", "reimbursements", "my"]
+            }
+          }
+        }
+      ]
+    }
+  ],
+  "variable": [
+    {
+      "key": "token",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "permissionId",
+      "value": "",
+      "type": "string"
+    }
+  ]
+}

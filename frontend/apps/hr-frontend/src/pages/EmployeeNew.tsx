@@ -1,12 +1,14 @@
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
 import Layout from '../components/Layout';
 import { ChevronRight, ChevronLeft, User, DollarSign, Shield, Plus, X } from 'lucide-react';
+import Select from 'react-select';
 import { PTKP_OPTIONS, isValidNpwp, normalizeNpwp, sumAllowancesFromArray, estimatePPh21Monthly, formatCurrencyID } from '../utils/tax';
 import { AllowanceCategoryLabels } from '../enums/employeeEnums';
 
 interface Allowance {
   name: string;
   amount: number;
+  customName?: string;
 }
 
 type Props = { onClose?: () => void };
@@ -18,6 +20,7 @@ export default function EmployeeNew({ onClose }: Props) {
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [npwpError, setNpwpError] = useState<string | null>(null);
+  const [employees, setEmployees] = useState<any[]>([]); // List employees untuk dropdown manager
 
   const [form, setForm] = useState({
     // Tab 1: Personal Information
@@ -38,6 +41,7 @@ export default function EmployeeNew({ onClose }: Props) {
     employment_type: 'FULL_TIME',
     status: 'ACTIVE',
     contract_end_date: '',
+    manager_id: '', // Atasan Langsung
     // Tab 3: Compensation
     basic_salary: '',
     // Tab 4: Account & Tax
@@ -74,11 +78,29 @@ export default function EmployeeNew({ onClose }: Props) {
     }
   };
 
-  const addAllowance = () => setAllowances((prev) => [...prev, { name: '', amount: 0 }]);
-  const updateAllowance = (index: number, field: 'name' | 'amount', value: string | number) => {
+  // Fetch employees untuk dropdown manager
+  useEffect(() => {
+    const fetchEmployees = async () => {
+      try {
+        const response = await fetch('http://localhost:4004/api/v1/employees');
+        const data = await response.json();
+        setEmployees(data.data || data || []);
+      } catch (error) {
+        console.error('Error fetching employees:', error);
+      }
+    };
+    fetchEmployees();
+  }, []);
+
+  const addAllowance = () => setAllowances((prev) => [...prev, { name: '', amount: 0, customName: '' }]);
+  const updateAllowance = (index: number, field: 'name' | 'amount' | 'customName', value: string | number) => {
     setAllowances((prev) => {
       const updated = [...prev];
       updated[index] = { ...updated[index], [field]: value } as Allowance;
+      // Reset customName jika ganti ke non-custom
+      if (field === 'name' && value !== 'CUSTOM') {
+        updated[index].customName = '';
+      }
       return updated;
     });
   };
@@ -113,7 +135,9 @@ export default function EmployeeNew({ onClose }: Props) {
     }
     try {
       const allowancesObj = allowances.reduce((acc, curr) => {
-        if (curr.name && curr.amount > 0) acc[curr.name] = curr.amount;
+        let key = curr.name;
+        if (curr.name === '__CUSTOM__' && curr.customName) key = curr.customName;
+        if (key && curr.amount > 0) acc[key] = curr.amount;
         return acc;
       }, {} as Record<string, number>);
 
@@ -135,6 +159,7 @@ export default function EmployeeNew({ onClose }: Props) {
 
   // Add optional fields only if they have values
       if (form.department && form.department.trim()) employeeData.department = form.department;
+      if (form.manager_id && form.manager_id.trim()) employeeData.manager_id = form.manager_id;
       if (form.gender && form.gender.trim()) employeeData.gender = form.gender;
       if (form.marital_status && form.marital_status.trim()) employeeData.marital_status = form.marital_status;
       if (form.blood_type && form.blood_type.trim()) employeeData.blood_type = form.blood_type;
@@ -157,7 +182,7 @@ export default function EmployeeNew({ onClose }: Props) {
         email: form.email,
       };
 
-      const res = await fetch('http://localhost:3002/api/v1/employees', {
+  const res = await fetch('http://localhost:4004/api/v1/employees', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
@@ -169,7 +194,7 @@ export default function EmployeeNew({ onClose }: Props) {
         setForm({
           full_name: '', ktp_number: '', address: '', phone: '', emergency_contact_name: '', emergency_contact_phone: '',
           gender: '', marital_status: '', blood_type: '', education_level: '',
-          position: '', department: '', hire_date: '', employment_type: 'FULL_TIME', status: 'ACTIVE', contract_end_date: '',
+          position: '', department: '', hire_date: '', employment_type: 'FULL_TIME', status: 'ACTIVE', contract_end_date: '', manager_id: '',
           basic_salary: '', bank_name: '', bank_account_number: '', npwp: '', ptkp: 'TK/0', email: '', password: '', roles: ['EMPLOYEE']
         });
         setAllowances([]);
@@ -266,17 +291,6 @@ export default function EmployeeNew({ onClose }: Props) {
                 <option value="DOCTORATE">DOCTORATE</option>
               </select>
             </div>
-            <div>
-              <label className="block mb-2 text-blue-900 font-semibold">Education Level</label>
-              <select name="education_level" value={form.education_level} onChange={handleChange} className="w-full border border-blue-200 rounded-xl px-4 py-3 bg-blue-50">
-                <option value="">(select)</option>
-                <option value="HIGH_SCHOOL">HIGH_SCHOOL</option>
-                <option value="DIPLOMA">DIPLOMA</option>
-                <option value="BACHELOR">BACHELOR</option>
-                <option value="MASTER">MASTER</option>
-                <option value="DOCTORATE">DOCTORATE</option>
-              </select>
-            </div>
           </div>
         );
       case 2:
@@ -290,6 +304,56 @@ export default function EmployeeNew({ onClose }: Props) {
               <div>
                 <label className="block mb-2 text-blue-900 font-semibold">Department</label>
                 <input name="department" value={form.department} onChange={handleChange} className="w-full border border-blue-200 rounded-xl px-4 py-3 bg-blue-50" placeholder="Example: HR" />
+              </div>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block mb-2 text-blue-900 font-semibold">Direct Manager</label>
+                <Select
+                  isClearable
+                  placeholder="Type to search manager..."
+                  noOptionsMessage={({ inputValue }) => 
+                    inputValue.length < 2 
+                      ? "Type at least 2 characters to search" 
+                      : "No manager found"
+                  }
+                  filterOption={(option, inputValue) => {
+                    if (inputValue.length < 2) return false;
+                    const searchText = inputValue.toLowerCase();
+                    const label = option.label.toLowerCase();
+                    return label.includes(searchText);
+                  }}
+                  options={employees.map((emp) => ({
+                    value: emp.id,
+                    label: `${emp.full_name} - ${emp.position || 'No Position'}`
+                  }))}
+                  value={
+                    form.manager_id
+                      ? employees.find(emp => emp.id === form.manager_id)
+                        ? { value: form.manager_id, label: `${employees.find(e => e.id === form.manager_id)?.full_name} - ${employees.find(e => e.id === form.manager_id)?.position || 'No Position'}` }
+                        : null
+                      : null
+                  }
+                  onChange={(selected) => {
+                    setForm({ ...form, manager_id: selected ? selected.value : '' });
+                  }}
+                  styles={{
+                    control: (base) => ({
+                      ...base,
+                      borderColor: '#bfdbfe',
+                      borderRadius: '0.75rem',
+                      padding: '0.5rem',
+                      backgroundColor: '#eff6ff',
+                      '&:hover': { borderColor: '#60a5fa' },
+                      '&:focus': { borderColor: '#60a5fa', boxShadow: '0 0 0 2px rgba(96, 165, 250, 0.1)' }
+                    }),
+                    placeholder: (base) => ({
+                      ...base,
+                      color: '#9ca3af'
+                    })
+                  }}
+                />
+                <p className="text-xs text-blue-600 mt-1">Type at least 2 characters to search. Leave empty for top-level (CEO/Director)</p>
               </div>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -350,16 +414,35 @@ export default function EmployeeNew({ onClose }: Props) {
               {allowances.map((allowance, index) => (
                 <div key={index} className="flex items-center space-x-3 p-4 bg-blue-50 rounded-xl">
                   <div className="flex-1">
-                    <select 
-                      value={allowance.name} 
-                      onChange={(e) => updateAllowance(index, 'name', e.target.value)} 
-                      className="w-full border border-blue-200 rounded-lg px-3 py-2 bg-white"
-                    >
-                      <option value="">Select allowance type</option>
-                      {Object.entries(AllowanceCategoryLabels).map(([key, label]) => (
-                        <option key={key} value={key}>{label}</option>
-                      ))}
-                    </select>
+                    {allowance.name === '__CUSTOM__' ? (
+                      <input
+                        type="text"
+                        placeholder="Other allowance name"
+                        value={allowance.customName || ''}
+                        onChange={e => updateAllowance(index, 'customName', e.target.value)}
+                        onBlur={e => { if (!e.target.value) updateAllowance(index, 'name', ''); }}
+                        className="w-full border border-blue-200 rounded-lg px-3 py-2 bg-white"
+                        autoFocus
+                      />
+                    ) : (
+                      <select
+                        value={Object.keys(AllowanceCategoryLabels).includes(allowance.name) ? allowance.name : ''}
+                        onChange={e => {
+                          if (e.target.value === '__CUSTOM__') {
+                            updateAllowance(index, 'name', '__CUSTOM__');
+                          } else {
+                            updateAllowance(index, 'name', e.target.value);
+                          }
+                        }}
+                        className="w-full border border-blue-200 rounded-lg px-3 py-2 bg-white"
+                      >
+                        <option value="">Select allowance type</option>
+                        {Object.entries(AllowanceCategoryLabels).map(([key, label]) => (
+                          <option key={key} value={key}>{label}</option>
+                        ))}
+                        <option value="__CUSTOM__">Other</option>
+                      </select>
+                    )}
                   </div>
                   <div className="flex-1">
                     <input type="number" placeholder="Amount" value={allowance.amount || ''} onChange={(e) => updateAllowance(index, 'amount', parseFloat(e.target.value) || 0)} className="w-full border border-blue-200 rounded-lg px-3 py-2 bg-white" />
@@ -476,39 +559,32 @@ export default function EmployeeNew({ onClose }: Props) {
               <label className="block mb-2 text-blue-900 font-semibold">Account Email <span className="text-red-500">*</span></label>
               <input name="email" type="email" value={form.email} onChange={handleChange} required className="w-full border border-blue-200 rounded-xl px-4 py-3 bg-blue-50" placeholder="email@company.com" />
             </div>
-            <div className="space-y-4">
-              {allowances.length === 0 && (
-                <div className="text-center py-8">
-                  <DollarSign className="w-12 h-12 text-blue-300 mx-auto mb-4" />
-                  <p className="text-blue-600 mb-4">No allowances added yet</p>
-                </div>
-              )}
-              {allowances.map((allowance, index) => (
-                <div key={index} className="flex items-center space-x-3 p-4 bg-blue-50 rounded-xl">
-                  <div className="flex-1">
-                    <select 
-                      value={allowance.name} 
-                      onChange={(e) => updateAllowance(index, 'name', e.target.value)} 
-                      className="w-full border border-blue-200 rounded-lg px-3 py-2 bg-white"
-                    >
-                      <option value="">Select allowance type</option>
-                      {Object.entries(AllowanceCategoryLabels).map(([key, label]) => (
-                        <option key={key} value={key}>{label}</option>
-                      ))}
-                    </select>
-                  </div>
-                  <div className="flex-1">
-                    <input type="number" placeholder="Amount" value={allowance.amount || ''} onChange={(e) => updateAllowance(index, 'amount', parseFloat(e.target.value) || 0)} className="w-full border border-blue-200 rounded-lg px-3 py-2 bg-white" />
-                  </div>
-                  <button type="button" onClick={() => removeAllowance(index)} className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors" title="Delete">
-                    <X className="w-5 h-5" />
-                  </button>
-                </div>
-              ))}
-              <button type="button" onClick={addAllowance} className="w-full py-3 border-2 border-dashed border-blue-300 text-blue-600 rounded-xl hover:border-blue-400 hover:bg-blue-50 transition-colors duration-200 flex items-center justify-center">
-                <Plus className="w-5 h-5 mr-2" />
-                Add Another Allowance
-              </button>
+            <div>
+              <label className="block mb-2 text-blue-900 font-semibold">Password <span className="text-red-500">*</span></label>
+              <input name="password" type="password" value={form.password} onChange={handleChange} required className="w-full border border-blue-200 rounded-xl px-4 py-3 bg-blue-50" placeholder="Minimum 8 characters" />
+            </div>
+            <div>
+              <label className="block mb-2 text-blue-900 font-semibold">System Role <span className="text-red-500">*</span></label>
+              <select name="roles" value={form.roles[0]} onChange={handleChange} className="w-full border border-blue-200 rounded-xl px-4 py-3 bg-blue-50">
+                <option value="EMPLOYEE">Employee</option>
+                <option value="HR_ADMIN">HR Admin</option>
+                <option value="FINANCE_ADMIN">Finance Admin</option>
+                <option value="PROJECT_MANAGER">Project Manager</option>
+                <option value="PROJECT_ENGINEER">Project Engineer</option>
+                <option value="SALES">Sales</option>
+                <option value="SALES_MANAGER">Sales Manager</option>
+                <option value="PROCUREMENT_ADMIN">Procurement Admin</option>
+                <option value="ASSET_ADMIN">Asset Admin</option>
+                <option value="SYSTEM_ADMIN">System Admin</option>
+                <option value="CEO">CEO</option>
+              </select>
+              <p className="text-xs text-blue-600 mt-1">Role determines system access for the employee</p>
+            </div>
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mt-4">
+              <p className="text-sm text-blue-900 font-medium mb-2">ℹ️ Account Information</p>
+              <p className="text-xs text-blue-700">
+                After the employee is saved, the account will be automatically created and the employee can log in using the email and password provided.
+              </p>
             </div>
           </div>
         );

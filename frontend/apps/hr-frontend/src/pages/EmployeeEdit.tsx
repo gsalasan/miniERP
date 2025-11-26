@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Trash2, ArrowLeft } from 'lucide-react';
+import Select from 'react-select';
 import {
   GenderLabels,
   MaritalStatusLabels,
@@ -35,16 +36,32 @@ function EmployeeEdit({ id, onClose }: EmployeeEditProps) {
     npwp: '',
     ptkp: ''
   });
+  const [managerId, setManagerId] = useState<string>('');
   const [allowances, setAllowances] = useState([{ name: '', amount: '' }]);
+  const [employees, setEmployees] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [showModal, setShowModal] = useState(false);
   const [npwpError, setNpwpError] = useState('');
 
   useEffect(() => {
+    async function fetchEmployees() {
+      try {
+        const res = await fetch('http://localhost:4004/api/v1/employees');
+        if (!res.ok) throw new Error('Failed to load employees');
+        const payload = await res.json();
+        setEmployees(payload.data || []);
+      } catch (err) {
+        console.error('Failed to load employees:', err);
+      }
+    }
+    fetchEmployees();
+  }, []);
+
+  useEffect(() => {
     async function fetchData() {
       try {
-        const res = await fetch(`http://localhost:3002/api/v1/employees/${id}`);
+        const res = await fetch(`http://localhost:4004/api/v1/employees/${id}`);
         if (!res.ok) throw new Error('Failed to load data');
         const payload = await res.json();
         const emp = payload.data || payload;
@@ -66,6 +83,7 @@ function EmployeeEdit({ id, onClose }: EmployeeEditProps) {
           npwp: emp.npwp || '',
           ptkp: emp.ptkp || ''
         });
+        setManagerId(emp.manager_id || '');
         // normalize allowances: backend may return object map or array
         if (emp.allowances) {
           if (Array.isArray(emp.allowances)) {
@@ -130,8 +148,16 @@ function EmployeeEdit({ id, onClose }: EmployeeEditProps) {
         }
       }
     });
+    
+    // Always include manager_id (support both setting and clearing)
+    filteredForm.manager_id = managerId || null;
+    
+    console.log('=== DEBUG: Submitting ===');
+    console.log('managerId state:', managerId);
+    console.log('Payload:', JSON.stringify(filteredForm, null, 2));
+    
     try {
-      const res = await fetch(`http://localhost:3002/api/v1/employees/${id}`, {
+      const res = await fetch(`http://localhost:4004/api/v1/employees/${id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ ...filteredForm, allowances }),
@@ -189,10 +215,61 @@ function EmployeeEdit({ id, onClose }: EmployeeEditProps) {
                 <input name="department" value={form.department} onChange={handleChange} className="w-full border border-gray-300 rounded-lg px-4 py-2 bg-white focus:border-blue-400 focus:ring-2 focus:ring-blue-100 text-gray-900 placeholder:text-gray-400 transition" placeholder="Example: HR, Finance, IT" />
               </div>
               <div className="flex flex-col gap-2 mb-2">
+                <label className="block font-semibold text-gray-800">Direct Manager</label>
+                <Select
+                  isClearable
+                  placeholder="Type to search manager..."
+                  noOptionsMessage={({ inputValue }) => 
+                    inputValue.length < 2 
+                      ? "Type at least 2 characters to search" 
+                      : "No manager found"
+                  }
+                  filterOption={(option, inputValue) => {
+                    if (inputValue.length < 2) return false;
+                    const searchText = inputValue.toLowerCase();
+                    const label = option.label.toLowerCase();
+                    return label.includes(searchText);
+                  }}
+                  options={employees.filter(e => e.id !== id).map(emp => ({
+                    value: emp.id,
+                    label: `${emp.full_name} - ${emp.position}`
+                  }))}
+                  value={
+                    managerId && employees.find(e => e.id === managerId)
+                      ? { 
+                          value: managerId, 
+                          label: `${employees.find(e => e.id === managerId)?.full_name} - ${employees.find(e => e.id === managerId)?.position}` 
+                        }
+                      : null
+                  }
+                  onChange={(selected) => {
+                    const newManagerId = selected ? selected.value : '';
+                    setManagerId(newManagerId);
+                    console.log('Manager changed to:', newManagerId);
+                  }}
+                  styles={{
+                    control: (base) => ({
+                      ...base,
+                      borderColor: '#d1d5db',
+                      borderRadius: '0.5rem',
+                      padding: '0.25rem',
+                      backgroundColor: 'white',
+                      '&:hover': { borderColor: '#60a5fa' },
+                      '&:focus': { borderColor: '#60a5fa', boxShadow: '0 0 0 2px rgba(96, 165, 250, 0.1)' }
+                    }),
+                    placeholder: (base) => ({
+                      ...base,
+                      color: '#9ca3af'
+                    })
+                  }}
+                />
+                <span className="text-xs text-gray-500 mt-1">Type at least 2 characters to search. Leave empty for top-level (CEO/Director)</span>
+              </div>
+              {/* Row 3 */}
+              <div className="flex flex-col gap-2 mb-2">
                 <label className="block font-semibold text-gray-800">Hire Date</label>
                 <input name="hire_date" type="date" value={form.hire_date} onChange={handleChange} className="w-full border border-gray-300 rounded-lg px-4 py-2 bg-white focus:border-blue-400 focus:ring-2 focus:ring-blue-100 text-gray-900 placeholder:text-gray-400 transition" required />
               </div>
-              {/* Row 3 */}
               <div className="flex flex-col gap-2 mb-2">
                 <label className="block font-semibold text-gray-800">Basic Salary</label>
                 <input name="basic_salary" type="number" value={form.basic_salary} onChange={handleChange} className="w-full border border-gray-300 rounded-lg px-4 py-2 bg-white focus:border-blue-400 focus:ring-2 focus:ring-blue-100 text-gray-900 placeholder:text-gray-400 transition" required />
@@ -374,6 +451,7 @@ function EmployeeEdit({ id, onClose }: EmployeeEditProps) {
 }
 
 export default EmployeeEdit;
+
 
 
 

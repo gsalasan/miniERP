@@ -33,7 +33,7 @@ export default function EmployeesList() {
   const [deleteId, setDeleteId] = useState<string | null>(null);
 
   useEffect(() => {
-    fetch('http://localhost:3002/api/v1/employees')
+    fetch('http://localhost:4004/api/v1/employees')
       .then(res => res.json())
       .then(data => {
         console.log('Employee data received:', data.data?.length || 0, 'employees');
@@ -73,7 +73,7 @@ export default function EmployeesList() {
     if (!deleteId) return;
     setDeletingId(deleteId);
     try {
-      const res = await fetch(`http://localhost:3002/api/v1/employees/${deleteId}`, { method: 'DELETE' });
+      const res = await fetch(`http://localhost:4004/api/v1/employees/${deleteId}`, { method: 'DELETE' });
       if (res.ok) {
         setEmployees(prev => prev.filter(e => e.id !== deleteId));
         setShowDeleteModal(false);
@@ -97,7 +97,7 @@ export default function EmployeesList() {
           <EmployeeNew onClose={() => {
             setShowNewModal(false);
             // Refresh list after creating
-            fetch('http://localhost:3002/api/v1/employees')
+            fetch('http://localhost:4004/api/v1/employees')
               .then(res => res.json())
               .then(data => setEmployees(data.data || []));
           }} />
@@ -110,7 +110,7 @@ export default function EmployeesList() {
             onClose={() => {
               setEditId(null);
               // Refresh list after editing
-              fetch('http://localhost:3002/api/v1/employees')
+              fetch('http://localhost:4004/api/v1/employees')
                 .then(res => res.json())
                 .then(data => setEmployees(data.data || []));
             }} 
@@ -337,3 +337,5 @@ function stringToColor(str: string) {
   const color = `hsl(${hash % 360}, 70%, 60%)`;
   return color;
 }
+
+

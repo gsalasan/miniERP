@@ -43,8 +43,16 @@ model employees {
   npwp                String?
   ptkp                String?
   
+  // Manager/Atasan Langsung
+  manager_id     String?
+  manager        employees?  @relation("EmployeeManager", fields: [manager_id], references: [id])
+  subordinates   employees[] @relation("EmployeeManager")
+  
   // Relations
-  attendances         hr_attendances[]
+  attendances              hr_attendances[]
+  permission_requests      hr_permission_requests[]
+  overtime_requests        hr_overtime_requests[]
+  reimbursement_requests   hr_reimbursement_requests[]
 }
 model Material {
   id            String            @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
@@ -230,6 +238,66 @@ model hr_leave_requests {
   employee         hr_employees @relation(fields: [employee_id], references: [id], onDelete: Cascade)
 
   @@map("hr_leave_requests")
+}
+
+model hr_permission_requests {
+  id               String            @id @default(uuid())
+  employee_id      String
+  permission_type  PermissionType
+  start_time       DateTime
+  end_time         DateTime
+  duration_hours   Decimal           @db.Decimal(5, 2)
+  reason           String
+  status           RequestStatus     @default(PENDING)
+  approved_by      String?
+  approved_at      DateTime?
+  rejection_reason String?
+  created_at       DateTime          @default(now())
+  updated_at       DateTime          @updatedAt
+  employee         employees         @relation(fields: [employee_id], references: [id], onDelete: Cascade)
+
+  @@map("hr_permission_requests")
+}
+
+model hr_overtime_requests {
+  id                String           @id @default(uuid())
+  employee_id       String
+  overtime_code     OvertimeCode
+  overtime_date     DateTime         @db.Date
+  start_time        DateTime
+  end_time          DateTime
+  duration_hours    Decimal          @db.Decimal(5, 2)
+  description       String
+  status            RequestStatus    @default(PENDING)
+  approved_by       String?
+  approved_at       DateTime?
+  rejection_reason  String?
+  created_at        DateTime         @default(now())
+  updated_at        DateTime         @updatedAt
+  employee          employees        @relation(fields: [employee_id], references: [id], onDelete: Cascade)
+
+  @@map("hr_overtime_requests")
+}
+
+model hr_reimbursement_requests {
+  id                String              @id @default(uuid())
+  employee_id       String
+  reimbursement_type ReimbursementType
+  claim_date        DateTime            @db.Date
+  amount            Decimal             @db.Decimal(15, 2)
+  currency          String              @default("IDR") @db.VarChar(3)
+  description       String
+  receipt_file      String?
+  status            RequestStatus       @default(PENDING)
+  approved_by       String?
+  approved_at       DateTime?
+  paid_at           DateTime?
+  rejection_reason  String?
+  created_at        DateTime            @default(now())
+  updated_at        DateTime            @updatedAt
+  employee          employees           @relation(fields: [employee_id], references: [id], onDelete: Cascade)
+
+  @@map("hr_reimbursement_requests")
 }
 
 model hr_performance_reviews {
@@ -441,6 +509,7 @@ enum UserRole {
   PROCUREMENT_ADMIN
   ASSET_ADMIN
   SYSTEM_ADMIN
+  OPERATIONAL_MANAGER
 }
 
 enum MaterialStatus {
@@ -546,6 +615,39 @@ enum LeaveStatus {
   APPROVED
   REJECTED
   CANCELLED
+}
+
+enum PermissionType {
+  PERSONAL
+  MEDICAL
+  FAMILY_EMERGENCY
+  OFFICIAL_BUSINESS
+  OTHER
+}
+
+enum OvertimeCode {
+  L1 // Lembur Weekday 8 jam
+  L2 // Lembur Weekday 4 jam
+  L3 // Lembur Weekend 8 jam
+  L4 // Lembur Weekend 4 jam
+}
+
+enum RequestStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  CANCELLED
+}
+
+enum ReimbursementType {
+  TRANSPORTATION
+  MEALS
+  ACCOMMODATION
+  COMMUNICATION
+  MEDICAL
+  OFFICE_SUPPLIES
+  TRAINING
+  OTHER
 }
 
 enum CustomerStatus {

@@ -1,5 +1,5 @@
 // API helper for employee endpoints (sesuai backend HR-service)
-const BASE_URL = 'http://localhost:3002/api/v1';
+const BASE_URL = 'http://localhost:4004/api/v1';
 
 export async function fetchEmployees() {
   const res = await fetch(`${BASE_URL}/employees`);
@@ -45,4 +45,30 @@ export async function deleteEmployee(id: string | number) {
     method: 'DELETE',
   });
   return res.ok;
+}
+
+// Fetch modules allowed for a specific role from HR-service (backend should expose this)
+export async function fetchModulesByRole(role: string) {
+  try {
+    const res = await fetch(`${BASE_URL}/roles/${encodeURIComponent(role)}/modules`);
+    if (!res.ok) return [];
+    const data = await res.json();
+    return data.modules || [];
+  } catch (e) {
+    // swallow and return empty list on error — caller can handle empty as no-access
+    return [];
+  }
+}
+
+// Fetch modules for multiple roles and deduplicate by id
+export async function fetchModulesByRoles(roles: string[]) {
+  if (!roles || roles.length === 0) return [];
+  const results = await Promise.all(roles.map((r) => fetchModulesByRole(r)));
+  const all = results.flat();
+  const map = new Map();
+  for (const m of all) {
+    if (!m || !m.id) continue;
+    if (!map.has(m.id)) map.set(m.id, m);
+  }
+  return Array.from(map.values());
 }
