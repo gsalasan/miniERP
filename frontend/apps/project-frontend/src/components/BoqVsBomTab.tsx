@@ -25,6 +25,8 @@ import WarningAmberOutlinedIcon from '@mui/icons-material/WarningAmberOutlined';
 import { projectApi } from '../api/projectApi';
 import { searchMaterials, searchServices, createMaterial, MaterialOption, ServiceOption } from '../api/engineeringApi';
 import AddBomItemDialog from './AddBomItemDialog';
+import BomTableWithRfp from './BomTableWithRfp';
+import ConfirmDialog from './ConfirmDialog';
 import Autocomplete from '@mui/material/Autocomplete';
 import TextField from '@mui/material/TextField';
 import type { EstimationItem, ProjectBOM, BomItem } from '../types';
@@ -87,6 +89,31 @@ const BoqVsBomTab: React.FC<BoqVsBomTabProps> = ({
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const [hasChanges, setHasChanges] = useState(false);
+  const [addConfirmOpen, setAddConfirmOpen] = useState(false);
+  const [addConfirmName, setAddConfirmName] = useState<string | null>(null);
+  const [addConfirmRowId, setAddConfirmRowId] = useState<string | null>(null);
+
+  const handleConfirmAddNew = async () => {
+    if (!addConfirmName || !addConfirmRowId) {
+      setAddConfirmOpen(false);
+      setAddConfirmName(null);
+      setAddConfirmRowId(null);
+      return;
+    }
+    try {
+      const created = await createMaterial({ item_name: addConfirmName });
+      setMaterialOptions((prev) => [created, ...prev]);
+      setBomRows((prev) => prev.map((row) => (row.id === addConfirmRowId ? { ...row, itemId: created.id, itemName: created.item_name } : row)));
+      setHasChanges(true);
+    } catch (err) {
+      console.error('Gagal membuat material:', err);
+      setError('Gagal membuat material baru');
+    } finally {
+      setAddConfirmOpen(false);
+      setAddConfirmName(null);
+      setAddConfirmRowId(null);
+    }
+  };
 
   useEffect(() => {
     if (existingBomItems.length > 0) {
@@ -187,22 +214,11 @@ const BoqVsBomTab: React.FC<BoqVsBomTabProps> = ({
             }}
             onChange={(_, newValue) => {
               if (newValue && (newValue as any).id === 'add-new') {
-                // create new material with minimal payload
-                (async () => {
-                  const name = inputMap[rowId] || '';
-                  const ok = window.confirm(`Tidak ditemukan. Tambah "${name}" sebagai material baru?`);
-                  if (!ok) return;
-                  try {
-                    const created = await createMaterial({ item_name: name });
-                    // add to material options cache
-                    setMaterialOptions((prev) => [created, ...prev]);
-                    params.api.setEditCellValue({ id: params.id, field: 'itemId', value: created.id });
-                    params.api.setEditCellValue({ id: params.id, field: 'itemName', value: created.item_name });
-                  } catch (err) {
-                    console.error('Gagal membuat material:', err);
-                    alert('Gagal membuat material baru');
-                  }
-                })();
+                // request confirmation to create new material and update the row after confirmation
+                const name = inputMap[rowId] || '';
+                setAddConfirmName(name);
+                setAddConfirmRowId(String(rowId));
+                setAddConfirmOpen(true);
               } else {
                 params.api.setEditCellValue({ id: params.id, field: 'itemId', value: newValue?.id || '' });
                 params.api.setEditCellValue({ id: params.id, field: 'itemName', value: newValue ? (isMaterial ? newValue.item_name : newValue.service_name) : '' });
@@ -301,8 +317,21 @@ const BoqVsBomTab: React.FC<BoqVsBomTabProps> = ({
   };
 
   const handleDeleteRow = (id: string) => {
-    setBomRows(bomRows.filter((row) => row.id !== id));
-    setHasChanges(true);
+    // Open confirm dialog instead of using window.confirm
+    setConfirmTargetId(id);
+    setConfirmOpen(true);
+  };
+
+  const [confirmOpen, setConfirmOpen] = React.useState(false);
+  const [confirmTargetId, setConfirmTargetId] = React.useState<string | null>(null);
+
+  const handleConfirmDelete = () => {
+    if (confirmTargetId) {
+      setBomRows((prev) => prev.filter((row) => row.id !== confirmTargetId));
+      setHasChanges(true);
+    }
+    setConfirmTargetId(null);
+    setConfirmOpen(false);
   };
 
   const handleSaveBom = async () => {
@@ -521,22 +550,39 @@ const BoqVsBomTab: React.FC<BoqVsBomTabProps> = ({
               </Box>
               <Divider />
               <Box sx={{ height: 500 }}>
-                <DataGrid
-                  rows={bomRows}
-                  columns={bomColumns}
-                  pageSize={10}
-                  rowsPerPageOptions={[10, 25, 50]}
-                  disableSelectionOnClick
-                  processRowUpdate={handleProcessRowUpdate}
-                  experimentalFeatures={{ newEditingApi: true }}
-                  density="compact"
-                  sx={{
-                    '& .MuiDataGrid-cell': {
-                      fontSize: '0.875rem',
-                    },
-                    '& .MuiDataGrid-cell--editable': {
-                      bgcolor: canEdit ? 'action.hover' : 'transparent',
-                    },
+                <BomTableWithRfp
+                  projectId={projectId}
+                  bomItems={bomRows.map((r) => ({
+                    id: r.id,
+                    itemId: r.itemId,
+                    itemName: r.itemName,
+                    itemType: r.itemType as 'MATERIAL' | 'SERVICE',
+                    quantity: r.quantity,
+                    available_stock: (r as any).available_stock,
+                    procurement_need: (r as any).procurement_need,
+                    procurement_status: (r as any).procurement_status,
+                  }))}
+                  canEdit={canEdit}
+                  onRfpCreated={() => {
+                    setSuccess('RFP berhasil dikirim');
+                    // trigger parent refresh if provided
+                    onBomSaved();
+                  }}
+                  onBomChange={(updated) => {
+                    // map updated back to parent bomRows shape
+                    const mapped = updated.map((u) => ({
+                      id: u.id,
+                      itemId: u.itemId,
+                      itemName: u.itemName,
+                      itemType: u.itemType,
+                      quantity: Number(u.quantity),
+                      isNew: false,
+                      available_stock: (u as any).available_stock,
+                      procurement_need: (u as any).procurement_need,
+                      procurement_status: (u as any).procurement_status,
+                    }));
+                    setBomRows(mapped);
+                    setHasChanges(true);
                   }}
                 />
               </Box>
@@ -582,6 +628,26 @@ const BoqVsBomTab: React.FC<BoqVsBomTabProps> = ({
           </Paper>
         </Grid>
       </Grid>
+      <ConfirmDialog
+        open={addConfirmOpen}
+        title="Tambah material baru"
+        description={`Tidak ditemukan. Tambah "${addConfirmName || ''}" sebagai material baru?`}
+        confirmLabel="Tambah"
+        cancelLabel="Batal"
+        onClose={() => { setAddConfirmOpen(false); setAddConfirmName(null); setAddConfirmRowId(null); }}
+        onConfirm={handleConfirmAddNew}
+      />
+
+      <ConfirmDialog
+        open={confirmOpen}
+        title="Hapus item BoM"
+        description="Yakin ingin menghapus item ini dari BoM? Aksi ini tidak bisa dibatalkan."
+        confirmLabel="Hapus"
+        cancelLabel="Batal"
+        onClose={() => { setConfirmOpen(false); setConfirmTargetId(null); }}
+        onConfirm={handleConfirmDelete}
+      />
+
       <AddBomItemDialog
         open={openAddItemDialog}
         onClose={() => setOpenAddItemDialog(false)}

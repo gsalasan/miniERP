@@ -1,39 +1,55 @@
 import React from 'react';
-import { Dialog, DialogTitle, DialogContent, DialogActions, Button, Typography } from '@mui/material';
+import {
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogContentText,
+  DialogActions,
+  Button,
+} from '@mui/material';
 
-interface ConfirmDialogProps {
+interface Props {
   open: boolean;
   title?: string;
-  message: string;
+  description?: string;
   confirmLabel?: string;
   cancelLabel?: string;
-  onConfirm: () => void;
   onClose: () => void;
+  onConfirm: () => void;
 }
 
-export default function ConfirmDialog({
+const ConfirmDialog: React.FC<Props> = ({
   open,
-  title,
-  message,
-  confirmLabel = 'Oke',
+  title = 'Konfirmasi',
+  description = 'Apakah Anda yakin?',
+  confirmLabel = 'Ya',
   cancelLabel = 'Batal',
-  onConfirm,
   onClose,
-}: ConfirmDialogProps) {
+  onConfirm,
+}) => {
   return (
-    <Dialog open={open} onClose={onClose} maxWidth="xs" fullWidth>
-      {title && <DialogTitle>{title}</DialogTitle>}
+    <Dialog open={open} onClose={onClose} aria-labelledby="confirm-dialog-title" maxWidth="xs" fullWidth>
+      {title && <DialogTitle id="confirm-dialog-title">{title}</DialogTitle>}
       <DialogContent>
-        <Typography>{message}</Typography>
+        <DialogContentText>{description}</DialogContentText>
       </DialogContent>
       <DialogActions>
         <Button onClick={onClose} color="inherit">
           {cancelLabel}
         </Button>
-        <Button onClick={() => { onConfirm(); }} variant="contained" color="primary">
+        <Button
+          onClick={() => {
+            onConfirm();
+            onClose();
+          }}
+          variant="contained"
+          color="error"
+        >
           {confirmLabel}
         </Button>
       </DialogActions>
     </Dialog>
   );
-}
+};
+
+export default ConfirmDialog;
