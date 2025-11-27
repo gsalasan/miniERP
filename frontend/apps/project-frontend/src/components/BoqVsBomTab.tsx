@@ -13,7 +13,7 @@ import {
   Grid,
   Chip,
 } from '@mui/material';
-import { DataGrid, GridColDef, GridRowsProp } from '@mui/x-data-grid';
+import { DataGrid, GridColDef, GridRowsProp, GridRenderEditCellParams } from '@mui/x-data-grid';
 import DescriptionOutlinedIcon from '@mui/icons-material/DescriptionOutlined';
 import BuildOutlinedIcon from '@mui/icons-material/BuildOutlined';
 import ContentCopyOutlinedIcon from '@mui/icons-material/ContentCopyOutlined';
@@ -23,6 +23,10 @@ import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
 import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline';
 import WarningAmberOutlinedIcon from '@mui/icons-material/WarningAmberOutlined';
 import { projectApi } from '../api/projectApi';
+import { searchMaterials, searchServices, createMaterial, MaterialOption, ServiceOption } from '../api/engineeringApi';
+import AddBomItemDialog from './AddBomItemDialog';
+import Autocomplete from '@mui/material/Autocomplete';
+import TextField from '@mui/material/TextField';
 import type { EstimationItem, ProjectBOM, BomItem } from '../types';
 
 interface BoqVsBomTabProps {
@@ -51,7 +55,34 @@ const BoqVsBomTab: React.FC<BoqVsBomTabProps> = ({
   canEdit,
   projectStatus,
 }) => {
+  // For autocomplete
+  const [materialOptions, setMaterialOptions] = useState<MaterialOption[]>([]);
+  const [serviceOptions, setServiceOptions] = useState<ServiceOption[]>([]);
+  const [autocompleteLoading, setAutocompleteLoading] = useState(false);
+  const searchDebounceRef = React.useRef<number | null>(null);
+  const [inputMap, setInputMap] = useState<Record<string, string>>({});
+
+  // Fetch options for autocomplete
+  const fetchMaterialOptions = async (input: string) => {
+    setAutocompleteLoading(true);
+    try {
+      const results = await searchMaterials(input);
+      setMaterialOptions(results);
+    } finally {
+      setAutocompleteLoading(false);
+    }
+  };
+  const fetchServiceOptions = async (input: string) => {
+    setAutocompleteLoading(true);
+    try {
+      const results = await searchServices(input);
+      setServiceOptions(results);
+    } finally {
+      setAutocompleteLoading(false);
+    }
+  };
   const [bomRows, setBomRows] = useState<BomRow[]>([]);
+  const [openAddItemDialog, setOpenAddItemDialog] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
@@ -111,13 +142,6 @@ const BoqVsBomTab: React.FC<BoqVsBomTabProps> = ({
 
   const bomColumns: GridColDef[] = [
     {
-      field: 'itemName',
-      headerName: 'Nama Item',
-      flex: 1,
-      minWidth: 300,
-      editable: false,
-    },
-    {
       field: 'itemType',
       headerName: 'Tipe',
       width: 120,
@@ -131,6 +155,87 @@ const BoqVsBomTab: React.FC<BoqVsBomTabProps> = ({
           color={params.value === 'MATERIAL' ? 'primary' : 'secondary'}
         />
       ),
+    },
+    {
+      field: 'itemName',
+      headerName: 'Nama Item',
+      flex: 1,
+      minWidth: 300,
+      editable: canEdit,
+      renderEditCell: (params: GridRenderEditCellParams) => {
+        const isMaterial = params.row.itemType === 'MATERIAL';
+        const options = isMaterial ? materialOptions : serviceOptions;
+        const current = options.find((opt) => opt.id === params.row.itemId) || null;
+        const rowId = params.id.toString();
+        const currentInput = inputMap[rowId] || '';
+
+        const showAddNew = isMaterial && currentInput.length >= 2 && !options.some((o) => (o.item_name || '').toLowerCase().includes(currentInput.toLowerCase()));
+
+        const displayOptions: any[] = showAddNew ? [...options, { id: 'add-new', item_name: currentInput }] : options;
+
+        return (
+          <Autocomplete
+            freeSolo={false}
+            loading={autocompleteLoading}
+            options={displayOptions}
+            getOptionLabel={(option: any) => (isMaterial ? option.item_name : option.service_name)}
+            value={current}
+            onInputChange={(_, input) => {
+              setInputMap((m) => ({ ...m, [rowId]: input }));
+              if (isMaterial) debounceSearch(true, input);
+              else debounceSearch(false, input);
+            }}
+            onChange={(_, newValue) => {
+              if (newValue && (newValue as any).id === 'add-new') {
+                // create new material with minimal payload
+                (async () => {
+                  const name = inputMap[rowId] || '';
+                  const ok = window.confirm(`Tidak ditemukan. Tambah "${name}" sebagai material baru?`);
+                  if (!ok) return;
+                  try {
+                    const created = await createMaterial({ item_name: name });
+                    // add to material options cache
+                    setMaterialOptions((prev) => [created, ...prev]);
+                    params.api.setEditCellValue({ id: params.id, field: 'itemId', value: created.id });
+                    params.api.setEditCellValue({ id: params.id, field: 'itemName', value: created.item_name });
+                  } catch (err) {
+                    console.error('Gagal membuat material:', err);
+                    alert('Gagal membuat material baru');
+                  }
+                })();
+              } else {
+                params.api.setEditCellValue({ id: params.id, field: 'itemId', value: newValue?.id || '' });
+                params.api.setEditCellValue({ id: params.id, field: 'itemName', value: newValue ? (isMaterial ? newValue.item_name : newValue.service_name) : '' });
+              }
+            }}
+            renderOption={(props, option: any) => {
+              if (option.id === 'add-new') {
+                return (
+                  <li {...props} key="add-new">
+                    <Box display="flex" alignItems="center" width="100%" py={1}>
+                      <AddCircleOutlineIcon fontSize="small" sx={{ mr: 1, color: 'primary.main' }} />
+                      <Typography variant="body2" color="primary">+ Tambah "{currentInput}" sebagai Item Baru</Typography>
+                    </Box>
+                  </li>
+                );
+              }
+              return (
+                <li {...props} key={option.id}>
+                  <Box>
+                    <Typography variant="body2" fontWeight={600}>{isMaterial ? option.item_name : option.service_name}</Typography>
+                    {isMaterial && (
+                      <Typography variant="caption" color="text.secondary">{option.brand || 'N/A'} | {option.vendor || 'N/A'}</Typography>
+                    )}
+                  </Box>
+                </li>
+              );
+            }}
+            renderInput={(paramsInput) => (
+              <TextField {...paramsInput} label={isMaterial ? 'Cari Material' : 'Cari Service'} variant="standard" />
+            )}
+          />
+        );
+      },
     },
     {
       field: 'quantity',
@@ -177,16 +282,22 @@ const BoqVsBomTab: React.FC<BoqVsBomTabProps> = ({
   };
 
   const handleAddItem = () => {
+    // legacy add fallback: open dialog for manual add
+    setOpenAddItemDialog(true);
+  };
+
+  const handleSelectMaterialFromDialog = (material: any) => {
     const newRow: BomRow = {
       id: `new-${Date.now()}`,
-      itemId: '',
-      itemName: 'Item Baru',
+      itemId: material.id,
+      itemName: material.item_name || material.name || material.itemName,
       itemType: 'MATERIAL',
       quantity: 1,
       isNew: true,
     };
-    setBomRows([...bomRows, newRow]);
+    setBomRows((prev) => [...prev, newRow]);
     setHasChanges(true);
+    // optional: focus to quantity column is UI-level; DataGrid focus not implemented here
   };
 
   const handleDeleteRow = (id: string) => {
@@ -229,12 +340,23 @@ const BoqVsBomTab: React.FC<BoqVsBomTabProps> = ({
   };
 
   const handleProcessRowUpdate = (newRow: any) => {
+    // Ensure itemName is always synced with the selected itemId
+    let itemName = newRow.itemName;
+    if (newRow.itemId) {
+      if (newRow.itemType === 'MATERIAL') {
+        const found = materialOptions.find((m) => m.id === newRow.itemId);
+        if (found) itemName = found.item_name;
+      } else if (newRow.itemType === 'SERVICE') {
+        const found = serviceOptions.find((s) => s.id === newRow.itemId);
+        if (found) itemName = found.service_name;
+      }
+    }
     const updatedRows = bomRows.map((row) =>
-      row.id === newRow.id ? { ...row, ...newRow } : row
+      row.id === newRow.id ? { ...row, ...newRow, itemName } : row
     );
     setBomRows(updatedRows);
     setHasChanges(true);
-    return newRow;
+    return { ...newRow, itemName };
   };
 
   const boqRows: GridRowsProp = estimationItems.map((item) => ({
@@ -386,11 +508,11 @@ const BoqVsBomTab: React.FC<BoqVsBomTabProps> = ({
                         <Button
                           variant="outlined"
                           startIcon={<AddCircleOutlineIcon />}
-                          onClick={handleAddItem}
+                          onClick={() => setOpenAddItemDialog(true)}
                           size="small"
                           disabled={loading}
                         >
-                          Tambah
+                          Tambah Item Manual
                         </Button>
                       </Tooltip>
                     </Stack>
@@ -460,6 +582,14 @@ const BoqVsBomTab: React.FC<BoqVsBomTabProps> = ({
           </Paper>
         </Grid>
       </Grid>
+      <AddBomItemDialog
+        open={openAddItemDialog}
+        onClose={() => setOpenAddItemDialog(false)}
+        onSelectItem={(m) => {
+          handleSelectMaterialFromDialog(m);
+          setOpenAddItemDialog(false);
+        }}
+      />
     </Box>
   );
 };
