@@ -1,4 +1,10 @@
 import { PrismaClient } from '@prisma/client';
+import dayjs from 'dayjs';
+import utc from 'dayjs/plugin/utc';
+import timezone from 'dayjs/plugin/timezone';
+
+dayjs.extend(utc);
+dayjs.extend(timezone);
 
 const prisma = new PrismaClient();
 
@@ -19,11 +25,16 @@ export class AttendanceService {
    * Get today's attendance for a user
    */
   async getTodayAttendance(userId: string) {
-    const startOfDay = new Date();
-    startOfDay.setHours(0, 0, 0, 0);
 
-    const endOfDay = new Date();
-    endOfDay.setHours(23, 59, 59, 999);
+
+  // Gunakan Asia/Jakarta untuk filter tanggal check_in_time
+  const tz = 'Asia/Jakarta';
+  const nowJakarta = dayjs().tz(tz);
+  // Ambil rentang waktu hari ini di Asia/Jakarta, lalu konversi ke UTC agar query DB benar
+  const todayStartJakarta = nowJakarta.startOf('day');
+  const todayEndJakarta = nowJakarta.endOf('day');
+  const todayStartUTC = todayStartJakarta.utc().toDate();
+  const todayEndUTC = todayEndJakarta.utc().toDate();
 
     // Find user to get employee_id
     const user = await prisma.users.findUnique({
@@ -35,13 +46,14 @@ export class AttendanceService {
       return null;
     }
 
+    // Cari attendance dengan check_in_time hari ini (Asia/Jakarta, di-query pakai UTC)
     const attendance = await prisma.hr_attendances.findFirst({
       where: {
         employee_id: user.employee_id,
-        date: {
-          gte: startOfDay,
-          lte: endOfDay
-        }
+        check_in_time: {
+          gte: todayStartUTC,
+          lte: todayEndUTC,
+        },
       },
       include: {
         employee: {
@@ -98,8 +110,11 @@ export class AttendanceService {
       throw new Error('Invalid longitude');
     }
 
-    // TODO: Add geofence validation for office workers
-    // For now, we accept all locations
+    // Geofence validation: ensure location is within allowed radius
+    const geofenceOk = await this.validateGeofence(geoLocation.latitude, geoLocation.longitude, user.employee_id);
+    if (!geofenceOk) {
+      throw new Error('Location is outside the allowed area');
+    }
 
     // Create attendance record
     const attendance = await prisma.hr_attendances.create({
@@ -162,6 +177,12 @@ export class AttendanceService {
     }
     if (geoLocation.longitude < -180 || geoLocation.longitude > 180) {
       throw new Error('Invalid longitude');
+    }
+
+    // Geofence validation for check-out as well
+    const geofenceOk = await this.validateGeofence(geoLocation.latitude, geoLocation.longitude, user.employee_id);
+    if (!geofenceOk) {
+      throw new Error('Location is outside the allowed area');
     }
 
     // Calculate work duration in minutes
@@ -263,8 +284,24 @@ export class AttendanceService {
       }
     });
 
+    // Helper to format Date to HH:mm (24h) in Asia/Jakarta
+    function formatTimeJakarta(date?: Date | string | null): string {
+      if (!date) return '';
+      const d = dayjs(date).tz('Asia/Jakarta');
+      if (!d.isValid()) return '';
+      return d.format('HH:mm');
+    }
+
+    // Add 'jam' field to each record
+    const dataWithJam = data.map((item) => ({
+      ...item,
+      jam: item.check_in_time || item.check_out_time
+        ? `${formatTimeJakarta(item.check_in_time)} - ${formatTimeJakarta(item.check_out_time)}`
+        : '',
+    }));
+
     return {
-      data,
+      data: dataWithJam,
       pagination: {
         page,
         limit,
@@ -366,22 +403,33 @@ export class AttendanceService {
 
   /**
    * Validate geofence (check if location is within allowed radius)
-   * TODO: Make office location and radius configurable
+   * By default, geofence is DISABLED so employees can check-in from anywhere.
+   * To enable geofence, set HR_GEOFENCE_ENABLED=true in environment.
    */
   private async validateGeofence(
     latitude: number,
     longitude: number,
     employeeId: string
   ): Promise<boolean> {
-    // TODO: Get office location from employee's work location settings
-    // For now, we'll skip geofence validation
-    // Example implementation:
-    // const officeLatitude = -6.200000;
-    // const officeLongitude = 106.816666;
-    // const allowedRadiusMeters = 100;
-    // const distance = this.calculateDistance(latitude, longitude, officeLatitude, officeLongitude);
-    // return distance <= allowedRadiusMeters;
-    
-    return true; // Accept all locations for now
+    // Default: DISABLED — allow attendance from anywhere
+    // Only enforce geofence if explicitly enabled via environment variable
+    const enabled = process.env.HR_GEOFENCE_ENABLED === 'true';
+    if (!enabled) {
+      return true; // Allow all locations by default
+    }
+
+    const officeLat = parseFloat(process.env.HR_OFFICE_LAT || '-6.200000');
+    const officeLng = parseFloat(process.env.HR_OFFICE_LNG || '106.816666');
+    const allowedRadiusMeters = parseFloat(process.env.HR_OFFICE_RADIUS_METERS || '1000');
+
+    if (isNaN(officeLat) || isNaN(officeLng) || isNaN(allowedRadiusMeters)) {
+      // Misconfiguration: allow by default but log warning
+      console.warn('[Geofence] Invalid environment geofence configuration, allowing location by default');
+      return true;
+    }
+
+    const distance = this.calculateDistance(latitude, longitude, officeLat, officeLng);
+    console.log('[Geofence] Distance (m):', distance, 'Allowed (m):', allowedRadiusMeters);
+    return distance <= allowedRadiusMeters;
   }
 }
