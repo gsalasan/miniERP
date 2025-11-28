@@ -2,7 +2,6 @@ import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import authRoutes from './routes/auth.routes';
-import employeeRoutes from './routes/employee.routes';
 
 // Load environment variables
 dotenv.config();
@@ -11,7 +10,7 @@ const app = express();
 
 // Middleware
 app.use(cors({
-  origin: process.env.CORS_ORIGIN || 'http://localhost:3000',
+  origin: ['http://localhost:3000', 'http://localhost:5174', 'http://localhost:3013'],
   credentials: true
 }));
 app.use(express.json());
@@ -29,7 +28,8 @@ app.get('/health', (req, res) => {
 
 // API Routes with versioning
 app.use('/api/v1/auth', authRoutes);
-app.use('/api/v1', employeeRoutes);
+// Employee-related endpoints were removed from identity-service.
+// Employee CRUD now belongs to HR service (`/services/hr-service`).
 
 // 404 handler
 app.use('*', (req, res) => {
