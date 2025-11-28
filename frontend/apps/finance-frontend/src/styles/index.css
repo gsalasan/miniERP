@@ -67,6 +67,32 @@ body {
   background: #4E88BE;
 }
 
+/* Sidebar specific scrollbar - more visible and smooth */
+nav::-webkit-scrollbar {
+  width: 6px;
+}
+
+nav::-webkit-scrollbar-track {
+  background: rgba(200, 168, 112, 0.1);
+  border-radius: 3px;
+  margin: 8px 0;
+}
+
+nav::-webkit-scrollbar-thumb {
+  background: rgba(200, 168, 112, 0.6);
+  border-radius: 3px;
+  transition: background 0.3s ease;
+}
+
+nav::-webkit-scrollbar-thumb:hover {
+  background: #C8A870;
+}
+
+/* Smooth scrolling for sidebar */
+nav {
+  scroll-behavior: smooth;
+}
+
 /* Focus styles */
 *:focus-visible {
   outline: 2px solid #4E88BE;
