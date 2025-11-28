@@ -9,7 +9,6 @@ import {
   Alert,
   Chip,
   Stack,
-  Grid,
 } from '@mui/material';
 import {
   AccessTime as ClockIcon,
@@ -68,7 +67,7 @@ const AttendanceWidget: React.FC = () => {
         lat: position.latitude,
         lng: position.longitude,
       });
-      setLiveAddress(position.address || 'Lokasi Anda saat ini');
+      setLiveAddress(position.location || 'Lokasi Anda saat ini');
       setPermissionGranted(true);
     } catch (err: any) {
       console.error('Failed to get live location:', err);
@@ -241,9 +240,9 @@ const AttendanceWidget: React.FC = () => {
 
           {attendance && (attendance.check_in_time || attendance.check_out_time) ? (
             <Box sx={{ bgcolor: '#f8f9fa', borderRadius: 2, p: 2, border: '1px solid #e9ecef' }}>
-              <Grid container spacing={2}>
+              <Stack spacing={2}>
                 {attendance.check_in_time && (
-                  <Grid item xs={12}>
+                  <Box>
                     <Stack direction="row" spacing={0.5} alignItems="center" mb={0.5}>
                       <ClockIcon sx={{ fontSize: 16, color: '#3498db' }} />
                       <Typography variant="body2" color="text.secondary" sx={{ fontSize: '0.75rem', fontWeight: 600 }}>Check In</Typography>
@@ -255,11 +254,11 @@ const AttendanceWidget: React.FC = () => {
                       if (lat && lng) return <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mt: 0.5 }}><LocationIcon sx={{ fontSize: 12, color: 'text.secondary' }} /><LocationDisplay lat={lat} lng={lng} /></Box>;
                       return null;
                     })()}
-                  </Grid>
+                  </Box>
                 )}
 
                 {attendance.check_out_time && (
-                  <Grid item xs={12}>
+                  <Box>
                     <Stack direction="row" spacing={0.5} alignItems="center" mb={0.5}>
                       <ClockIcon sx={{ fontSize: 16, color: '#e74c3c' }} />
                       <Typography variant="body2" color="text.secondary" sx={{ fontSize: '0.75rem', fontWeight: 600 }}>Check Out</Typography>
@@ -272,9 +271,9 @@ const AttendanceWidget: React.FC = () => {
                       return null;
                     })()}
                     {attendance.work_duration_minutes && <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 0.5 }}>Duration: {formatDuration(attendance.work_duration_minutes)}</Typography>}
-                  </Grid>
+                  </Box>
                 )}
-              </Grid>
+              </Stack>
             </Box>
           ) : (
             <Box sx={{ bgcolor: '#f8f9fa', borderRadius: 2, p: 3, textAlign: 'center', border: '1px dashed #dee2e6' }}>

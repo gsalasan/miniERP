@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import Layout from '../../components/Layout';
-import { Edit2, Trash2, Eye, AlertCircle } from 'lucide-react';
+import { Edit2, Trash2, Eye, AlertCircle, ArrowLeft } from 'lucide-react';
 import { fetchAllUsers, updateUser, deleteUser } from '../../api/userApi';
+import { useNavigate } from 'react-router-dom';
 
 interface User {
   id: string;
@@ -39,6 +40,7 @@ const ROLE_OPTIONS = [
 ];
 
 export default function UserManagement() {
+  const navigate = useNavigate();
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -166,10 +168,19 @@ export default function UserManagement() {
     <Layout>
       <div className="min-h-screen bg-[#F4F4F4] px-8 py-8">
         <div className="max-w-7xl mx-auto">
-          {/* Header */}
-          <div className="mb-6">
-            <h1 className="text-4xl font-bold text-[#06103A] mb-2">User Management</h1>
-            <p className="text-[#6B6E70]">Manage system users and permissions</p>
+          {/* Header with Back Button */}
+          <div className="mb-6 flex items-center gap-4">
+            <button
+              onClick={() => navigate(-1)}
+              className="p-2 hover:bg-white rounded-lg transition-all border border-[#E5E7EB] flex items-center justify-center"
+              title="Go Back"
+            >
+              <ArrowLeft size={20} className="text-[#06103A]" />
+            </button>
+            <div>
+              <h1 className="text-4xl font-bold text-[#06103A] mb-2">User Management</h1>
+              <p className="text-[#6B6E70]">Manage system users and permissions</p>
+            </div>
           </div>
 
           {/* Error Alert */}
@@ -323,7 +334,16 @@ export default function UserManagement() {
               {/* Modal Content */}
               {modalType === 'view' && selectedUser && (
                 <>
-                  <h2 className="text-2xl font-bold text-[#06103A] mb-4">View User</h2>
+                  <div className="flex items-center gap-3 mb-4">
+                    <button
+                      onClick={() => setShowModal(false)}
+                      className="p-2 hover:bg-gray-100 rounded-lg transition-all"
+                      title="Back"
+                    >
+                      <ArrowLeft size={20} className="text-[#06103A]" />
+                    </button>
+                    <h2 className="text-2xl font-bold text-[#06103A]">View User</h2>
+                  </div>
                   <div className="space-y-4">
                     <div>
                       <label className="block text-sm font-medium text-[#6B6E70] mb-1">Email</label>
@@ -350,20 +370,21 @@ export default function UserManagement() {
                       </p>
                     </div>
                   </div>
-                  <div className="mt-8 flex gap-3">
-                    <button
-                      onClick={() => setShowModal(false)}
-                      className="flex-1 px-4 py-2.5 border border-[#E5E7EB] rounded-lg font-medium text-[#06103A] hover:bg-[#F9FAFB] transition-all"
-                    >
-                      Close
-                    </button>
-                  </div>
                 </>
               )}
 
               {modalType === 'edit' && selectedUser && (
                 <>
-                  <h2 className="text-2xl font-bold text-[#06103A] mb-4">Edit User</h2>
+                  <div className="flex items-center gap-3 mb-4">
+                    <button
+                      onClick={() => setShowModal(false)}
+                      className="p-2 hover:bg-gray-100 rounded-lg transition-all"
+                      title="Back"
+                    >
+                      <ArrowLeft size={20} className="text-[#06103A]" />
+                    </button>
+                    <h2 className="text-2xl font-bold text-[#06103A]">Edit User</h2>
+                  </div>
                   <div className="space-y-4">
                     <div>
                       <label className="block text-sm font-medium text-[#6B6E70] mb-2">Email</label>
