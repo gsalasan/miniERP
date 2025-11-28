@@ -54,17 +54,19 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     try {
       console.log('[AUTH] Bootstrap starting...');
       const params = new URLSearchParams(window.location.search);
-      const urlToken = params.get('token');
+      // Accept both `token` (legacy) and `cross_app_token` (main dashboard)
+      const urlToken = params.get('token') || params.get('cross_app_token');
       let activeToken: string | null = null;
 
       if (urlToken) {
         console.log('[AUTH] Token found in URL, length:', urlToken.length);
         localStorage.setItem('token', urlToken);
         activeToken = urlToken;
+        // remove both possible param names from URL
         params.delete('token');
+        params.delete('cross_app_token');
         const cleaned = params.toString();
-        const newUrl =
-          window.location.pathname + (cleaned ? `?${cleaned}` : '');
+        const newUrl = window.location.pathname + (cleaned ? `?${cleaned}` : '');
         window.history.replaceState({}, '', newUrl);
         console.log('[AUTH] URL cleaned');
       } else {
@@ -247,22 +249,29 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   };
 
   // Role-based permission helpers
+
+  // Normalize all roles to uppercase for comparison
+  const getUserRoles = (): string[] => {
+    if (!user) return [];
+    const rolesArr = user.roles && user.roles.length > 0 ? user.roles : (user.role ? [user.role] : []);
+    return rolesArr.map((r) => (r || '').toString().toUpperCase());
+  };
+
   const hasRole = (role: string): boolean => {
-    return user?.role?.toLowerCase() === role.toLowerCase();
+    const userRoles = getUserRoles();
+    return userRoles.includes(role.toUpperCase());
   };
 
   const hasAnyRole = (roles: string[]): boolean => {
-    const primary = user?.role || (user?.roles && user.roles[0]);
-    if (!primary) return false;
-    const primaryLower = primary.toLowerCase();
-    return roles.some((r) => r.toLowerCase() === primaryLower);
+    const userRoles = getUserRoles();
+    const allowed = roles.map((r) => r.toUpperCase());
+    return userRoles.some((r) => allowed.includes(r));
   };
 
   const hasAllRoles = (roles: string[]): boolean => {
-    const primary = user?.role || (user?.roles && user.roles[0]);
-    if (!primary) return false;
-    const primaryLower = primary.toLowerCase();
-    return roles.every((r) => r.toLowerCase() === primaryLower);
+    const userRoles = getUserRoles();
+    const allowed = roles.map((r) => r.toUpperCase());
+    return allowed.every((r) => userRoles.includes(r));
   };
 
   // Project-specific permissions
