@@ -16,7 +16,6 @@ interface CreateEmployeeData {
   basic_salary: number | string;
   allowances?: any;
   // Optional extended fields
-  department?: string;
   gender?: string;
   marital_status?: string;
   blood_type?: string;

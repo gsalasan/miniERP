@@ -148,19 +148,18 @@ const Dashboard: React.FC = () => {
 
     if (token && user) {
       // Use localStorage for cross-app sharing (since sessionStorage is tab-specific)
-      localStorage.setItem("cross_app_token", token);
-      localStorage.setItem("cross_app_user", JSON.stringify(user));
-      localStorage.setItem("cross_app_timestamp", Date.now().toString());
-
-      // Navigate to the module
-      window.open(module.url, '_blank');
-
-      // Clean up cross-app data after a short delay
-      setTimeout(() => {
-        localStorage.removeItem("cross_app_token");
-        localStorage.removeItem("cross_app_user");
-        localStorage.removeItem("cross_app_timestamp");
-      }, 5000); // 5 seconds cleanup
+      // Navigate to the module in the same tab and pass token via URL query param
+      try {
+        const url = new URL(module.url);
+        // attach cross-app token so the target app can read it from URL
+        url.searchParams.set('cross_app_token', token);
+        // preserve existing params if any
+        window.location.href = url.toString();
+      } catch {
+        // Fallback for non-absolute URLs
+        const separator = module.url.includes('?') ? '&' : '?';
+        window.location.href = `${module.url}${separator}cross_app_token=${encodeURIComponent(token)}`;
+      }
     } else {
       console.error("No token or user data available");
     }
