@@ -3,6 +3,7 @@ import cors from 'cors';
 import dotenv from 'dotenv';
 import vendorRoutes from './routes/vendorRoutes';
 import vendorPricelistRoutes from './routes/vendorPricelistRoutes';
+import vendorLookupRoutes from './routes/vendorLookupRoutes';
 import materialsProxyRoutes from './routes/materialsProxyRoutes';
 
 dotenv.config();
@@ -13,6 +14,7 @@ app.use(express.json());
 
 app.use('/api/v1/vendors', vendorRoutes);
 app.use('/api/v1/vendor-pricelist', vendorPricelistRoutes);
+app.use('/api/v1', vendorLookupRoutes);
 app.use('/api/v1/materials-proxy', materialsProxyRoutes);
 app.get('/health', (_, res) => res.json({ ok: true }));
 

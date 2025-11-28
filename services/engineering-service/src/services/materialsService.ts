@@ -1,4 +1,5 @@
-import { PrismaClient } from '@prisma/client';
+import prisma from '../prisma/client';
+import { Prisma } from '@prisma/client';
 
 // Enum definitions to match database schema
 enum MaterialStatus {
@@ -35,13 +36,7 @@ interface Material {
   updated_at: Date;
 }
 
-const prisma = new PrismaClient({
-  datasources: {
-    db: {
-      url: process.env.DATABASE_URL,
-    },
-  },
-});
+
 
 export interface CreateMaterialData {
   sbu?: string;
@@ -191,14 +186,14 @@ class MaterialService {
         skip,
       ];
 
+      // Use unsafe raw execution here with positional parameters because the
+      // SQL string uses explicit $1..$n placeholders. Building a fully
+      // parameterized Prisma.sql fragment for this dynamic set of optional
+      // filters is more involved. Keep this localized and safe by only
+      // interpolating validated filter values above.
       const [materials, totalResult] = await Promise.all([
-        prisma.$queryRawUnsafe(dataQuery, ...queryParams) as Promise<
-          Material[]
-        >,
-        prisma.$queryRawUnsafe(
-          countQuery,
-          ...queryParams.slice(0, -2)
-        ) as Promise<[{ count: bigint }]>,
+        prisma.$queryRawUnsafe(dataQuery, ...queryParams) as Promise<Material[]>,
+        prisma.$queryRawUnsafe(countQuery, ...queryParams.slice(0, -2)) as Promise<[{ count: bigint }]>,
       ]);
 
       const total = Number(totalResult[0].count);
@@ -225,7 +220,7 @@ class MaterialService {
   async getMaterialById(id: string): Promise<Material | null> {
     try {
       const material = (await prisma.$queryRaw`
-        SELECT * FROM "Material" WHERE "id" = ${id}::uuid
+        SELECT * FROM "Material" WHERE "id"::text = ${id}
       `) as Material[];
 
       return material[0] || null;
@@ -238,16 +233,80 @@ class MaterialService {
   // Create new material
   async createMaterial(data: CreateMaterialData): Promise<Material> {
     try {
+      // Normalize lookups: ensure SBULookup, MaterialSystemCategory, MaterialSubSystem exist
+      let sbu_id: string | null = null;
+      let kategori_sistem_id: string | null = null;
+      let sub_sistem_id: string | null = null;
+
+      if (data.sbu) {
+        // find or create SBULookup
+        const rows = (await prisma.$queryRaw`
+          SELECT id FROM "SBULookup" WHERE name = ${data.sbu}
+        `) as Array<{ id: string }>;
+        if (rows && rows.length) {
+          sbu_id = rows[0].id;
+        } else {
+          const inserted = (await prisma.$queryRaw`
+            INSERT INTO "SBULookup" (id, name) VALUES (gen_random_uuid(), ${data.sbu}) RETURNING id
+          `) as Array<{ id: string }>;
+          sbu_id = inserted[0].id;
+        }
+      }
+
+      if (data.system) {
+        const rows = (await prisma.$queryRaw`
+          SELECT id FROM "MaterialSystemCategory" WHERE name = ${data.system}
+        `) as Array<{ id: string }>;
+        if (rows && rows.length) {
+          kategori_sistem_id = rows[0].id;
+        } else {
+          const inserted = (await prisma.$queryRaw`
+            INSERT INTO "MaterialSystemCategory" (id, name) VALUES (gen_random_uuid(), ${data.system}) RETURNING id
+          `) as Array<{ id: string }>;
+          kategori_sistem_id = inserted[0].id;
+        }
+      }
+
+      if (data.subsystem) {
+        // ensure category id exists to attach subsystem
+        let finalSysCatId = kategori_sistem_id;
+        if (!finalSysCatId) {
+          const first = (await prisma.$queryRaw`SELECT id FROM "MaterialSystemCategory" LIMIT 1`) as Array<{ id: string }>;
+          if (first && first.length) finalSysCatId = first[0].id;
+          else {
+            const created = (await prisma.$queryRaw`
+              INSERT INTO "MaterialSystemCategory" (id, name) VALUES (gen_random_uuid(), 'Uncategorized') RETURNING id
+            `) as Array<{ id: string }>;
+            finalSysCatId = created[0].id;
+          }
+        }
+
+        const subsRows = (await prisma.$queryRaw`
+          SELECT id FROM "MaterialSubSystem" WHERE name = ${data.subsystem} AND system_category_id = ${finalSysCatId}::uuid
+        `) as Array<{ id: string }>;
+        if (subsRows && subsRows.length) {
+          sub_sistem_id = subsRows[0].id;
+        } else {
+          const inserted = (await prisma.$queryRaw`
+            INSERT INTO "MaterialSubSystem" (id, name, system_category_id) VALUES (gen_random_uuid(), ${data.subsystem}, ${finalSysCatId}::uuid) RETURNING id
+          `) as Array<{ id: string }>;
+          sub_sistem_id = inserted[0].id;
+        }
+        kategori_sistem_id = finalSysCatId;
+      }
+
       const result = (await prisma.$queryRaw`
         INSERT INTO "Material" (
           "sbu", "system", "subsystem", "components", "item_name", 
           "brand", "owner_pn", "vendor", "status", "location",
-          "cost_ori", "curr", "satuan", "cost_rp", "cost_validity"
+          "cost_ori", "curr", "satuan", "cost_rp", "cost_validity",
+          "kategori_sistem_id", "sub_sistem_id", "sbu_id"
         ) VALUES (
           ${data.sbu}, ${data.system}, ${data.subsystem}, ${data.components ?? null}::"Components", ${data.item_name},
           ${data.brand}, ${data.owner_pn}, ${data.vendor}, ${data.status}::"MaterialStatus", ${data.location}::"MaterialLocation",
           ${data.cost_ori || null}, ${data.curr}, ${data.satuan}, 
-          ${data.cost_rp || null}, ${data.cost_validity}
+          ${data.cost_rp || null}, ${data.cost_validity},
+          ${kategori_sistem_id}::uuid, ${sub_sistem_id}::uuid, ${sbu_id}::uuid
         ) 
         RETURNING *
       `) as Material[];
@@ -265,22 +324,93 @@ class MaterialService {
     data: UpdateMaterialData
   ): Promise<Material | null> {
     try {
-      const updateFields = [];
+  const updateFields = [];
       const values = [];
       let paramIndex = 1;
+  let kategoriAssigned = false;
 
       // Build dynamic update query
       if (data.sbu !== undefined) {
         updateFields.push(`"sbu" = $${paramIndex++}`);
         values.push(data.sbu);
+
+        // ensure SBULookup exists and set sbu_id
+        if (data.sbu) {
+          const rows = (await prisma.$queryRaw`SELECT id FROM "SBULookup" WHERE name = ${data.sbu}`) as Array<{ id: string }>;
+          let sbuId: string | null = null;
+          if (rows && rows.length) sbuId = rows[0].id;
+          else {
+            const inserted = (await prisma.$queryRaw`INSERT INTO "SBULookup" (id, name) VALUES (gen_random_uuid(), ${data.sbu}) RETURNING id`) as Array<{ id: string }>;
+            sbuId = inserted[0].id;
+          }
+          updateFields.push(`"sbu_id" = $${paramIndex++}::uuid`);
+          values.push(sbuId);
+        } else {
+          updateFields.push(`"sbu_id" = $${paramIndex++}::uuid`);
+          values.push(null);
+        }
       }
+
       if (data.system !== undefined) {
         updateFields.push(`"system" = $${paramIndex++}`);
         values.push(data.system);
+
+          if (data.system) {
+          const rows = (await prisma.$queryRaw`SELECT id FROM "MaterialSystemCategory" WHERE name = ${data.system}`) as Array<{ id: string }>;
+          let kategoriId: string | null = null;
+          if (rows && rows.length) kategoriId = rows[0].id;
+          else {
+            const inserted = (await prisma.$queryRaw`INSERT INTO "MaterialSystemCategory" (id, name) VALUES (gen_random_uuid(), ${data.system}) RETURNING id`) as Array<{ id: string }>;
+            kategoriId = inserted[0].id;
+          }
+          updateFields.push(`"kategori_sistem_id" = $${paramIndex++}::uuid`);
+          values.push(kategoriId);
+          kategoriAssigned = true;
+        } else {
+          updateFields.push(`"kategori_sistem_id" = $${paramIndex++}::uuid`);
+          values.push(null);
+          kategoriAssigned = true;
+        }
       }
+
       if (data.subsystem !== undefined) {
         updateFields.push(`"subsystem" = $${paramIndex++}`);
         values.push(data.subsystem);
+
+        if (data.subsystem) {
+          // determine category id to attach subsystem
+          let catId: string | null = null;
+          const catRows = (await prisma.$queryRaw`SELECT id FROM "MaterialSystemCategory" WHERE name = ${data.system}`) as Array<{ id: string }>;
+          if (catRows && catRows.length) catId = catRows[0].id;
+          if (!catId) {
+            const first = (await prisma.$queryRaw`SELECT id FROM "MaterialSystemCategory" LIMIT 1`) as Array<{ id: string }>;
+            if (first && first.length) catId = first[0].id;
+            else {
+              const created = (await prisma.$queryRaw`INSERT INTO "MaterialSystemCategory" (id, name) VALUES (gen_random_uuid(), 'Uncategorized') RETURNING id`) as Array<{ id: string }>;
+              catId = created[0].id;
+            }
+          }
+
+          const subsRows = (await prisma.$queryRaw`SELECT id FROM "MaterialSubSystem" WHERE name = ${data.subsystem} AND system_category_id = ${catId}::uuid`) as Array<{ id: string }>;
+          let subsId: string | null = null;
+          if (subsRows && subsRows.length) subsId = subsRows[0].id;
+          else {
+            const inserted = (await prisma.$queryRaw`INSERT INTO "MaterialSubSystem" (id, name, system_category_id) VALUES (gen_random_uuid(), ${data.subsystem}, ${catId}::uuid) RETURNING id`) as Array<{ id: string }>;
+            subsId = inserted[0].id;
+          }
+
+          updateFields.push(`"sub_sistem_id" = $${paramIndex++}::uuid`);
+          values.push(subsId);
+          // ensure kategori_sistem_id references the same category (only if not already set by system update)
+          if (!kategoriAssigned) {
+            updateFields.push(`"kategori_sistem_id" = $${paramIndex++}::uuid`);
+            values.push(catId);
+            kategoriAssigned = true;
+          }
+        } else {
+          updateFields.push(`"sub_sistem_id" = $${paramIndex++}::uuid`);
+          values.push(null);
+        }
       }
       if (data.components !== undefined) {
         updateFields.push(`"components" = $${paramIndex++}::"Components"`);
@@ -334,26 +464,23 @@ class MaterialService {
       // If no fields to update, just return current material without error
       if (updateFields.length === 0) {
         const current = (await prisma.$queryRaw`
-          SELECT * FROM "Material" WHERE "id" = ${id}::uuid
+          SELECT * FROM "Material" WHERE "id"::text = ${id}
         `) as Material[];
         return current[0] || null;
       }
 
       // Always update the updated_at field when there are changes
-      updateFields.push(`"updated_at" = NOW()`);
+      updateFields.push('"updated_at" = NOW()');
 
-      const query = `
-        UPDATE "Material" 
-        SET ${updateFields.join(', ')}
-        WHERE "id" = $${paramIndex}::uuid
-        RETURNING *
-      `;
-      values.push(id);
+      // Build the SET clause and parameter array
+      const setClause = updateFields.join(', ');
+      // Add id as the last parameter for WHERE clause
+      const params = [...values, id];
 
-      const result = (await prisma.$queryRawUnsafe(
-        query,
-        ...values
-      )) as Material[];
+      // Build the SQL query string
+      const sql = `UPDATE "Material" SET ${setClause} WHERE "id"::text = $${params.length} RETURNING *`;
+
+      const result = await prisma.$queryRawUnsafe(sql, ...params) as Material[];
       return result[0] || null;
     } catch (error) {
       console.error('Error updating material:', error);
@@ -365,7 +492,7 @@ class MaterialService {
   async deleteMaterial(id: string): Promise<boolean> {
     try {
       const result = (await prisma.$queryRaw`
-        DELETE FROM "Material" WHERE "id" = ${id}::uuid
+        DELETE FROM "Material" WHERE "id"::text = ${id}
         RETURNING "id"
       `) as Array<{ id: string }>;
 
@@ -415,31 +542,210 @@ class MaterialService {
   // Get unique values for dropdown filters
   async getFilterOptions() {
     try {
-      const [sbus, systems, subsystems, vendors, brands] = (await Promise.all([
-        prisma.$queryRaw`SELECT DISTINCT "sbu" FROM "Material" WHERE "sbu" IS NOT NULL ORDER BY "sbu"`,
-        prisma.$queryRaw`SELECT DISTINCT "system" FROM "Material" WHERE "system" IS NOT NULL ORDER BY "system"`,
-        prisma.$queryRaw`SELECT DISTINCT "subsystem" FROM "Material" WHERE "subsystem" IS NOT NULL ORDER BY "subsystem"`,
+      // Use normalized lookup tables instead of legacy distinct text columns
+      const [sbusRows, systemRows, subsystemRows, vendorRows, brandRows] = (await Promise.all([
+        prisma.$queryRaw`SELECT name FROM "SBULookup" WHERE name IS NOT NULL ORDER BY name`,
+        prisma.$queryRaw`SELECT name FROM "MaterialSystemCategory" ORDER BY name`,
+        prisma.$queryRaw`SELECT name FROM "MaterialSubSystem" ORDER BY name`,
         prisma.$queryRaw`SELECT DISTINCT "vendor" FROM "Material" WHERE "vendor" IS NOT NULL ORDER BY "vendor"`,
         prisma.$queryRaw`SELECT DISTINCT "brand" FROM "Material" WHERE "brand" IS NOT NULL ORDER BY "brand"`,
       ])) as [
-        Array<{ sbu: string }>,
-        Array<{ system: string }>,
-        Array<{ subsystem: string }>,
+        Array<{ name: string }>,
+        Array<{ name: string }>,
+        Array<{ name: string }>,
         Array<{ vendor: string }>,
         Array<{ brand: string }>,
       ];
 
       return {
-        sbus: sbus.map(item => item.sbu),
-        systems: systems.map(item => item.system),
-        subsystems: subsystems.map(item => item.subsystem),
-        vendors: vendors.map(item => item.vendor),
-        brands: brands.map(item => item.brand),
+        sbus: sbusRows.map(r => r.name),
+        systems: systemRows.map(r => r.name),
+        subsystems: subsystemRows.map(r => r.name),
+        vendors: vendorRows.map(item => item.vendor),
+        brands: brandRows.map(item => item.brand),
         statuses: Object.values(MaterialStatus),
         locations: Object.values(MaterialLocation),
       };
     } catch (error) {
       console.error('Error fetching filter options:', error);
+      throw error;
+    }
+  }
+
+  // FITUR 3.2.C: Search materials for autocomplete
+  async searchMaterials(query: string, limit: number = 20) {
+    try {
+      if (!query || query.length < 2) {
+        return [];
+      }
+
+      const materials = await prisma.material.findMany({
+        where: {
+          OR: [
+            { item_name: { contains: query, mode: 'insensitive' } },
+            { brand: { contains: query, mode: 'insensitive' } },
+            { owner_pn: { contains: query, mode: 'insensitive' } },
+            { vendor: { contains: query, mode: 'insensitive' } },
+          ],
+          status: { in: ['Active', 'Discontinue'] }, // Exclude EOL
+        },
+        select: {
+          id: true,
+          item_name: true,
+          brand: true,
+          vendor: true,
+          owner_pn: true,
+          cost_rp: true,
+          satuan: true,
+          curr: true,
+          status: true,
+        },
+        take: limit,
+        orderBy: {
+          item_name: 'asc',
+        },
+      });
+
+      return materials;
+    } catch (error) {
+      console.error('Error searching materials:', error);
+      throw error;
+    }
+  }
+
+  // FITUR 3.2.C: Create material with vendor and initial price
+  async createMaterialWithVendor(data: {
+    item_name: string;
+    owner_pn?: string;
+    category?: string;
+    brand?: string;
+    satuan: string;
+    status?: string;
+    location?: string;
+    initialPrice: {
+      vendor: string;
+      price: number;
+      currency: string;
+      exchangeRate?: number;
+      cost_validity?: string;
+    };
+  }) {
+    try {
+      const {
+        item_name,
+        owner_pn,
+        category,
+        brand,
+        satuan,
+        status = 'Active',
+        location = 'Local',
+        initialPrice,
+      } = data;
+
+      // Validate required fields
+      if (!item_name || !satuan || !initialPrice) {
+        throw new Error('Missing required fields: item_name, satuan, or initialPrice');
+      }
+
+      if (!initialPrice.vendor || !initialPrice.price || !initialPrice.currency) {
+        throw new Error('Missing required price fields: vendor, price, or currency');
+      }
+
+      // Check for duplicate by owner_pn
+      if (owner_pn) {
+        const existingMaterial = await prisma.material.findFirst({
+          where: { owner_pn },
+        });
+
+        if (existingMaterial) {
+          throw new Error(
+            `Material dengan P/N "${owner_pn}" sudah ada di database dengan nama "${existingMaterial.item_name}"`
+          );
+        }
+      }
+
+      // Execute transaction
+      const result = await prisma.$transaction(async tx => {
+        // 1. Find or create vendor
+        let vendor = await tx.vendors.findFirst({
+          where: {
+            vendor_name: {
+              equals: initialPrice.vendor,
+              mode: 'insensitive',
+            },
+          },
+        });
+
+        if (!vendor) {
+          vendor = await tx.vendors.create({
+            data: {
+              vendor_name: initialPrice.vendor,
+              classification: 'Local',
+              is_preferred: false,
+            },
+          });
+        }
+
+        // 2. Convert currency to IDR if needed
+        const exchangeRate = initialPrice.exchangeRate || 1;
+        const priceInIdr =
+          initialPrice.currency === 'IDR'
+            ? initialPrice.price
+            : initialPrice.price * exchangeRate;
+
+        // 3. Create material
+        const newMaterial = await tx.material.create({
+          data: {
+            item_name,
+            owner_pn: owner_pn || undefined,
+            brand: brand || undefined,
+            satuan,
+            status: status as MaterialStatus,
+            location: location as MaterialLocation,
+            vendor: initialPrice.vendor,
+            cost_rp: priceInIdr,
+            cost_ori: initialPrice.price,
+            curr: initialPrice.currency,
+            cost_date: new Date(),
+            cost_validity: initialPrice.cost_validity
+              ? new Date(initialPrice.cost_validity)
+              : undefined,
+          },
+        });
+
+        // 4. Create vendor pricelist entry
+        await tx.vendorPricelist.create({
+          data: {
+            material_id: newMaterial.id,
+            vendor_id: vendor.id,
+            price: initialPrice.price,
+            currency: initialPrice.currency,
+            price_updated_at: new Date(),
+          },
+        });
+
+        // 5. Return full material data with vendor info
+        const materialWithVendor = await tx.material.findUnique({
+          where: { id: newMaterial.id },
+          include: {
+            vendorPricelist: {
+              include: {
+                Vendor: true,
+              },
+              orderBy: {
+                price_updated_at: 'desc',
+              },
+              take: 1,
+            },
+          },
+        });
+
+        return materialWithVendor;
+      });
+
+      return result;
+    } catch (error) {
+      console.error('Error creating material with vendor:', error);
       throw error;
     }
   }

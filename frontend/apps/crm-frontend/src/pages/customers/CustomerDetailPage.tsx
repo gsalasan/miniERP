@@ -25,13 +25,18 @@ import {
 import { customersApi } from "../../api/customers";
 import { Customer, CustomerStatus } from "../../types/customer";
 import { LoadingSpinner, StatusBadge } from "../../components";
+import { useAuth } from "../../contexts/AuthContext";
 
 const CustomerDetailPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [customer, setCustomer] = useState<Customer | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  // Check if user is CEO - CEO cannot edit/delete customers
+  const isCEO = user?.roles?.includes("CEO") || false;
 
   // Load customer data
   const loadCustomer = async () => {
@@ -142,19 +147,21 @@ const CustomerDetailPage: React.FC = () => {
           <StatusBadge status={customer.status} />
         </Box>
 
-        <Box sx={{ display: "flex", gap: 2 }}>
-          <Button
-            onClick={handleDelete}
-            variant="outlined"
-            color="error"
-            startIcon={<DeleteIcon />}
-          >
-            Hapus
-          </Button>
-          <Button onClick={handleEdit} variant="contained" startIcon={<EditIcon />}>
-            Edit
-          </Button>
-        </Box>
+        {!isCEO && (
+          <Box sx={{ display: "flex", gap: 2 }}>
+            <Button
+              onClick={handleDelete}
+              variant="outlined"
+              color="error"
+              startIcon={<DeleteIcon />}
+            >
+              Hapus
+            </Button>
+            <Button onClick={handleEdit} variant="contained" startIcon={<EditIcon />}>
+              Edit
+            </Button>
+          </Box>
+        )}
       </Box>
 
       {/* Error Alert */}
@@ -203,6 +210,22 @@ const CustomerDetailPage: React.FC = () => {
             </Typography>
             <Typography variant="body1" fontWeight={500}>
               {customer.city}
+            </Typography>
+          </Grid>
+          <Grid item xs={12} sm={6}>
+            <Typography variant="body2" color="text.secondary" mb={0.5}>
+              District
+            </Typography>
+            <Typography variant="body1" fontWeight={500}>
+              {customer.district || "-"}
+            </Typography>
+          </Grid>
+          <Grid item xs={12} sm={12}>
+            <Typography variant="body2" color="text.secondary" mb={0.5}>
+              Alamat
+            </Typography>
+            <Typography variant="body1" fontWeight={500}>
+              {customer.alamat || "-"}
             </Typography>
           </Grid>
 
@@ -295,7 +318,14 @@ const CustomerDetailPage: React.FC = () => {
                   }}
                 >
                   <CardContent>
-                    <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 2 }}>
+                    <Box
+                      sx={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 1,
+                        mb: 2,
+                      }}
+                    >
                       <PersonIcon color="primary" />
                       <Typography variant="subtitle1" fontWeight={600}>
                         {contact.name}
@@ -309,7 +339,14 @@ const CustomerDetailPage: React.FC = () => {
                     )}
 
                     {contact.email && (
-                      <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 0.5 }}>
+                      <Box
+                        sx={{
+                          display: "flex",
+                          alignItems: "center",
+                          gap: 1,
+                          mb: 0.5,
+                        }}
+                      >
                         <EmailIcon fontSize="small" color="action" />
                         <Typography variant="body2" color="text.secondary">
                           {contact.email}
@@ -333,6 +370,46 @@ const CustomerDetailPage: React.FC = () => {
         ) : (
           <Alert severity="info" sx={{ borderRadius: 2 }}>
             Belum ada kontak untuk customer ini
+          </Alert>
+        )}
+      </Paper>
+
+      {/* Rekening (Bank Accounts) */}
+      <Paper
+        elevation={2}
+        sx={{
+          p: 4,
+          borderRadius: 3,
+          background: "linear-gradient(145deg, #ffffff 0%, #f8faff 100%)",
+          mt: 3,
+        }}
+      >
+        <Typography variant="h6" fontWeight={600} mb={3}>
+          Rekening ({customer.customer_rekenings?.length || 0})
+        </Typography>
+
+        {customer.customer_rekenings && customer.customer_rekenings.length > 0 ? (
+          <Grid container spacing={2}>
+            {customer.customer_rekenings.map((r, idx) => (
+              <Grid item xs={12} sm={6} md={4} key={r.id || idx}>
+                <Card variant="outlined" sx={{ borderRadius: 2 }}>
+                  <CardContent>
+                    <Typography variant="subtitle1" fontWeight={600} mb={1}>
+                      {r.bank_name || "Bank"} - {r.account_number}
+                    </Typography>
+                    {r.account_holder && (
+                      <Typography variant="body2" color="text.secondary">
+                        {r.account_holder}
+                      </Typography>
+                    )}
+                  </CardContent>
+                </Card>
+              </Grid>
+            ))}
+          </Grid>
+        ) : (
+          <Alert severity="info" sx={{ borderRadius: 2 }}>
+            Belum ada nomor rekening untuk customer ini
           </Alert>
         )}
       </Paper>

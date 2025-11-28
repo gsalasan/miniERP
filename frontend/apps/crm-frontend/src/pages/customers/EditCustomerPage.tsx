@@ -27,6 +27,7 @@ const EditCustomerPage: React.FC = () => {
     no_npwp: "",
     sppkp: "",
     contacts: [],
+    rekenings: [],
   });
 
   // Load customer data
@@ -43,6 +44,8 @@ const EditCustomerPage: React.FC = () => {
         customer_name: data.customer_name,
         channel: data.channel,
         city: data.city,
+        district: data.district || "",
+        alamat: data.alamat || "",
         status: data.status,
         top_days: data.top_days,
         assigned_sales_id: data.assigned_sales_id || "",
@@ -56,6 +59,13 @@ const EditCustomerPage: React.FC = () => {
             position: contact.position || "",
             email: contact.email || "",
             phone: contact.phone || "",
+          })) || [],
+        rekenings:
+          data.customer_rekenings?.map((r) => ({
+            id: r.id,
+            bank_name: r.bank_name || "",
+            account_number: r.account_number || "",
+            account_holder: r.account_holder || "",
           })) || [],
       });
     } catch (err) {
@@ -109,6 +119,8 @@ const EditCustomerPage: React.FC = () => {
       if (formData.customer_name?.trim()) cleanData.customer_name = formData.customer_name.trim();
       if (formData.channel?.trim()) cleanData.channel = formData.channel.trim();
       if (formData.city?.trim()) cleanData.city = formData.city.trim();
+      if (formData.district?.trim()) cleanData.district = formData.district.trim();
+      if (formData.alamat?.trim()) cleanData.alamat = formData.alamat.trim();
       if (formData.status) cleanData.status = formData.status;
       if (formData.top_days !== undefined) cleanData.top_days = Number(formData.top_days);
       if (formData.assigned_sales_id?.trim())
@@ -119,6 +131,10 @@ const EditCustomerPage: React.FC = () => {
       // Filter out contacts with empty names
       if (formData.contacts) {
         cleanData.contacts = formData.contacts.filter((contact) => contact.name?.trim());
+      }
+      // Filter out rekenings with empty account_number
+      if (formData.rekenings) {
+        cleanData.rekenings = formData.rekenings.filter((r) => r.account_number?.trim());
       }
 
       // If there's nothing to update (no changed fields), just go back to detail

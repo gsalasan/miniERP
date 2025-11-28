@@ -24,6 +24,12 @@ export function validateCustomerData(
     if (!data.city || typeof data.city !== 'string') {
       errors.push('Kota harus diisi dan berupa string');
     }
+    if (data.district && typeof data.district !== 'string') {
+      errors.push('District harus berupa string');
+    }
+    if (data.alamat && typeof data.alamat !== 'string') {
+      errors.push('Alamat harus berupa string');
+    }
 
     if (
       !data.status ||
@@ -216,6 +222,15 @@ export function validateCustomerContactData(
   const errors: string[] = [];
 
   // Required fields untuk create
+  // For update, validate type if present
+  if (isUpdate) {
+    if (data.district && typeof data.district !== 'string') {
+      errors.push('District harus berupa string');
+    }
+    if (data.alamat && typeof data.alamat !== 'string') {
+      errors.push('Alamat harus berupa string');
+    }
+  }
   if (!isUpdate) {
     if (!data.customer_id || typeof data.customer_id !== 'string') {
       errors.push('Customer ID harus diisi dan berupa string');

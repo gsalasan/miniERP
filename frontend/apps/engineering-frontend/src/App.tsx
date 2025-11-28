@@ -6,7 +6,17 @@ import { DashboardPage } from "./pages/DashboardPage";
 import { ItemsPage } from "./pages/items";
 import { MaterialsPage } from "./pages/materials";
 import { ServicesPage } from "./pages/services";
+import {
+  EstimationCalculatorPage,
+  EstimationsListPage,
+  EstimationQueuePage,
+  EstimationRequestDemoPage,
+  ApprovalQueuePage,
+  EstimationReviewPage,
+} from "./pages/estimations";
+import { EngineeringDashboardPage } from "./pages/dashboard/EngineeringDashboardPage";
 import { NotificationProvider } from "./contexts/NotificationContext";
+import { AuthProvider } from "./context/AuthContext";
 
 // Create modern MUI theme
 const theme = createTheme({
@@ -173,12 +183,12 @@ const theme = createTheme({
       styleOverrides: {
         root: ({ theme }) => ({
           // keep title area compact and transparent so it doesn't become a full-width bar
-          padding: '12px 20px',
-          backgroundColor: 'transparent',
+          padding: "12px 20px",
+          backgroundColor: "transparent",
           color: theme.palette.text.primary,
-          position: 'relative',
+          position: "relative",
           marginTop: 4,
-          '& .MuiTypography-root': {
+          "& .MuiTypography-root": {
             fontWeight: 700,
             color: theme.palette.text.primary,
           },
@@ -188,7 +198,7 @@ const theme = createTheme({
     MuiDialogContent: {
       styleOverrides: {
         root: ({ theme }) => ({
-          padding: '20px',
+          padding: "20px",
           color: theme.palette.text.primary,
         }),
       },
@@ -196,7 +206,7 @@ const theme = createTheme({
     MuiDialogActions: {
       styleOverrides: {
         root: {
-          padding: '12px 20px',
+          padding: "12px 20px",
         },
       },
     },
@@ -292,6 +302,24 @@ function App() {
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
   const [loading, setLoading] = useState<boolean>(true);
 
+  // On initial load, accept token passed via URL (?token=...) and store it in localStorage
+  useEffect(() => {
+    try {
+      const params = new URLSearchParams(window.location.search);
+      const token = params.get('token');
+      if (token) {
+        localStorage.setItem('token', token);
+        // Remove token from URL to avoid leaking it in history
+        params.delete('token');
+        const newSearch = params.toString();
+        const newUrl = window.location.pathname + (newSearch ? `?${newSearch}` : '') + window.location.hash;
+        window.history.replaceState({}, document.title, newUrl);
+      }
+    } catch (e) {
+      // ignore
+    }
+  }, []);
+
   useEffect(() => {
     // For now, skip authentication to test the app works
     setIsAuthenticated(true);
@@ -319,58 +347,33 @@ function App() {
     );
   }
 
-  if (!isAuthenticated) {
-    return (
-      <div
-        style={{
-          display: "flex",
-          justifyContent: "center",
-          alignItems: "center",
-          height: "100vh",
-          flexDirection: "column",
-          gap: "16px",
-          textAlign: "center",
-          padding: "20px",
-        }}
-      >
-        <div style={{ fontSize: "48px" }}>🔒</div>
-        <h2>Akses Tidak Diizinkan</h2>
-        <p>Silakan login melalui aplikasi utama terlebih dahulu.</p>
-        <button
-          onClick={() => (window.location.href = "http://localhost:3000")}
-          style={{
-            padding: "12px 24px",
-            backgroundColor: "#1976d2",
-            color: "white",
-            border: "none",
-            borderRadius: "6px",
-            cursor: "pointer",
-            fontSize: "16px",
-          }}
-        >
-          Kembali ke Login
-        </button>
-      </div>
-    );
-  }
-
   return (
     <ThemeProvider theme={theme}>
       <CssBaseline />
-      <NotificationProvider>
-        <Router>
-          <Layout>
-            <Routes>
-              <Route path="/" element={<Navigate to="/dashboard" replace />} />
-              <Route path="/dashboard" element={<DashboardPage />} />
-              <Route path="/items" element={<ItemsPage />} />
-              <Route path="/items/materials" element={<MaterialsPage />} />
-              <Route path="/items/services" element={<ServicesPage />} />
-              {/* Add more routes as needed */}
-            </Routes>
-          </Layout>
-        </Router>
-      </NotificationProvider>
+      <AuthProvider>
+        <NotificationProvider>
+          <Router>
+            <Layout>
+              <Routes>
+                <Route path="/" element={<Navigate to="/dashboard" replace />} />
+                <Route path="/dashboard" element={<DashboardPage />} />
+                <Route path="/dashboard/engineering" element={<EngineeringDashboardPage />} />
+                <Route path="/items" element={<ItemsPage />} />
+                <Route path="/items/materials" element={<MaterialsPage />} />
+                <Route path="/items/services" element={<ServicesPage />} />
+                <Route path="/estimations" element={<EstimationsListPage />} />
+                <Route path="/estimations/queue" element={<EstimationQueuePage />} />
+                <Route path="/estimations/approval-queue" element={<ApprovalQueuePage />} />
+                <Route path="/estimations/request-demo" element={<EstimationRequestDemoPage />} />
+                <Route path="/estimations/:id" element={<EstimationCalculatorPage />} />
+                <Route path="/estimations/:id/view" element={<EstimationCalculatorPage />} />
+                <Route path="/estimations/:id/review" element={<EstimationReviewPage />} />
+                {/* Add more routes as needed */}
+              </Routes>
+            </Layout>
+          </Router>
+        </NotificationProvider>
+      </AuthProvider>
     </ThemeProvider>
   );
 }

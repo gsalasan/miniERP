@@ -208,15 +208,6 @@ const HomePage: React.FC = () => {
         activeCustomers > 0 ? `${Math.round((activeCustomers / totalCustomers) * 100)}%` : "0%",
     },
     {
-      title: "Active Pipeline",
-      value: prospectCustomers.toLocaleString("id-ID"),
-      icon: <TrendingUpIcon fontSize="large" />,
-      color: "#4E88BE", // Primary Light
-      subtitle: "leads baru",
-      trend: prospectCustomers > 0 ? ("up" as const) : ("down" as const),
-      percentage: prospectCustomers > 0 ? `${prospectCustomers}` : "0",
-    },
-    {
       title: "Sales Orders",
       value: "0",
       icon: <AssignmentIcon fontSize="large" />,

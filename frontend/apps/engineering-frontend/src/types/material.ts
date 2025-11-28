@@ -1,5 +1,5 @@
 // Material related types
-import { MaterialStatus, MaterialLocation, Components } from './enums';
+import { MaterialStatus, MaterialLocation, Components } from "./enums";
 
 export interface Material {
   id: string;

@@ -62,7 +62,9 @@ const CreateTaxonomyDialog: React.FC<CreateTaxonomyDialogProps> = ({
         </Box>
       </DialogContent>
       <DialogActions>
-        <Button onClick={onClose} disabled={saving}>Cancel</Button>
+        <Button onClick={onClose} disabled={saving}>
+          Cancel
+        </Button>
         <Button variant="contained" onClick={handleSubmit} disabled={saving || !value.trim()}>
           {saving ? "Saving..." : "Save"}
         </Button>

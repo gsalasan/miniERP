@@ -16,6 +16,8 @@ const NewCustomerPage: React.FC = () => {
     customer_name: "",
     channel: "",
     city: "",
+    district: "",
+    alamat: "",
     status: "PROSPECT" as CustomerStatus,
     top_days: 30,
     assigned_sales_id: "",
@@ -23,6 +25,7 @@ const NewCustomerPage: React.FC = () => {
     no_npwp: "",
     sppkp: "",
     contacts: [],
+    rekenings: [],
   };
 
   const [formData, setFormData] = useState<CreateCustomerData>(initialFormData);
@@ -64,6 +67,8 @@ const NewCustomerPage: React.FC = () => {
         customer_name: formData.customer_name.trim(),
         channel: formData.channel.trim(),
         city: formData.city.trim(),
+        district: formData.district?.trim() || undefined,
+        alamat: formData.alamat?.trim() || undefined,
         status: formData.status,
         top_days: Number(formData.top_days),
         assigned_sales_id: formData.assigned_sales_id?.trim() || undefined,
@@ -71,6 +76,7 @@ const NewCustomerPage: React.FC = () => {
         no_npwp: formData.no_npwp?.trim() || undefined,
         sppkp: formData.sppkp?.trim() || undefined,
         contacts: formData.contacts?.filter((contact) => contact.name?.trim()) || undefined,
+        rekenings: formData.rekenings?.filter((r) => r.account_number?.trim()) || undefined,
       };
 
       await customersApi.createCustomer(cleanData);

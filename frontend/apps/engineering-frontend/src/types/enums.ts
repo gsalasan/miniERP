@@ -202,7 +202,9 @@ export enum MilestoneStatus {
 }
 
 // Helper functions for enum conversions
-export const enumToOptions = <T extends Record<string, string>>(enumObj: T): { value: string; label: string }[] => {
+export const enumToOptions = <T extends Record<string, string>>(
+  enumObj: T,
+): { value: string; label: string }[] => {
   return Object.values(enumObj).map((value) => ({
     value,
     label: value.replace(/_/g, " "),

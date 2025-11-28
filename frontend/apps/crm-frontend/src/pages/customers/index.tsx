@@ -1,31 +1,46 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { Box, Typography, Button, Alert } from "@mui/material";
+import {
+  Box,
+  Typography,
+  Button,
+  Alert,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  IconButton,
+} from "@mui/material";
 import { DataGrid, GridColDef, GridActionsCellItem, GridRenderCellParams } from "@mui/x-data-grid";
 import {
   Add as AddIcon,
   Delete as DeleteIcon,
   Visibility as VisibilityIcon,
+  WarningAmber as WarningIcon,
+  Close as CloseIcon,
 } from "@mui/icons-material";
 import { customersApi } from "../../api/customers";
+import { usersApi, SalesUserOption } from "../../api/users";
 import { Customer, CustomerStatus, UpdateCustomerData } from "../../types/customer";
 import { StatusBadge, LoadingSpinner, EmptyState } from "../../components";
 import CustomerEditDialog from "../../components/CustomerEditDialog";
-
-// Type declaration for window
-declare global {
-  interface Window {
-    confirm: (message?: string) => boolean;
-  }
-}
+import { useAuth } from "../../contexts/AuthContext";
 
 const CustomersPage: React.FC = () => {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
+  const [salesUsers, setSalesUsers] = useState<SalesUserOption[]>([]);
+  const [salesMap, setSalesMap] = useState<Record<string, SalesUserOption>>({});
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [customerToDelete, setCustomerToDelete] = useState<string | null>(null);
+
+  // Check if user is CEO - CEO cannot edit/delete customers
+  const isCEO = user?.roles?.includes("CEO") || false;
 
   // DataGrid columns definition
   const columns: GridColDef[] = [
@@ -55,6 +70,23 @@ const CustomersPage: React.FC = () => {
       headerName: "Kota",
       width: 130,
       sortable: true,
+    },
+    {
+      field: "district",
+      headerName: "District",
+      width: 130,
+      sortable: true,
+    },
+    {
+      field: "alamat",
+      headerName: "Alamat",
+      width: 200,
+      sortable: false,
+      renderCell: (params: GridRenderCellParams<Customer, string>) => (
+        <Typography variant="body2" sx={{ whiteSpace: "pre-line" }}>
+          {params.value || "-"}
+        </Typography>
+      ),
     },
     {
       field: "status",
@@ -94,7 +126,21 @@ const CustomersPage: React.FC = () => {
       width: 130,
       sortable: true,
       renderCell: (params: GridRenderCellParams<Customer, string>) => {
-        return params.value || "-";
+        const id = params.value;
+        if (!id) return "-";
+        const su = salesMap[id];
+        return (
+          <Box sx={{ display: "flex", flexDirection: "column" }}>
+            <Typography variant="body2" sx={{ lineHeight: 1.2 }}>
+              {su?.name || id}
+            </Typography>
+            {su?.email && (
+              <Typography variant="caption" color="text.secondary" sx={{ lineHeight: 1 }}>
+                {su.email}
+              </Typography>
+            )}
+          </Box>
+        );
       },
     },
     {
@@ -112,20 +158,30 @@ const CustomersPage: React.FC = () => {
       type: "actions",
       headerName: "Aksi",
       width: 120,
-      getActions: (params) => [
-        <GridActionsCellItem
-          key="view"
-          icon={<VisibilityIcon />}
-          label="Detail"
-          onClick={() => navigate(`/customers/${params.row.id}`)}
-        />,
-        <GridActionsCellItem
-          key="delete"
-          icon={<DeleteIcon />}
-          label="Delete"
-          onClick={() => handleDelete(params.row.id)}
-        />,
-      ],
+      getActions: (params) => {
+        const actions = [
+          <GridActionsCellItem
+            key="view"
+            icon={<VisibilityIcon />}
+            label="Detail"
+            onClick={() => navigate(`/customers/${params.row.id}`)}
+          />,
+        ];
+
+        // CEO cannot delete customers
+        if (!isCEO) {
+          actions.push(
+            <GridActionsCellItem
+              key="delete"
+              icon={<DeleteIcon />}
+              label="Delete"
+              onClick={() => handleDelete(params.row.id)}
+            />,
+          );
+        }
+
+        return actions;
+      },
     },
   ];
 
@@ -142,6 +198,23 @@ const CustomersPage: React.FC = () => {
       console.error("Error loading customers:", err);
     } finally {
       setLoading(false);
+    }
+  };
+
+  // Load sales users for mapping assigned_sales_id -> name/email
+  const loadSalesUsers = async () => {
+    try {
+      const list = await usersApi.getSalesUsers();
+      setSalesUsers(list);
+      const map = list.reduce<Record<string, SalesUserOption>>((acc, u) => {
+        acc[u.id] = u;
+        return acc;
+      }, {});
+      setSalesMap(map);
+    } catch {
+      // keep empty mapping if HR is unavailable
+      setSalesUsers([]);
+      setSalesMap({});
     }
   };
 
@@ -168,17 +241,31 @@ const CustomersPage: React.FC = () => {
   };
 
   // Handle delete customer
-  const handleDelete = async (customerId: string) => {
-    if (window.confirm("Apakah Anda yakin ingin menghapus customer ini?")) {
-      try {
-        await customersApi.deleteCustomer(customerId);
-        await loadCustomers(); // Reload data
-      } catch (err) {
-        setError(err instanceof Error ? err.message : "Terjadi kesalahan saat menghapus customer");
-        // eslint-disable-next-line no-console
-        console.error("Error deleting customer:", err);
-      }
+  const handleDelete = (customerId: string) => {
+    setCustomerToDelete(customerId);
+    setDeleteDialogOpen(true);
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!customerToDelete) return;
+
+    try {
+      await customersApi.deleteCustomer(customerToDelete);
+      await loadCustomers(); // Reload data
+      setDeleteDialogOpen(false);
+      setCustomerToDelete(null);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Terjadi kesalahan saat menghapus customer");
+      // eslint-disable-next-line no-console
+      console.error("Error deleting customer:", err);
+      setDeleteDialogOpen(false);
+      setCustomerToDelete(null);
     }
+  };
+
+  const handleCancelDelete = () => {
+    setDeleteDialogOpen(false);
+    setCustomerToDelete(null);
   };
 
   // Handle add new customer
@@ -188,6 +275,7 @@ const CustomersPage: React.FC = () => {
 
   useEffect(() => {
     loadCustomers();
+    loadSalesUsers();
   }, []);
 
   if (loading) {
@@ -195,7 +283,7 @@ const CustomersPage: React.FC = () => {
   }
 
   return (
-    <Box>
+    <Box sx={{ px: { xs: 1, sm: 2, md: 0 } }}>
       {/* Header */}
       <Box
         sx={{
@@ -203,13 +291,13 @@ const CustomersPage: React.FC = () => {
           flexDirection: { xs: "column", sm: "row" },
           justifyContent: "space-between",
           alignItems: { xs: "flex-start", sm: "center" },
-          mb: 4,
+          mb: { xs: 2, sm: 4 },
           gap: 2,
         }}
       >
         <Box>
           <Typography
-            variant="h2"
+            variant={window.innerWidth < 600 ? "h5" : "h2"}
             sx={{
               mb: 1,
               background: "linear-gradient(45deg, #1976d2, #42a5f5)",
@@ -217,6 +305,7 @@ const CustomersPage: React.FC = () => {
               WebkitBackgroundClip: "text",
               WebkitTextFillColor: "transparent",
               fontWeight: 700,
+              fontSize: { xs: "1.5rem", sm: "2.5rem" },
             }}
           >
             Customers
@@ -227,15 +316,17 @@ const CustomersPage: React.FC = () => {
         </Box>
         <Button
           variant="contained"
-          size="large"
+          size={window.innerWidth < 600 ? "medium" : "large"}
           startIcon={<AddIcon />}
           onClick={handleAdd}
           sx={{
-            minWidth: 160,
+            minWidth: { xs: 120, sm: 160 },
             borderRadius: 3,
             textTransform: "none",
             fontWeight: 600,
             boxShadow: "0 4px 12px rgba(25, 118, 210, 0.3)",
+            fontSize: { xs: "0.95rem", sm: "1rem" },
+            py: { xs: 1, sm: 2 },
             "&:hover": {
               boxShadow: "0 6px 20px rgba(25, 118, 210, 0.4)",
             },
@@ -276,49 +367,54 @@ const CustomersPage: React.FC = () => {
             bgcolor: "white",
             borderRadius: 3,
             boxShadow: "0 4px 20px rgba(0,0,0,0.08)",
-            overflow: "hidden",
+            overflow: "auto",
+            width: "100%",
+            maxWidth: "100vw",
           }}
         >
-          <DataGrid
-            rows={customers}
-            columns={columns}
-            initialState={{
-              pagination: {
-                paginationModel: {
-                  pageSize: 10,
+          <Box sx={{ minWidth: 600 }}>
+            <DataGrid
+              rows={customers}
+              columns={columns}
+              initialState={{
+                pagination: {
+                  paginationModel: {
+                    pageSize: 10,
+                  },
                 },
-              },
-            }}
-            pageSizeOptions={[5, 10, 25, 50]}
-            checkboxSelection
-            disableRowSelectionOnClick
-            autoHeight={false}
-            sx={{
-              minHeight: 500,
-              border: "none",
-              "& .MuiDataGrid-cell": {
-                fontSize: "0.875rem",
-                borderBottom: "1px solid #f0f0f0",
-                py: 1.5,
-              },
-              "& .MuiDataGrid-columnHeaders": {
-                backgroundColor: "#f8f9fa",
-                fontSize: "0.875rem",
-                fontWeight: 600,
-                color: "#495057",
-                borderBottom: "2px solid #e9ecef",
-              },
-              "& .MuiDataGrid-row": {
-                "&:hover": {
+              }}
+              pageSizeOptions={[5, 10, 25, 50]}
+              checkboxSelection
+              disableRowSelectionOnClick
+              autoHeight={false}
+              sx={{
+                minHeight: { xs: 350, sm: 500 },
+                border: "none",
+                fontSize: { xs: "0.8rem", sm: "0.875rem" },
+                "& .MuiDataGrid-cell": {
+                  fontSize: { xs: "0.8rem", sm: "0.875rem" },
+                  borderBottom: "1px solid #f0f0f0",
+                  py: { xs: 1, sm: 1.5 },
+                },
+                "& .MuiDataGrid-columnHeaders": {
                   backgroundColor: "#f8f9fa",
+                  fontSize: { xs: "0.8rem", sm: "0.875rem" },
+                  fontWeight: 600,
+                  color: "#495057",
+                  borderBottom: "2px solid #e9ecef",
                 },
-              },
-              "& .MuiDataGrid-footerContainer": {
-                borderTop: "1px solid #e9ecef",
-                backgroundColor: "#fafafa",
-              },
-            }}
-          />
+                "& .MuiDataGrid-row": {
+                  "&:hover": {
+                    backgroundColor: "#f8f9fa",
+                  },
+                },
+                "& .MuiDataGrid-footerContainer": {
+                  borderTop: "1px solid #e9ecef",
+                  backgroundColor: "#fafafa",
+                },
+              }}
+            />
+          </Box>
         </Box>
       )}
 
@@ -329,6 +425,114 @@ const CustomersPage: React.FC = () => {
         onClose={handleCloseEditDialog}
         onSave={handleUpdateCustomer}
       />
+
+      {/* Delete Confirmation Dialog */}
+      <Dialog
+        open={deleteDialogOpen}
+        onClose={handleCancelDelete}
+        maxWidth="xs"
+        fullWidth
+        PaperProps={{
+          sx: {
+            borderRadius: 3,
+            boxShadow: "0 8px 32px rgba(0,0,0,0.12)",
+          },
+        }}
+      >
+        <DialogTitle
+          sx={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            pb: 1,
+            pt: 3,
+            px: 3,
+          }}
+        >
+          <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
+            <Box
+              sx={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                width: 48,
+                height: 48,
+                borderRadius: 2,
+                bgcolor: "error.light",
+                color: "error.main",
+              }}
+            >
+              <WarningIcon sx={{ fontSize: 28 }} />
+            </Box>
+            <Typography variant="h6" fontWeight={600} color="text.primary">
+              Hapus Customer
+            </Typography>
+          </Box>
+          <IconButton
+            onClick={handleCancelDelete}
+            size="small"
+            sx={{
+              color: "text.secondary",
+              "&:hover": { bgcolor: "action.hover" },
+            }}
+          >
+            <CloseIcon fontSize="small" />
+          </IconButton>
+        </DialogTitle>
+
+        <DialogContent sx={{ px: 3, py: 2 }}>
+          <Typography variant="body1" color="text.secondary">
+            Yakin mau hapus customer ini? Data tidak bisa dikembalikan lagi.
+          </Typography>
+        </DialogContent>
+
+        <DialogActions
+          sx={{
+            px: 3,
+            pb: 3,
+            pt: 1,
+            gap: 1.5,
+          }}
+        >
+          <Button
+            onClick={handleCancelDelete}
+            variant="outlined"
+            size="large"
+            fullWidth
+            sx={{
+              borderRadius: 2,
+              textTransform: "none",
+              fontWeight: 600,
+              borderColor: "divider",
+              color: "text.secondary",
+              "&:hover": {
+                borderColor: "text.secondary",
+                bgcolor: "action.hover",
+              },
+            }}
+          >
+            Batal
+          </Button>
+          <Button
+            onClick={handleConfirmDelete}
+            variant="contained"
+            color="error"
+            size="large"
+            fullWidth
+            sx={{
+              borderRadius: 2,
+              textTransform: "none",
+              fontWeight: 600,
+              boxShadow: "0 4px 12px rgba(211, 47, 47, 0.3)",
+              "&:hover": {
+                boxShadow: "0 6px 20px rgba(211, 47, 47, 0.4)",
+              },
+            }}
+          >
+            Ya, Hapus
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Box>
   );
 };

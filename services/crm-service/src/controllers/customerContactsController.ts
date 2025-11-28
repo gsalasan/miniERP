@@ -309,7 +309,7 @@ export async function deleteCustomerContact(
       message: 'Customer contact berhasil dihapus',
     });
   } catch (error: unknown) {
-    // eslint-disable-next-line no-console
+    
     console.error('Error deleting customer contact:', error);
 
     res.status(500).json({

@@ -33,6 +33,8 @@ const CustomerEditDialog: React.FC<CustomerEditDialogProps> = ({
     channel: "",
     city: "",
     status: "ACTIVE" as CustomerStatus,
+    district: "",
+    alamat: "",
     top_days: 30,
     assigned_sales_id: "",
     credit_limit: 0,
@@ -49,6 +51,8 @@ const CustomerEditDialog: React.FC<CustomerEditDialogProps> = ({
         customer_name: customer.customer_name || "",
         channel: customer.channel || "",
         city: customer.city || "",
+        district: customer.district || "",
+        alamat: customer.alamat || "",
         status: customer.status || "ACTIVE",
         top_days: customer.top_days || 30,
         assigned_sales_id: customer.assigned_sales_id || "",
@@ -64,7 +68,7 @@ const CustomerEditDialog: React.FC<CustomerEditDialogProps> = ({
     (
       event:
         | React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
-        | { target: { value: unknown } }
+        | { target: { value: unknown } },
     ) => {
       const value = event.target.value;
       // Handle numeric fields
@@ -111,6 +115,8 @@ const CustomerEditDialog: React.FC<CustomerEditDialogProps> = ({
       if (formData.customer_name?.trim()) cleanData.customer_name = formData.customer_name.trim();
       if (formData.channel?.trim()) cleanData.channel = formData.channel.trim();
       if (formData.city?.trim()) cleanData.city = formData.city.trim();
+      if (formData.district?.trim()) cleanData.district = formData.district.trim();
+      if (formData.alamat?.trim()) cleanData.alamat = formData.alamat.trim();
       if (formData.status) cleanData.status = formData.status;
       if (formData.top_days !== undefined) cleanData.top_days = Number(formData.top_days);
       if (formData.assigned_sales_id?.trim())

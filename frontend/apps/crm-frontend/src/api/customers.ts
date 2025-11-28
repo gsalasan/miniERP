@@ -1,22 +1,22 @@
-
 import axios from "axios";
-import {Customer, CreateCustomerData, UpdateCustomerData } from "../types/customer";
-// Base URL for CRM service
-const CRM_BASE_URL = "http://localhost:4002/api/v1";
+import { Customer, CreateCustomerData, UpdateCustomerData } from "../types/customer";
+import { config, auth } from "../config";
 
 // Create axios instance for CRM service
 const crmApi = axios.create({
-  baseURL: CRM_BASE_URL,
+  baseURL: config.CRM_SERVICE_URL,
   headers: {
     "Content-Type": "application/json",
   },
+  timeout: 10000, // 10 seconds timeout
 });
 
 // Add request interceptor to include auth token
 crmApi.interceptors.request.use(
   (config) => {
     // Support either 'authToken' or legacy 'token' keys saved by the login flow
-    const token = localStorage.getItem("authToken") || localStorage.getItem("token");
+    const token =
+      localStorage.getItem(auth.TOKEN_KEY) || localStorage.getItem(auth.LEGACY_TOKEN_KEY);
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
@@ -24,7 +24,7 @@ crmApi.interceptors.request.use(
   },
   (error) => {
     return Promise.reject(error);
-  }
+  },
 );
 
 // Add response interceptor to handle errors
@@ -33,23 +33,33 @@ crmApi.interceptors.response.use(
   (error) => {
     if (error.response?.status === 401) {
       // Handle unauthorized access: remove any saved token keys
-      localStorage.removeItem("authToken");
-      localStorage.removeItem("token");
+      localStorage.removeItem(auth.TOKEN_KEY);
+      localStorage.removeItem(auth.LEGACY_TOKEN_KEY);
       // Redirect to login if needed
       // window.location.href = '/login';
     }
     return Promise.reject(error);
-  }
+  },
 );
 
 export const customersApi = {
+  // Get all customers (alias for getAllCustomers)
+  getCustomers: async (): Promise<Customer[]> => {
+    try {
+      const response = await crmApi.get("/customers");
+      return response.data.data || response.data;
+    } catch (error) {
+      console.error("Error fetching customers:", error);
+      throw new Error("Gagal memuat data customer");
+    }
+  },
+
   // Get all customers
   getAllCustomers: async (): Promise<Customer[]> => {
     try {
       const response = await crmApi.get("/customers");
       return response.data.data || response.data;
     } catch (error) {
-      // eslint-disable-next-line no-console
       console.error("Error fetching customers:", error);
       throw new Error("Gagal memuat data customer");
     }

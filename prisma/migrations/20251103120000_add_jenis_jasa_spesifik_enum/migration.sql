@@ -1,0 +1,3 @@
+-- Placeholder migration: 20251103120000_add_jenis_jasa_spesifik_enum
+-- Created to match migration history stored in the database.
+-- Replace with original migration SQL if available. This file is intentionally a no-op placeholder.

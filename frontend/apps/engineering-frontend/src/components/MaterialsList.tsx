@@ -46,6 +46,7 @@ import MaterialDetailModal from "./MaterialDetailModal";
 import DeleteConfirmationModal from "./DeleteConfirmationModal";
 import MaterialsTableSkeleton from "./MaterialsTableSkeleton";
 import { useNotification } from "../contexts/NotificationContext";
+import { useAuth } from "../context/AuthContext";
 
 interface MaterialsListProps {
   globalSearch?: string;
@@ -82,6 +83,9 @@ const MaterialsList: React.FC<MaterialsListProps> = ({ globalSearch }) => {
 
   // Notification hook
   const { showSuccess, showError } = useNotification();
+  
+  // Auth hook for role-based access
+  const { canCreateMaterial, canEditMaterial, canDeleteMaterial, isProjectManager } = useAuth();
 
   // Calculate active filters count
   const activeFiltersCount =
@@ -105,7 +109,7 @@ const MaterialsList: React.FC<MaterialsListProps> = ({ globalSearch }) => {
     try {
       // Prioritize globalSearch over local searchTerm
       const searchQuery = globalSearch || searchTerm;
-      
+
       const queryParams: MaterialsQueryParams = {
         page: page + 1, // API uses 1-based pagination
         limit: rowsPerPage,
@@ -187,12 +191,15 @@ const MaterialsList: React.FC<MaterialsListProps> = ({ globalSearch }) => {
       [field]: value || undefined,
     };
     // Remove undefined values
-    Object.keys(newFilters).forEach(key => {
-      if (newFilters[key as keyof MaterialsQueryParams] === undefined || newFilters[key as keyof MaterialsQueryParams] === '') {
+    Object.keys(newFilters).forEach((key) => {
+      if (
+        newFilters[key as keyof MaterialsQueryParams] === undefined ||
+        newFilters[key as keyof MaterialsQueryParams] === ""
+      ) {
         delete newFilters[key as keyof MaterialsQueryParams];
       }
     });
-    console.log('Filter changed:', field, value, 'New filters:', newFilters);
+    console.log("Filter changed:", field, value, "New filters:", newFilters);
     setFilters(newFilters);
     setPage(0); // Reset to first page when filtering
   };
@@ -359,13 +366,15 @@ const MaterialsList: React.FC<MaterialsListProps> = ({ globalSearch }) => {
         }}
       >
         <CardContent sx={{ p: 3 }}>
-          <Box sx={{ 
-            display: "flex", 
-            gap: 3, 
-            alignItems: "center", 
-            flexWrap: "wrap",
-            justifyContent: "space-between"
-          }}>
+          <Box
+            sx={{
+              display: "flex",
+              gap: 3,
+              alignItems: "center",
+              flexWrap: "wrap",
+              justifyContent: "space-between",
+            }}
+          >
             {/* Search Box */}
             <TextField
               placeholder="Cari materials berdasarkan nama, brand, vendor..."
@@ -464,15 +473,17 @@ const MaterialsList: React.FC<MaterialsListProps> = ({ globalSearch }) => {
               >
                 Export
               </Button>
-              <Button
-                variant="contained"
-                startIcon={<AddIcon />}
-                onClick={handleAddMaterial}
-                size="medium"
-                sx={{ minWidth: 100 }}
-              >
-                Add
-              </Button>
+              {canCreateMaterial() && (
+                <Button
+                  variant="contained"
+                  startIcon={<AddIcon />}
+                  onClick={handleAddMaterial}
+                  size="medium"
+                  sx={{ minWidth: 100 }}
+                >
+                  Add
+                </Button>
+              )}
             </Box>
           </Box>
 
@@ -747,7 +758,11 @@ const MaterialsList: React.FC<MaterialsListProps> = ({ globalSearch }) => {
                           </Box>
                         </TableCell>
                         <TableCell>
-                          <Tooltip title={formatComponentName(material.components) || "No components specified"}>
+                          <Tooltip
+                            title={
+                              formatComponentName(material.components) || "No components specified"
+                            }
+                          >
                             <Typography
                               variant="caption"
                               color="textSecondary"
@@ -769,24 +784,28 @@ const MaterialsList: React.FC<MaterialsListProps> = ({ globalSearch }) => {
                                 <VisibilityIcon fontSize="small" />
                               </IconButton>
                             </Tooltip>
-                            <Tooltip title="Edit Material">
-                              <IconButton
-                                size="small"
-                                onClick={() => handleEditMaterial(material)}
-                                color="primary"
-                              >
-                                <EditIcon fontSize="small" />
-                              </IconButton>
-                            </Tooltip>
-                            <Tooltip title="Delete Material">
-                              <IconButton
-                                size="small"
-                                onClick={() => handleDeleteMaterial(material)}
-                                color="error"
-                              >
-                                <DeleteIcon fontSize="small" />
-                              </IconButton>
-                            </Tooltip>
+                            {canEditMaterial() && (
+                              <Tooltip title="Edit Material">
+                                <IconButton
+                                  size="small"
+                                  onClick={() => handleEditMaterial(material)}
+                                  color="primary"
+                                >
+                                  <EditIcon fontSize="small" />
+                                </IconButton>
+                              </Tooltip>
+                            )}
+                            {canDeleteMaterial() && (
+                              <Tooltip title="Delete Material">
+                                <IconButton
+                                  size="small"
+                                  onClick={() => handleDeleteMaterial(material)}
+                                  color="error"
+                                >
+                                  <DeleteIcon fontSize="small" />
+                                </IconButton>
+                              </Tooltip>
+                            )}
                           </Box>
                         </TableCell>
                       </TableRow>

@@ -1,0 +1,36 @@
+{
+  "name": "@minierp/shared-event-bus",
+  "version": "1.0.0",
+  "description": "Shared Event Bus for miniERP microservices",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "type": "commonjs",
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "lint": "eslint src --ext .ts --fix",
+    "lint:check": "eslint src --ext .ts",
+    "format": "prettier --write src/**/*.{ts,js,json,md}",
+    "format:check": "prettier --check src/**/*.{ts,js,json,md}",
+    "type-check": "tsc --noEmit"
+  },
+  "dependencies": {
+    "dotenv": "^16.4.5",
+    "redis": "^4.6.0"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.37.0",
+    "@types/node": "^20.0.0",
+    "@typescript-eslint/eslint-plugin": "^8.46.0",
+    "@typescript-eslint/parser": "^8.46.0",
+    "eslint": "^9.37.0",
+    "eslint-config-prettier": "^10.1.8",
+    "eslint-plugin-prettier": "^5.5.4",
+    "prettier": "^3.6.2",
+    "typescript": "^5.6.3"
+  },
+  "peerDependencies": {
+    "@prisma/client": "^6.0.0"
+  }
+}
+

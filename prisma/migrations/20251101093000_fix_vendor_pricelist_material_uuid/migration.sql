@@ -1,0 +1,3 @@
+-- Placeholder migration: 20251101093000_fix_vendor_pricelist_material_uuid
+-- Created to match migration history stored in the database.
+-- Replace with the original migration SQL if available. This file is intentionally a no-op placeholder.

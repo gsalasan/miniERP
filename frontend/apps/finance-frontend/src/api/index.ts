@@ -1,3 +1,101 @@
+<<<<<<< HEAD
+// API utilities and endpoints for Finance module// API utilities and endpoints for Finance module
+
+import { API_ENDPOINTS } from '../config';
+
+// Types
+export interface ChartOfAccount {
+  id: number;
+  account_code: string;
+  account_name: string;
+  account_type: 'Asset' | 'Liability' | 'Equity' | 'Revenue' | 'Expense';
+  description?: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface CreateChartOfAccountDto {
+  account_code: string;
+  account_name: string;
+  account_type: 'Asset' | 'Liability' | 'Equity' | 'Revenue' | 'Expense';
+  description?: string;
+}
+
+export interface UpdateChartOfAccountDto {
+  account_code?: string;
+  account_name?: string;
+  account_type?: 'Asset' | 'Liability' | 'Equity' | 'Revenue' | 'Expense';
+  description?: string;
+}
+
+// API Functions
+export const chartOfAccountsAPI = {
+  getAll: async (): Promise<ChartOfAccount[]> => {
+    const response = await fetch(API_ENDPOINTS.CHART_OF_ACCOUNTS);
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+    const json = await response.json();
+    console.log('🔍 COA API Response:', json);
+    // Backend returns { success, data } - extract data array
+    return json.data || [];
+  },
+
+  getById: async (id: number): Promise<ChartOfAccount> => {
+    const response = await fetch(`${API_ENDPOINTS.CHART_OF_ACCOUNTS}/${id}`);
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+    const json = await response.json();
+    return json.data || json;
+  },
+
+  create: async (data: CreateChartOfAccountDto): Promise<ChartOfAccount> => {
+    const response = await fetch(API_ENDPOINTS.CHART_OF_ACCOUNTS, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(data),
+    });
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
+    }
+    const json = await response.json();
+    return json.data || json;
+  },
+
+  update: async (id: number, data: UpdateChartOfAccountDto): Promise<ChartOfAccount> => {
+    const response = await fetch(`${API_ENDPOINTS.CHART_OF_ACCOUNTS}/${id}`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(data),
+    });
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
+    }
+    const json = await response.json();
+    return json.data || json;
+  },
+
+  delete: async (id: number): Promise<void> => {
+    const response = await fetch(`${API_ENDPOINTS.CHART_OF_ACCOUNTS}/${id}`, {
+      method: 'DELETE',
+    });
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
+    }
+  },
+};
+
+// Journal Entry Types
+export interface JournalEntry {
+=======
 // API utilities and endpoints for Finance module
 
 // ...existing code...

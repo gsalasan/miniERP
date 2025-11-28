@@ -3,20 +3,20 @@ import { Box, Container, Typography, Card, CardContent, Grid, Button, Alert } fr
 import { People, Business, Assessment } from "@mui/icons-material";
 
 const CRMHome: React.FC = () => {
-  const [user, setUser] = useState<any>(null);
+  const [user, setUser] = useState<unknown>(null);
   const [error, setError] = useState<string>("");
 
   useEffect(() => {
     // Check for cross-app authentication
     const crossAppToken = localStorage.getItem("cross_app_token");
     const crossAppUser = localStorage.getItem("cross_app_user");
-    
+
     if (crossAppToken && crossAppUser) {
       try {
         setUser(JSON.parse(crossAppUser));
         // Set the main token for API calls
         localStorage.setItem("token", crossAppToken);
-      } catch (err) {
+      } catch {
         setError("Invalid user data");
       }
     } else {

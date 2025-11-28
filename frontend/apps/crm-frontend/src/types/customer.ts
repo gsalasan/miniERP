@@ -9,11 +9,21 @@ export interface CustomerContact {
   phone?: string;
 }
 
+export interface CustomerRekening {
+  id: string;
+  customer_id: string;
+  bank_name?: string;
+  account_number: string;
+  account_holder?: string;
+}
+
 export interface Customer {
   id: string;
   customer_name: string;
   channel: string;
   city: string;
+  district?: string;
+  alamat?: string;
   status: CustomerStatus;
   top_days: number;
   assigned_sales_id?: string;
@@ -23,12 +33,15 @@ export interface Customer {
   createdAt: string;
   updatedAt: string;
   customer_contacts?: CustomerContact[];
+  customer_rekenings?: CustomerRekening[];
 }
 
 export interface CreateCustomerData {
   customer_name: string;
   channel: string;
   city: string;
+  district?: string;
+  alamat?: string;
   status: CustomerStatus;
   top_days: number;
   assigned_sales_id?: string;
@@ -41,12 +54,19 @@ export interface CreateCustomerData {
     email?: string;
     phone?: string;
   }[];
+  rekenings?: {
+    bank_name?: string;
+    account_number: string;
+    account_holder?: string;
+  }[];
 }
 
 export interface UpdateCustomerData {
   customer_name?: string;
   channel?: string;
   city?: string;
+  district?: string;
+  alamat?: string;
   status?: CustomerStatus;
   top_days?: number;
   assigned_sales_id?: string;
@@ -59,5 +79,11 @@ export interface UpdateCustomerData {
     position?: string;
     email?: string;
     phone?: string;
+  }[];
+  rekenings?: {
+    id?: string;
+    bank_name?: string;
+    account_number: string;
+    account_holder?: string;
   }[];
 }

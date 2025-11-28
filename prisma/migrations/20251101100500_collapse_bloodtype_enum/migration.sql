@@ -1,0 +1,3 @@
+-- Placeholder migration: 20251101100500_collapse_bloodtype_enum
+-- Created to match migration history stored in the database.
+-- Replace with original migration SQL if available. This file is intentionally a no-op placeholder.
