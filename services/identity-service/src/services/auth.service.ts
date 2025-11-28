@@ -1,3 +1,47 @@
+// Update user by id
+export const updateUserById = async (id: string, data: Partial<{ email: string; roles: UserRole[]; is_active: boolean }>): Promise<any> => {
+  const prisma = initializePrisma();
+  if (prisma) {
+    try {
+      const updated = await prisma.users.update({
+        where: { id },
+        data,
+      });
+      return updated;
+    } catch (error) {
+      console.error('Database error updating user:', error);
+      throw error;
+    }
+  }
+  // Fallback to mock data
+  const idx = mockUsers.findIndex(u => u.id === id);
+  if (idx !== -1) {
+    mockUsers[idx] = { ...mockUsers[idx], ...data, updated_at: new Date() };
+    return mockUsers[idx];
+  }
+  return null;
+};
+
+// Delete user by id
+export const deleteUserById = async (id: string): Promise<boolean> => {
+  const prisma = initializePrisma();
+  if (prisma) {
+    try {
+      await prisma.users.delete({ where: { id } });
+      return true;
+    } catch (error) {
+      console.error('Database error deleting user:', error);
+      return false;
+    }
+  }
+  // Fallback to mock data
+  const idx = mockUsers.findIndex(u => u.id === id);
+  if (idx !== -1) {
+    mockUsers.splice(idx, 1);
+    return true;
+  }
+  return false;
+};
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { PrismaClient } from '@prisma/client';
@@ -35,10 +79,24 @@ const mockUsers: Array<{
   updated_at: Date;
 }> = [];
 
+// Ambil semua user
+export const getAllUsers = async (): Promise<any[]> => {
+  const prisma = initializePrisma();
+  if (prisma) {
+    try {
+      const users = await prisma.users.findMany();
+      return users;
+    } catch (error) {
+      console.error('Database error getting all users:', error);
+    }
+  }
+  // Fallback to mock data
+  return mockUsers;
+};
+
 // Cari user berdasarkan email
 export const findUserByEmail = async (email: string): Promise<any> => {
   const prisma = initializePrisma();
-  
   if (prisma) {
     try {
       const user = await prisma.users.findUnique({
@@ -51,7 +109,6 @@ export const findUserByEmail = async (email: string): Promise<any> => {
       // Fall back to mock if database fails
     }
   }
-  
   // Fallback to mock data
   console.log(`Fallback: searching mock data for email ${email}`);
   const user = mockUsers.find(user => user.email === email) || null;
