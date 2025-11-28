@@ -96,13 +96,21 @@ const IncomeStatementTab: React.FC = () => {
       if (endDate) params.append('endDate', endDate);
       if (params.toString()) url += `?${params.toString()}`;
 
+      console.log('📡 Fetching Income Statement:', url);
       const response = await fetch(url);
+      
       if (response.ok) {
         const data = await response.json();
+        console.log('✅ Income Statement data from DB:', data);
+        console.log('📊 Total Revenue:', data.revenue?.total);
+        console.log('📊 Total Expenses:', data.expenses?.total);
+        console.log('💰 Net Income:', data.net_income);
         setIncomeStatementData(data);
+      } else {
+        console.error('❌ Failed to fetch income statement:', response.status);
       }
     } catch (error) {
-      console.error('Error fetching income statement:', error);
+      console.error('❌ Error fetching income statement:', error);
     } finally {
       setLoading(false);
     }

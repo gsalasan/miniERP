@@ -9,6 +9,21 @@ dotenv.config();
 const app = express();
 
 // Middleware
+// Allow multiple origins via environment variable `ALLOWED_ORIGINS` (comma-separated).
+const getAllowedOrigins = () => {
+  const raw = process.env.ALLOWED_ORIGINS || process.env.CORS_ORIGIN;
+  if (!raw) return [
+    'http://localhost:3000',
+    'http://localhost:3010',
+    'http://localhost:3011',
+    'http://localhost:3012',
+    'http://localhost:3013',
+    'http://localhost:3015',
+    'http://localhost:3016'
+  ];
+  return raw.split(',').map(s => s.trim());
+};
+
 app.use(cors({
   origin: ['http://localhost:3000', 'http://localhost:5174', 'http://localhost:3013'],
   credentials: true

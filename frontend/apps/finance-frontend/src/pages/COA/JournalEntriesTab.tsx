@@ -494,8 +494,8 @@ const JournalEntriesTab: React.FC<JournalEntriesTabProps> = ({ onSuccess, onErro
                         <div className="flex items-center justify-end gap-2">
                           <button
                             onClick={() => handleEdit(entry)}
-                            className="inline-flex items-center gap-1 px-2 py-1 text-xs font-medium text-primary-dark bg-primary-light/10 rounded hover:bg-primary-light/20 transition-colors"
-                            title="Edit"
+                            className="inline-flex items-center justify-center w-9 h-9 rounded-lg bg-gradient-to-r from-blue-500 to-blue-600 text-white hover:from-blue-600 hover:to-blue-700 shadow-md hover:shadow-lg transition-all duration-200"
+                            title="Edit Entry"
                           >
                             <PencilIcon className="h-4 w-4" />
                           </button>

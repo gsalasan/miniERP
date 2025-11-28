@@ -65,7 +65,7 @@ const GeneralLedgerTab: React.FC = () => {
 
   const fetchAccounts = async () => {
     try {
-      const response = await fetch('/api/chart-of-accounts'); // Use relative path for Vite proxy
+      const response = await fetch('/api/chartofaccounts'); // Use Vite proxy to backend
       if (response.ok) {
         const data = await response.json();
         setAccounts(data.data || data); // Handle { success, data } format
@@ -79,7 +79,10 @@ const GeneralLedgerTab: React.FC = () => {
   };
 
   const fetchGeneralLedger = async () => {
-    if (!selectedAccountId) return;
+    if (!selectedAccountId) {
+      console.log('⚠️ No account selected for General Ledger');
+      return;
+    }
     
     setLoading(true);
     try {
@@ -89,13 +92,21 @@ const GeneralLedgerTab: React.FC = () => {
       if (endDate) params.append('endDate', endDate);
       if (params.toString()) url += `?${params.toString()}`;
 
+      console.log('📡 Fetching General Ledger:', url);
       const response = await fetch(url);
+      
       if (response.ok) {
         const data = await response.json();
+        console.log('✅ General Ledger data from DB:', data);
+        console.log('📊 Entries count:', data.entries?.length || 0);
         setLedgerData(data);
+      } else {
+        console.error('❌ Failed to fetch general ledger:', response.status);
+        const errorText = await response.text();
+        console.error('Error details:', errorText);
       }
     } catch (error) {
-      console.error('Error fetching general ledger:', error);
+      console.error('❌ Error fetching general ledger:', error);
     } finally {
       setLoading(false);
     }

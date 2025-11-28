@@ -1,5 +1,4 @@
 import React from 'react';
-import { Layout } from '../components';
 import {
   BanknotesIcon,
   DocumentTextIcon,
@@ -15,36 +14,36 @@ const Dashboard: React.FC = () => {
       value: '142',
       description: 'Total Accounts',
       icon: DocumentTextIcon,
-      color: 'from-blue-500 to-blue-600',
-      textColor: 'text-blue-600',
-      bgColor: 'bg-blue-50',
+      color: 'from-blue-200 to-blue-300',
+      textColor: 'text-blue-500',
+      bgColor: 'bg-blue-100',
     },
     {
       name: 'Kokpit Finansial',
       value: 'Rp 1.2M',
       description: 'Total Balance',
       icon: ChartBarIcon,
-      color: 'from-green-500 to-green-600',
-      textColor: 'text-green-600',
-      bgColor: 'bg-green-50',
+      color: 'from-emerald-200 to-emerald-300',
+      textColor: 'text-emerald-500',
+      bgColor: 'bg-emerald-100',
     },
     {
       name: 'Journal Entries',
       value: '6',
       description: 'Recent Entries',
       icon: BanknotesIcon,
-      color: 'from-purple-500 to-purple-600',
-      textColor: 'text-purple-600',
-      bgColor: 'bg-purple-50',
+      color: 'from-purple-200 to-purple-300',
+      textColor: 'text-purple-500',
+      bgColor: 'bg-purple-100',
     },
     {
       name: 'Reports',
       value: '24',
       description: 'Available Reports',
       icon: ArrowTrendingUpIcon,
-      color: 'from-orange-500 to-orange-600',
-      textColor: 'text-orange-600',
-      bgColor: 'bg-orange-50',
+      color: 'from-orange-200 to-orange-300',
+      textColor: 'text-orange-500',
+      bgColor: 'bg-orange-100',
     },
   ];
 
@@ -54,7 +53,7 @@ const Dashboard: React.FC = () => {
       description: 'Manage your financial accounts and ledger',
       path: '/coa',
       icon: DocumentTextIcon,
-      gradient: 'from-blue-500 to-blue-600',
+      gradient: 'from-blue-200 to-blue-300',
       iconBg: 'bg-blue-100',
       iconColor: 'text-blue-600',
     },
@@ -63,23 +62,28 @@ const Dashboard: React.FC = () => {
       description: 'View financial dashboard and analytics',
       path: '/financial-cockpit',
       icon: ChartBarIcon,
-      gradient: 'from-green-500 to-green-600',
+      gradient: 'from-emerald-200 to-emerald-300',
       iconBg: 'bg-green-100',
       iconColor: 'text-green-600',
     },
   ];
 
   return (
-    <Layout title="Dashboard">
+    <>
       {/* Welcome Section */}
       <div className="mb-8">
-        <div className="bg-gradient-to-r from-primary-dark via-primary to-accent-gold rounded-2xl shadow-xl p-8 text-white relative overflow-hidden">
-          <div className="relative z-10">
-            <h1 className="text-4xl font-bold mb-2">Welcome to Finance Module! 👋</h1>
-            <p className="text-primary-light text-lg">Manage your financial data efficiently and effectively.</p>
+        <div className="bg-gradient-to-r from-primary-dark to-primary-light rounded-2xl shadow-lg p-8 relative overflow-hidden">
+          <div className="relative z-10 flex items-center gap-4">
+            <div className="p-3 bg-white/20 rounded-xl backdrop-blur-sm">
+              <BanknotesIcon className="w-10 h-10 text-accent-gold" />
+            </div>
+            <div>
+              <h1 className="text-4xl font-bold mb-2 text-white">Welcome to Finance Module! 👋</h1>
+              <p className="text-white/90 text-lg">Manage your financial data efficiently and effectively.</p>
+            </div>
           </div>
-          <div className="absolute top-0 right-0 w-64 h-64 bg-white opacity-5 rounded-full -mr-32 -mt-32"></div>
-          <div className="absolute bottom-0 right-0 w-48 h-48 bg-white opacity-5 rounded-full -mr-24 -mb-24"></div>
+          <div className="absolute top-0 right-0 w-64 h-64 bg-white opacity-10 rounded-full -mr-32 -mt-32"></div>
+          <div className="absolute bottom-0 right-0 w-48 h-48 bg-white opacity-10 rounded-full -mr-24 -mb-24"></div>
         </div>
       </div>
 
@@ -105,7 +109,7 @@ const Dashboard: React.FC = () => {
       {/* Quick Links */}
       <div className="mb-8">
         <h2 className="text-2xl font-bold text-gray-900 mb-6 flex items-center">
-          <span className="w-1 h-8 bg-accent-gold rounded-full mr-3"></span>
+          <span className="w-1 h-8 bg-amber-300 rounded-full mr-3"></span>
           Quick Access
         </h2>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -113,7 +117,7 @@ const Dashboard: React.FC = () => {
             <Link
               key={index}
               to={link.path}
-              className="group bg-white rounded-xl shadow-sm border border-gray-100 p-8 hover:shadow-xl hover:border-accent-gold transition-all duration-300 hover:-translate-y-1"
+              className="group bg-white rounded-xl shadow-sm border border-gray-100 p-8 hover:shadow-xl hover:border-amber-200 transition-all duration-300 hover:-translate-y-1"
             >
               <div className="flex items-start space-x-4">
                 <div className={`w-16 h-16 ${link.iconBg} rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform duration-300`}>
@@ -164,7 +168,7 @@ const Dashboard: React.FC = () => {
           ))}
         </div>
       </div>
-    </Layout>
+    </>
   );
 };
 
