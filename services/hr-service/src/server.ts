@@ -3,7 +3,7 @@ import dotenv from 'dotenv';
 import path from 'path';
 import { PrismaClient } from '@prisma/client';
 import { eventBus } from './utils/eventBus';
-import { EventNames, CustomerCreatedPayload, CustomerUpdatedPayload } from '../../../shared-event-bus/src/events';
+import { EventNames, CustomerCreatedPayload, CustomerUpdatedPayload } from '../../shared-event-bus/src/events';
 
 // Load .env from hr-service directory specifically with override
 dotenv.config({ path: path.join(__dirname, '..', '.env'), override: true });

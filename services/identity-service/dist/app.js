@@ -12,8 +12,38 @@ const employee_routes_1 = __importDefault(require("./routes/employee.routes"));
 dotenv_1.default.config();
 const app = (0, express_1.default)();
 // Middleware
+// Allow multiple origins via environment variable `ALLOWED_ORIGINS` (comma-separated).
+const getAllowedOrigins = () => {
+    const raw = process.env.ALLOWED_ORIGINS || process.env.CORS_ORIGIN;
+    if (!raw)
+        return [
+            'http://localhost:3000',
+            'http://localhost:3010',
+            'http://localhost:3011',
+            'http://localhost:3012',
+            'http://localhost:3013',
+            'http://localhost:3015',
+            'http://localhost:3016'
+        ];
+    return raw.split(',').map(s => s.trim());
+};
 app.use((0, cors_1.default)({
-    origin: process.env.CORS_ORIGIN || 'http://localhost:3000',
+    origin: (origin, callback) => {
+        const allowed = getAllowedOrigins();
+        // Allow requests with no origin (mobile apps, Postman)
+        if (!origin)
+            return callback(null, true);
+        // Allow all localhost origins in development to simplify local integration
+        if (origin.startsWith('http://localhost'))
+            return callback(null, true);
+        if (allowed.includes('*') || allowed.includes(origin))
+            return callback(null, true);
+        // Support wildcard suffix like http://localhost:30*
+        const matched = allowed.some(a => a.endsWith('*') && origin.startsWith(a.slice(0, -1)));
+        if (matched)
+            return callback(null, true);
+        callback(new Error('Not allowed by CORS'));
+    },
     credentials: true
 }));
 app.use(express_1.default.json());

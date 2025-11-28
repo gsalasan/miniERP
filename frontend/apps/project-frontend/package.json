@@ -1,0 +1,41 @@
+{
+  "name": "project-frontend",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "lint": "eslint src --ext .ts,.tsx --fix",
+    "lint:check": "eslint src --ext .ts,.tsx",
+    "format": "prettier --write src/**/*.{ts,tsx,js,jsx,json,css,md}",
+    "format:check": "prettier --check src/**/*.{ts,tsx,js,jsx,json,css,md}",
+    "type-check": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@emotion/react": "^11.11.0",
+    "@emotion/styled": "^11.11.0",
+    "@mui/icons-material": "^5.18.0",
+    "@mui/material": "^5.15.0",
+    "@mui/x-data-grid": "^8.15.0",
+    "@mui/x-date-pickers": "^8.19.0",
+    "@types/react-router-dom": "^5.3.3",
+    "axios": "^1.6.0",
+    "date-fns": "^4.1.0",
+    "frappe-gantt": "^1.0.4",
+    "minierp": "file:../../..",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "react-router-dom": "^7.9.4",
+    "zustand": "^4.4.0"
+  },
+  "devDependencies": {
+    "@types/react": "^18.3.27",
+    "@types/react-dom": "^18.3.7",
+    "@vitejs/plugin-react": "^4.0.4",
+    "eslint": "^9.37.0",
+    "prettier": "^3.6.2",
+    "typescript": "^5.2.2",
+    "vite": "^4.4.9"
+  }
+}
