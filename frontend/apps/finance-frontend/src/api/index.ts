@@ -1,101 +1,6 @@
-<<<<<<< HEAD
-// API utilities and endpoints for Finance module// API utilities and endpoints for Finance module
+// API utilities and endpoints for Finance module
 
-import { API_ENDPOINTS } from '../config';
-
-// Types
-export interface ChartOfAccount {
-  id: number;
-  account_code: string;
-  account_name: string;
-  account_type: 'Asset' | 'Liability' | 'Equity' | 'Revenue' | 'Expense';
-  description?: string | null;
-  created_at: string;
-  updated_at: string;
-}
-
-export interface CreateChartOfAccountDto {
-  account_code: string;
-  account_name: string;
-  account_type: 'Asset' | 'Liability' | 'Equity' | 'Revenue' | 'Expense';
-  description?: string;
-}
-
-export interface UpdateChartOfAccountDto {
-  account_code?: string;
-  account_name?: string;
-  account_type?: 'Asset' | 'Liability' | 'Equity' | 'Revenue' | 'Expense';
-  description?: string;
-}
-
-// API Functions
-export const chartOfAccountsAPI = {
-  getAll: async (): Promise<ChartOfAccount[]> => {
-    const response = await fetch(API_ENDPOINTS.CHART_OF_ACCOUNTS);
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
-    }
-    const json = await response.json();
-    console.log('🔍 COA API Response:', json);
-    // Backend returns { success, data } - extract data array
-    return json.data || [];
-  },
-
-  getById: async (id: number): Promise<ChartOfAccount> => {
-    const response = await fetch(`${API_ENDPOINTS.CHART_OF_ACCOUNTS}/${id}`);
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
-    }
-    const json = await response.json();
-    return json.data || json;
-  },
-
-  create: async (data: CreateChartOfAccountDto): Promise<ChartOfAccount> => {
-    const response = await fetch(API_ENDPOINTS.CHART_OF_ACCOUNTS, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(data),
-    });
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
-      throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
-    }
-    const json = await response.json();
-    return json.data || json;
-  },
-
-  update: async (id: number, data: UpdateChartOfAccountDto): Promise<ChartOfAccount> => {
-    const response = await fetch(`${API_ENDPOINTS.CHART_OF_ACCOUNTS}/${id}`, {
-      method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(data),
-    });
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
-      throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
-    }
-    const json = await response.json();
-    return json.data || json;
-  },
-
-  delete: async (id: number): Promise<void> => {
-    const response = await fetch(`${API_ENDPOINTS.CHART_OF_ACCOUNTS}/${id}`, {
-      method: 'DELETE',
-    });
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
-      throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
-    }
-  },
-};
-
-// Journal Entry Types
-export interface JournalEntry {
-=======
+// ...existing code...
 // API utilities and endpoints for Finance module
 export type ChartOfAccount = {
   id: number;
@@ -128,11 +33,11 @@ export type UpdateTaxRateDto = Partial<CreateTaxRateDto>;
 
 export const chartOfAccountsAPI = {
   async getAll() {
-    const res = await fetch(`${API_BASE}/chart-of-accounts`);
+    const res = await fetch(`${API_BASE}/chartofaccounts`);
     return res.json();
   },
   async create(payload: Partial<ChartOfAccount>) {
-    const res = await fetch(`${API_BASE}/chart-of-accounts`, {
+    const res = await fetch(`${API_BASE}/chartofaccounts`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload),
@@ -140,7 +45,7 @@ export const chartOfAccountsAPI = {
     return res.json();
   },
   async update(id: number, payload: Partial<ChartOfAccount>) {
-    const res = await fetch(`${API_BASE}/chart-of-accounts/${id}`, {
+    const res = await fetch(`${API_BASE}/chartofaccounts/${id}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload),
@@ -148,9 +53,24 @@ export const chartOfAccountsAPI = {
     return res.json();
   },
   async delete(id: number) {
-    const res = await fetch(`${API_BASE}/chart-of-accounts/${id}`, { method: 'DELETE' });
+    const res = await fetch(`${API_BASE}/chartofaccounts/${id}`, { method: 'DELETE' });
     return res.json();
   },
+};
+
+export type GeneralJournalLine = {
+  account_id: number;
+  debit?: number;
+  credit?: number;
+  description?: string;
+};
+
+export type CreateGeneralJournalDto = {
+  transaction_date: string;
+  description: string;
+  reference_type?: string;
+  lines: GeneralJournalLine[];
+  created_by?: string;
 };
 
 export const journalEntriesAPI = {
@@ -164,6 +84,18 @@ export const journalEntriesAPI = {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload),
     });
+    return res.json();
+  },
+  async createGeneral(payload: CreateGeneralJournalDto) {
+    const res = await fetch(`${API_BASE}/journal-entries/general`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+    if (!res.ok) {
+      const error = await res.json();
+      throw new Error(error.message || 'Failed to create general journal');
+    }
     return res.json();
   },
   async update(id: string, payload: Partial<JournalEntry>) {
@@ -252,6 +184,178 @@ export const exchangeRatesAPI = {
   },
   async delete(id: number) {
     const res = await fetch(`${API_BASE}/exchange-rates/${id}`, { method: 'DELETE' });
+    return res.json();
+  },
+};
+
+// Pricing Rules API
+export type PricingRule = {
+  id: number;
+  category: string;
+  markup_percentage: number;
+  created_at?: string;
+  updated_at?: string;
+};
+
+export type CreatePricingRuleDto = {
+  category: string;
+  markup_percentage: number;
+};
+
+export type UpdatePricingRuleDto = Partial<CreatePricingRuleDto>;
+
+export const pricingRulesAPI = {
+  async getAll() {
+    const res = await fetch(`${API_BASE}/pricing-rules`);
+    const data = await res.json();
+    return data.success ? data.data : [];
+  },
+  async create(payload: CreatePricingRuleDto) {
+    const res = await fetch(`${API_BASE}/pricing-rules`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+    return res.json();
+  },
+  async update(id: number, payload: UpdatePricingRuleDto) {
+    const res = await fetch(`${API_BASE}/pricing-rules/${id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+    return res.json();
+  },
+  async delete(id: number) {
+    const res = await fetch(`${API_BASE}/pricing-rules/${id}`, { 
+      method: 'DELETE' 
+    });
+    return res.json();
+  },
+};
+
+// ==================== PAYMENT TERMS API ====================
+export type PaymentTerm = {
+  id: number;
+  term_name: string;
+  term_code: string;
+  days_until_due: number;
+  discount_percentage?: number | string;
+  discount_days?: number;
+  description?: string;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+};
+
+export type CreatePaymentTermDto = {
+  term_name: string;
+  term_code: string;
+  days_until_due: number;
+  discount_percentage?: number;
+  discount_days?: number;
+  description?: string;
+  is_active?: boolean;
+};
+
+export type UpdatePaymentTermDto = Partial<CreatePaymentTermDto>;
+
+export const paymentTermsAPI = {
+  async getAll(params?: { is_active?: boolean }) {
+    const queryString = params?.is_active !== undefined 
+      ? `?is_active=${params.is_active}` 
+      : '';
+    const res = await fetch(`${API_BASE}/payment-terms${queryString}`);
+    const data = await res.json();
+    return data;
+  },
+  async getById(id: number) {
+    const res = await fetch(`${API_BASE}/payment-terms/${id}`);
+    return res.json();
+  },
+  async create(payload: CreatePaymentTermDto) {
+    const res = await fetch(`${API_BASE}/payment-terms`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+    return res.json();
+  },
+  async update(id: number, payload: UpdatePaymentTermDto) {
+    const res = await fetch(`${API_BASE}/payment-terms/${id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+    return res.json();
+  },
+  async delete(id: number) {
+    const res = await fetch(`${API_BASE}/payment-terms/${id}`, { 
+      method: 'DELETE' 
+    });
+    return res.json();
+  },
+};
+
+// ==================== EXPENSE CLAIM POLICIES API ====================
+export type ExpenseClaimPolicy = {
+  id: number;
+  policy_name: string;
+  policy_code: string;
+  max_claim_amount: number | string;
+  approval_required: boolean;
+  requires_receipt: boolean;
+  description?: string;
+  is_active: boolean;
+  created_at?: string;
+  updated_at?: string;
+};
+
+export type CreateExpenseClaimPolicyDto = {
+  policy_name: string;
+  policy_code: string;
+  max_claim_amount: number;
+  approval_required?: boolean;
+  requires_receipt?: boolean;
+  description?: string;
+  is_active?: boolean;
+};
+
+export type UpdateExpenseClaimPolicyDto = Partial<CreateExpenseClaimPolicyDto>;
+
+export const expenseClaimPoliciesAPI = {
+  async getAll(params?: { is_active?: boolean }) {
+    const queryString = params?.is_active !== undefined 
+      ? `?is_active=${params.is_active}` 
+      : '';
+    const res = await fetch(`${API_BASE}/expense-claim-policies${queryString}`);
+    const data = await res.json();
+    return data;
+  },
+  async getById(id: number) {
+    const res = await fetch(`${API_BASE}/expense-claim-policies/${id}`);
+    return res.json();
+  },
+  async create(payload: CreateExpenseClaimPolicyDto) {
+    const res = await fetch(`${API_BASE}/expense-claim-policies`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+    return res.json();
+  },
+  async update(id: number, payload: UpdateExpenseClaimPolicyDto) {
+    const res = await fetch(`${API_BASE}/expense-claim-policies/${id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+    return res.json();
+  },
+  async delete(id: number) {
+    const res = await fetch(`${API_BASE}/expense-claim-policies/${id}`, { 
+      method: 'DELETE' 
+    });
     return res.json();
   },
 };

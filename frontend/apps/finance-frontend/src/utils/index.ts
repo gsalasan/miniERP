@@ -1,6 +1,4 @@
-<<<<<<< HEAD
-// Finance utility functions// Finance utility functions
-
+// Finance utility functions
 
 export const formatCurrency = (amount: number): string => {
   return new Intl.NumberFormat('id-ID', {
@@ -29,7 +27,3 @@ export const formatDateTime = (date: string | Date): string => {
     minute: '2-digit',
   }).format(d);
 };
-=======
-// Finance utility functions
-export * from './formatters';
-export * from './exportUtils';

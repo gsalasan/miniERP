@@ -6,7 +6,6 @@ import {
   BanknotesIcon,
   ChartBarIcon,
   Cog6ToothIcon,
-  Bars3Icon,
   XMarkIcon,
   ChevronDownIcon,
 } from '@heroicons/react/24/outline';
@@ -40,13 +39,48 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, setIsOpen }) => {
       icon: BanknotesIcon,
       children: [
         {
-          name: 'Chart of Accounts',
+          name: 'Akuntansi (COA)',
           path: '/coa',
           icon: DocumentTextIcon,
         },
         {
+          name: 'Jurnal Umum',
+          path: '/journals/new',
+          icon: DocumentTextIcon,
+        },
+        {
+          name: 'Invoice & Piutang (AR)',
+          path: '/invoices',
+          icon: DocumentTextIcon,
+        },
+        {
+          name: 'Bank Reconciliation',
+          path: '/bank-reconciliation',
+          icon: BanknotesIcon,
+        },
+        {
           name: 'Kokpit Finansial',
           path: '/financial-cockpit',
+          icon: Cog6ToothIcon,
+        },
+        {
+          name: 'Utang Usaha (AP)',
+          path: '/payables',
+          icon: DocumentTextIcon,
+        },
+        {
+          name: 'Laporan Keuangan',
+          path: '/reports',
+          icon: ChartBarIcon,
+        },
+        {
+          name: 'Aset Tetap',
+          path: '/assets',
+          icon: DocumentTextIcon,
+        },
+        {
+          name: 'Simulasi Insentif',
+          path: '/incentives/simulate',
           icon: ChartBarIcon,
         },
       ],
@@ -84,12 +118,12 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, setIsOpen }) => {
 
       {/* Sidebar */}
       <aside
-        className={`fixed top-0 left-0 z-50 h-screen transition-transform duration-300 ease-in-out lg:translate-x-0 ${
+        className={`fixed top-0 left-0 z-50 h-screen flex flex-col transition-transform duration-300 ease-in-out lg:translate-x-0 ${
           isOpen ? 'translate-x-0' : '-translate-x-full'
         } w-64 bg-primary-dark text-white shadow-2xl`}
       >
         {/* Header */}
-        <div className="flex flex-col items-center justify-center pt-1 bg-gradient-to-b from-accent-gold to-accent-gold/90 border-b-4 border-accent-gold">
+        <div className="flex-shrink-0 flex flex-col items-center justify-center pt-1 bg-gradient-to-b from-accent-gold to-accent-gold/90 border-b-4 border-accent-gold">
           {/* Logo Image */}
           <div className="w-36 h-36 flex items-center justify-center">
             <img 
@@ -108,7 +142,14 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, setIsOpen }) => {
         </div>
 
         {/* Navigation */}
-        <nav className="flex-1 overflow-y-auto py-6 px-3">
+        <nav 
+          className="flex-1 overflow-y-auto py-6 px-3 scroll-smooth" 
+          style={{
+            scrollbarWidth: 'thin',
+            scrollbarColor: '#C8A870 rgba(200, 168, 112, 0.1)',
+            minHeight: 0
+          }}
+        >
           <div className="space-y-1">
             {menuItems.map((item) => (
               <div key={item.name}>
@@ -117,46 +158,50 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, setIsOpen }) => {
                   <div>
                     <button
                       onClick={() => toggleMenu(item.name.toLowerCase())}
-                      className={`w-full flex items-center justify-between px-4 py-3 rounded-xl transition-all duration-200 group ${
+                      className={`w-full flex items-center justify-between px-4 py-3 rounded-xl transition-all duration-300 group ${
                         isParentActive(item.children)
-                          ? 'bg-accent-gold text-primary-dark shadow-md'
-                          : 'text-primary-light hover:bg-white/5 hover:text-white'
+                          ? 'bg-accent-gold text-primary-dark shadow-lg scale-105'
+                          : 'text-primary-light hover:bg-white/10 hover:text-white hover:scale-102'
                       }`}
                     >
                       <div className="flex items-center space-x-3">
                         <item.icon
-                          className={`h-5 w-5 transition-colors ${
+                          className={`h-5 w-5 transition-all duration-300 ${
                             isParentActive(item.children)
                               ? 'text-primary-dark'
-                              : 'text-primary-light group-hover:text-white'
+                              : 'text-primary-light group-hover:text-accent-gold group-hover:scale-110'
                           }`}
                         />
                         <span className="font-medium">{item.name}</span>
                       </div>
                       <ChevronDownIcon
-                        className={`h-4 w-4 transition-transform duration-200 ${
+                        className={`h-4 w-4 transition-all duration-300 ${
                           expandedMenus.includes(item.name.toLowerCase())
-                            ? 'rotate-180'
-                            : ''
+                            ? 'rotate-180 text-accent-gold'
+                            : 'group-hover:text-accent-gold'
                         }`}
                       />
                     </button>
                     
                     {/* Submenu */}
                     {expandedMenus.includes(item.name.toLowerCase()) && (
-                      <div className="ml-4 mt-1 space-y-1">
+                      <div className="ml-2 mt-1 space-y-1">
                         {item.children.map((child) => (
                           <Link
                             key={child.path}
                             to={child.path}
                             onClick={() => setIsOpen(false)}
-                            className={`flex items-center space-x-3 px-4 py-2.5 rounded-lg transition-all duration-200 ${
+                            className={`group flex items-center space-x-3 px-4 py-2.5 rounded-lg transition-all duration-300 ${
                               isActive(child.path)
-                                ? 'bg-accent-gold text-primary-dark shadow-md font-semibold'
-                                : 'text-primary-light hover:bg-white/5 hover:text-white'
+                                ? 'bg-accent-gold text-primary-dark shadow-lg font-semibold scale-105'
+                                : 'text-primary-light hover:bg-white/10 hover:text-white hover:translate-x-1'
                             }`}
                           >
-                            <div className="w-2 h-2 rounded-full bg-current opacity-50" />
+                            <child.icon className={`w-4 h-4 transition-all duration-300 ${
+                              isActive(child.path) 
+                                ? 'text-primary-dark' 
+                                : 'text-primary-light group-hover:text-accent-gold group-hover:scale-110'
+                            }`} />
                             <span className="text-sm font-medium">{child.name}</span>
                           </Link>
                         ))}
@@ -168,27 +213,20 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, setIsOpen }) => {
                   <Link
                     to={item.path}
                     onClick={() => setIsOpen(false)}
-                    className={`flex items-center justify-between px-4 py-3 rounded-xl transition-all duration-200 group ${
+                    className={`flex items-center space-x-3 px-4 py-3 rounded-xl transition-all duration-300 group ${
                       isActive(item.path)
-                        ? 'bg-accent-gold text-primary-dark shadow-md'
-                        : 'text-primary-light hover:bg-white/5 hover:text-white'
+                        ? 'bg-accent-gold text-primary-dark shadow-lg scale-105'
+                        : 'text-primary-light hover:bg-white/10 hover:text-white hover:scale-102'
                     }`}
                   >
-                    <div className="flex items-center space-x-3">
-                      <item.icon
-                        className={`h-5 w-5 transition-colors ${
-                          isActive(item.path)
-                            ? 'text-primary-dark'
-                            : 'text-primary-light group-hover:text-white'
-                        }`}
-                      />
-                      <span className="font-medium">{item.name}</span>
-                    </div>
-                    {item.badge && (
-                      <span className="px-2 py-1 text-xs font-bold bg-danger text-white rounded-full">
-                        {item.badge}
-                      </span>
-                    )}
+                    <item.icon
+                      className={`h-5 w-5 transition-all duration-300 ${
+                        isActive(item.path)
+                          ? 'text-primary-dark'
+                          : 'text-primary-light group-hover:text-accent-gold group-hover:scale-110'
+                      }`}
+                    />
+                    <span className="font-medium">{item.name}</span>
                   </Link>
                 )}
               </div>
