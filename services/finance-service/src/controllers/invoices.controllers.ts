@@ -1,7 +1,5 @@
 import { Request, Response } from "express";
 import { PrismaClient } from '@prisma/client';
-import { eventBus } from '../utils/eventBus';
-import { EventNames, InvoiceCreatedPayload } from '../../../shared-event-bus/src/events';
 
 const prisma = new PrismaClient();
 
@@ -171,24 +169,6 @@ export const createInvoice = async (req: Request, res: Response): Promise<void> 
       )
       RETURNING *
     `);
-
-    // Publish invoice:created event
-    try {
-      await eventBus.publish<InvoiceCreatedPayload>(EventNames.INVOICE_CREATED, {
-        invoiceId: newInvoice[0].id,
-        invoiceNumber: newInvoice[0].invoice_number,
-        customerId: newInvoice[0].customer_id || undefined,
-        customerName: newInvoice[0].customer_name,
-        totalAmount: Number(newInvoice[0].total_amount),
-        currency: newInvoice[0].currency || 'IDR',
-        status: newInvoice[0].status || 'DRAFT',
-        invoiceDate: new Date(newInvoice[0].invoice_date),
-        dueDate: new Date(newInvoice[0].due_date),
-      });
-    } catch (error) {
-      console.error('[EventBus] Error publishing invoice:created event:', error);
-      // Don't throw - event publishing failure shouldn't break the operation
-    }
 
     res.status(201).json({
       success: true,
