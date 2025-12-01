@@ -2,7 +2,6 @@ import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import authRoutes from './routes/auth.routes';
-import employeeRoutes from './routes/employee.routes';
 
 // Load environment variables
 dotenv.config();
@@ -26,18 +25,7 @@ const getAllowedOrigins = () => {
 };
 
 app.use(cors({
-  origin: (origin, callback) => {
-    const allowed = getAllowedOrigins();
-    // Allow requests with no origin (mobile apps, Postman)
-    if (!origin) return callback(null, true);
-    // Allow all localhost origins in development to simplify local integration
-    if (origin.startsWith('http://localhost')) return callback(null, true);
-    if (allowed.includes('*') || allowed.includes(origin)) return callback(null, true);
-    // Support wildcard suffix like http://localhost:30*
-    const matched = allowed.some(a => a.endsWith('*') && origin.startsWith(a.slice(0, -1)));
-    if (matched) return callback(null, true);
-    callback(new Error('Not allowed by CORS'));
-  },
+  origin: ['http://localhost:3000', 'http://localhost:5174', 'http://localhost:3013'],
   credentials: true
 }));
 app.use(express.json());
@@ -55,7 +43,8 @@ app.get('/health', (req, res) => {
 
 // API Routes with versioning
 app.use('/api/v1/auth', authRoutes);
-app.use('/api/v1', employeeRoutes);
+// Employee-related endpoints were removed from identity-service.
+// Employee CRUD now belongs to HR service (`/services/hr-service`).
 
 // 404 handler
 app.use('*', (req, res) => {
