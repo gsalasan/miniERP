@@ -23,9 +23,19 @@ process.on('uncaughtException', (error) => {
   // Don't exit immediately - keep server running
 });
 
+
+// Import app dari utils/app
+import app from './app';
+import { initFinanceCronJobs } from '../cron/finance-cron';
+
 // Jalankan server
 const server = app.listen(PORT, () => {
   console.log(`Finance Service running on http://localhost:${PORT}`);
+  
+  // Initialize cron jobs after server starts
+  console.log('\n🕐 Initializing Finance Automation...');
+  initFinanceCronJobs();
+  console.log('✅ Finance Service fully initialized with cron jobs\n');
 });
 
 // Handle server errors
