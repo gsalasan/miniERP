@@ -2,11 +2,14 @@ export interface Estimation {
   id: string;
   project_id?: string | null;
   version: number;
+  name?: string | null; // NEW: Estimation name
+  type?: string | null; // NEW: Estimation type (e.g., "INITIAL", "REVISION")
   status: EstimationStatus;
 
   // Assignment fields
   assigned_to_user_id?: string | null;
   requested_by_user_id?: string | null; // FITUR 3.1.D: Sales yang buat request
+  created_by_user_id?: string | null; // NEW: User who created the estimation
 
   // Request information (FITUR 3.1.D)
   technical_brief?: string | null; // Ringkasan kebutuhan & brief teknis
@@ -53,6 +56,7 @@ export interface Estimation {
   total_overhead_allocation: number;
   total_hpp: number;
   total_sell_price: number;
+  total_sales?: number | null; // NEW: Alternative field for total sales
 
   created_at?: Date | string;
   updated_at?: Date | string;
@@ -73,21 +77,30 @@ export interface AssignedUser {
   };
 }
 
+// Customer type for client relation
+export interface Customer {
+  id: string;
+  name: string;
+  email?: string;
+}
+
 export interface EstimationItem {
-  // Customer type for client relation
-  export interface Customer {
-    id: string;
-    name: string;
-    email?: string;
-  }
   id: string;
   estimation_id: string;
   item_id: string;
   item_type: ItemType;
+  category?: EstimationItemCategory | null; // NEW: Item category (LABOR, EQUIPMENT, etc.)
+  sub_category?: string | null; // NEW: Sub category
+  item_name?: string | null; // NEW: Item name for display
   quantity: number;
   source: SourceType;
+  unit?: string | null; // NEW: Unit of measure
+  cost_per_unit?: number | null; // NEW: Cost per unit
+  total_cost?: number | null; // NEW: Total cost (quantity * cost_per_unit)
   hpp_at_estimation: number;
+  markup_pct?: number | null; // NEW: Markup percentage
   sell_price_at_estimation: number;
+  notes?: string | null; // NEW: Additional notes
 }
 
 export interface Project {

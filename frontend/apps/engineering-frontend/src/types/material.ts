@@ -20,6 +20,11 @@ export interface Material {
   cost_validity?: string;
   created_at: string;
   updated_at: string;
+  
+  // New FK fields from schema migration
+  kategori_sistem_id?: string | null;
+  sub_sistem_id?: string | null;
+  sbu_id?: string | null;
 }
 
 export interface MaterialsQueryParams {
