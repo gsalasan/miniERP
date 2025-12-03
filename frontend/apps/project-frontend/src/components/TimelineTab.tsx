@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import {
   Box,
   Button,
@@ -11,6 +11,7 @@ import {
 } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import CalendarMonthOutlinedIcon from '@mui/icons-material/CalendarMonthOutlined';
+import PictureAsPdfOutlinedIcon from '@mui/icons-material/PictureAsPdfOutlined';
 import { projectApi } from '../api/projectApi';
 import NotificationCenter, { notify } from './NotificationCenter';
 import type { Milestone, Task } from '../types';
@@ -20,6 +21,7 @@ import ApplyTemplateModal from './ApplyTemplateModal';
 import MilestoneDetailPanel from './MilestoneDetailPanel';
 import CreateMilestoneModal from './CreateMilestoneModal';
 import CreateTaskModal from './CreateTaskModal';
+import { exportGanttToPDF } from '../utils/ganttExport';
 
 interface TimelineTabProps {
   projectId: string;
@@ -41,6 +43,28 @@ const TimelineTab = ({ projectId, isPM }: TimelineTabProps) => {
   const [viewMode, setViewMode] = useState<'Day' | 'Week' | 'Month'>('Week');
   const [createMilestoneOpen, setCreateMilestoneOpen] = useState(false);
   const [createTaskOpen, setCreateTaskOpen] = useState(false);
+  const ganttContainerRef = useRef<HTMLDivElement>(null);
+
+  // Handle PDF Export
+  const handleExportPDF = () => {
+    if (!ganttContainerRef.current) {
+      notify('Gantt chart not ready for export', { severity: 'error' });
+      return;
+    }
+
+    try {
+      exportGanttToPDF(ganttContainerRef.current, {
+        filename: `project-gantt-${projectId}.pdf`,
+        format: 'pdf',
+        orientation: 'landscape',
+        quality: 0.95,
+      });
+      notify('Exporting Gantt chart to PDF...', { severity: 'info' });
+    } catch (error) {
+      console.error('PDF Export error:', error);
+      notify('Failed to export PDF', { severity: 'error' });
+    }
+  };
 
   const fetchMilestones = async () => {
     try {
@@ -100,11 +124,22 @@ const TimelineTab = ({ projectId, isPM }: TimelineTabProps) => {
         start_date: start.toISOString(),
         end_date: end.toISOString(),
       });
-      fetchMilestones();
+      
+      // Optimistic update instead of full refetch
+      setMilestones((prev) =>
+        prev.map((m) =>
+          m.id === milestoneId
+            ? { ...m, start_date: start.toISOString(), end_date: end.toISOString() }
+            : m
+        )
+      );
+      
       notify('Tanggal milestone diperbarui', { severity: 'success' });
     } catch (err: any) {
       const msg = err?.message || 'Gagal memperbarui tanggal milestone';
       notify(msg, { severity: 'error' });
+      // Revert by refetching on error
+      fetchMilestones();
     }
   };
 
@@ -136,11 +171,22 @@ const TimelineTab = ({ projectId, isPM }: TimelineTabProps) => {
         start_date: start.toISOString(),
         due_date: end.toISOString(),
       });
-      fetchTasks();
+      
+      // Optimistic update instead of full refetch
+      setTasks((prev) =>
+        prev.map((t) =>
+          t.id === taskId
+            ? { ...t, start_date: start.toISOString(), due_date: end.toISOString() }
+            : t
+        )
+      );
+      
       notify('Tanggal tugas diperbarui', { severity: 'success' });
     } catch (err: any) {
       const msg = err?.message || 'Gagal memperbarui tanggal tugas';
       notify(msg, { severity: 'error' });
+      // Revert by refetching on error
+      fetchTasks();
     }
   };
 
@@ -204,80 +250,194 @@ const TimelineTab = ({ projectId, isPM }: TimelineTabProps) => {
 
       {/* Milestone Summary */}
       {milestones.length > 0 && (
-        <Paper sx={{ p: 2, mb: 3 }}>
-          <Typography variant="subtitle2" gutterBottom>
-            Milestone Summary
-          </Typography>
-          <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
-            {milestones.map((m) => (
-              <Chip
-                key={m.id}
-                label={m.name}
-                color={
-                  m.status === 'DONE'
-                    ? 'success'
-                    : m.status === 'IN_PROGRESS'
-                      ? 'primary'
-                      : 'default'
-                }
-                size="small"
-              />
-            ))}
-          </Stack>
+        <Paper 
+          sx={{ 
+            mb: 2, 
+            overflow: 'hidden',
+            border: '1px solid',
+            borderColor: 'divider'
+          }}
+        >
+          <Box sx={{ px: 2, py: 1.5, borderBottom: '1px solid', borderColor: 'divider', bgcolor: 'grey.50' }}>
+            <Typography variant="subtitle2" fontWeight={600}>
+              Milestone Summary
+            </Typography>
+          </Box>
+          <Box sx={{ p: 2 }}>
+            <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
+              {milestones.map((m) => (
+                <Chip
+                  key={m.id}
+                  label={m.name}
+                  color={
+                    m.status === 'DONE'
+                      ? 'success'
+                      : m.status === 'IN_PROGRESS'
+                        ? 'primary'
+                        : 'default'
+                  }
+                  size="small"
+                  sx={{
+                    height: 28,
+                    fontWeight: 600,
+                    fontSize: '0.813rem'
+                  }}
+                />
+              ))}
+            </Stack>
+          </Box>
         </Paper>
       )}
 
       {/* Gantt Chart */}
       {tasks.length > 0 || milestones.length > 0 ? (
-        <Paper sx={{ p: 2, mb: 3, overflow: 'visible' }}>
-          <Typography variant="subtitle2" gutterBottom>
-            Gantt Chart
-          </Typography>
-          <Stack direction="row" spacing={1} mb={1} alignItems="center">
-            <Typography variant="caption">View:</Typography>
-            {['Day', 'Week', 'Month'].map((m) => (
-              <Button
-                key={m}
-                size="small"
-                variant={viewMode === m ? 'contained' : 'text'}
-                onClick={() => setViewMode(m as any)}
-              >
-                {m}
-              </Button>
-            ))}
-            <Box flexGrow={1} />
-            <Stack direction="row" spacing={1}>
+        <Paper sx={{ mb: 3, overflow: 'hidden', border: '1px solid', borderColor: 'divider' }}>
+          {/* Gantt Chart Title */}
+          <Box sx={{ px: 2, py: 1.5, borderBottom: '1px solid', borderColor: 'divider', bgcolor: 'grey.50' }}>
+            <Typography variant="subtitle1" fontWeight={600}>
+              Gantt Chart
+            </Typography>
+          </Box>
+
+          {/* Controls Bar - View Mode + Legend + Export PDF */}
+          <Box 
+            sx={{ 
+              px: 2, 
+              py: 1.5, 
+              borderBottom: '1px solid', 
+              borderColor: 'divider',
+              display: 'flex',
+              alignItems: 'center',
+              gap: 2,
+              flexWrap: 'wrap',
+              bgcolor: '#fafafa'
+            }}
+          >
+            {/* Export PDF Button */}
+            <Button
+              variant="contained"
+              size="small"
+              startIcon={<PictureAsPdfOutlinedIcon />}
+              onClick={handleExportPDF}
+              sx={{
+                height: 32,
+                fontWeight: 600,
+                fontSize: '0.813rem',
+                bgcolor: '#1976d2',
+                '&:hover': {
+                  bgcolor: '#1565c0',
+                }
+              }}
+            >
+              Export PDF
+            </Button>
+
+            {/* Divider */}
+            <Box sx={{ height: 32, width: '1px', bgcolor: 'divider' }} />
+
+            {/* View Mode Selector */}
+            <Stack direction="row" spacing={0.5} alignItems="center">
+              <Typography variant="body2" fontWeight={600} color="text.secondary" sx={{ mr: 0.5 }}>
+                View:
+              </Typography>
+              {['Day', 'Week', 'Month'].map((m) => (
+                <Button
+                  key={m}
+                  size="small"
+                  variant={viewMode === m ? 'contained' : 'outlined'}
+                  onClick={() => setViewMode(m as any)}
+                  sx={{ 
+                    minWidth: 70,
+                    height: 32,
+                    fontSize: '0.813rem',
+                    fontWeight: 600,
+                    ...(viewMode !== m && {
+                      borderColor: 'divider',
+                      color: 'text.secondary',
+                      '&:hover': {
+                        borderColor: 'primary.main',
+                        bgcolor: 'action.hover'
+                      }
+                    })
+                  }}
+                >
+                  {m}
+                </Button>
+              ))}
+            </Stack>
+
+            {/* Divider */}
+            <Box sx={{ height: 32, width: '1px', bgcolor: 'divider' }} />
+
+            {/* Legend */}
+            <Stack direction="row" spacing={1} alignItems="center" flexWrap="wrap" useFlexGap>
+              <Typography variant="body2" fontWeight={600} color="text.secondary" sx={{ mr: 0.5 }}>
+                Legend:
+              </Typography>
               <Chip
                 size="small"
                 label="Milestone"
-                sx={{ bgcolor: '#5d4037', color: '#fff' }}
+                icon={<span style={{ fontSize: '14px' }}>📌</span>}
+                sx={{ 
+                  bgcolor: '#5d4037', 
+                  color: '#fff',
+                  height: 26,
+                  '& .MuiChip-label': { px: 1, fontSize: '0.75rem', fontWeight: 600 }
+                }}
               />
               <Chip
                 size="small"
-                label="Task TODO"
-                sx={{ bgcolor: '#90caf9' }}
+                label="TODO"
+                sx={{ 
+                  bgcolor: '#90caf9',
+                  color: '#000',
+                  height: 26,
+                  '& .MuiChip-label': { px: 1, fontSize: '0.75rem', fontWeight: 600 }
+                }}
               />
               <Chip
                 size="small"
-                label="Task In Progress"
-                sx={{ bgcolor: '#4caf50', color: '#fff' }}
+                label="In Progress"
+                sx={{ 
+                  bgcolor: '#4caf50', 
+                  color: '#fff',
+                  height: 26,
+                  '& .MuiChip-label': { px: 1, fontSize: '0.75rem', fontWeight: 600 }
+                }}
               />
               <Chip
                 size="small"
-                label="Task Done"
-                sx={{ bgcolor: '#9e9e9e' }}
+                label="Done"
+                sx={{ 
+                  bgcolor: '#9e9e9e',
+                  color: '#fff',
+                  height: 26,
+                  '& .MuiChip-label': { px: 1, fontSize: '0.75rem', fontWeight: 600 }
+                }}
               />
             </Stack>
-          </Stack>
-          <GanttChartComponent
-            tasks={tasks}
-            milestones={milestones}
-            onTaskClick={handleTaskClick}
-            onMilestoneClick={handleMilestoneClick}
-            viewMode={viewMode}
-            onDateChange={isPM ? handleDateChange : undefined}
-            onMilestoneDateChange={isPM ? handleMilestoneDateChange : undefined}
-          />
+          </Box>
+
+          {/* Gantt Chart Container */}
+          <Box 
+            ref={ganttContainerRef} 
+            sx={{ 
+              p: 2,
+              overflow: 'auto',
+              width: '100%',
+              minHeight: 400
+            }}
+          >
+            <GanttChartComponent
+              tasks={tasks}
+              milestones={milestones}
+              onTaskClick={handleTaskClick}
+              onMilestoneClick={handleMilestoneClick}
+              viewMode={viewMode}
+              onDateChange={isPM ? handleDateChange : undefined}
+              onMilestoneDateChange={isPM ? handleMilestoneDateChange : undefined}
+            />
+          </Box>
         </Paper>
       ) : (
         <Alert severity="info">
@@ -331,6 +491,7 @@ const TimelineTab = ({ projectId, isPM }: TimelineTabProps) => {
         onClose={() => setCreateTaskOpen(false)}
         onCreate={handleCreateTask}
         milestones={milestones}
+        tasks={tasks}
       />
       <NotificationCenter />
     </Box>

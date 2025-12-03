@@ -79,9 +79,26 @@ export const getMaterials = async (params: { search?: string; category?: string;
 };
 
 export const searchServices = async (query: string): Promise<ServiceOption[]> => {
-  const res = await engineeringClient.get('/services/search', { params: { q: query, query } });
-  // controller may return [] or an array of services directly, normalize both shapes
-  return res.data?.data ?? res.data ?? [];
+  // Try common variants: /services/search, /services?q=, /services?search=
+  const tryPaths = ['/services/search', '/services'];
+  for (const p of tryPaths) {
+    try {
+      const res = await engineeringClient.get(p, { params: { q: query, search: query, query } });
+      const body = res.data;
+      if (!body) continue;
+      if (Array.isArray(body)) return body as ServiceOption[];
+      if (Array.isArray(body.data)) return body.data as ServiceOption[];
+      if (Array.isArray(body.services)) return body.services as ServiceOption[];
+      // If single object returned with array inside, try to find candidate array
+      const candidates = ['data', 'services', 'items', 'results'];
+      for (const k of candidates) {
+        if (Array.isArray((body as any)[k])) return (body as any)[k] as ServiceOption[];
+      }
+    } catch (e) {
+      // try next
+    }
+  }
+  return [];
 };
 
 export interface CreateMaterialPayload {
