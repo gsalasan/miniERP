@@ -16,7 +16,8 @@
     "rootDir": "./src"
   },
   "include": [
-    "src/**/*"
+    "src/**/*",
+    "../shared-event-bus/src/**/*"
   ],
   "exclude": [
     "node_modules",

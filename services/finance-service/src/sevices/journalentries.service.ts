@@ -30,6 +30,23 @@ export interface JournalEntryFilters {
   end_date?: string;
 }
 
+// For General Journal Entry (multi-row form)
+export interface GeneralJournalLineDto {
+  account_id: number;
+  debit?: number;
+  credit?: number;
+  description?: string;
+}
+
+export interface CreateGeneralJournalDto {
+  transaction_date: string;
+  description: string;
+  reference_type?: string;
+  reference_id?: string; // Optional: Link to invoice, payment, etc.
+  lines: GeneralJournalLineDto[];
+  created_by?: string;
+}
+
 class JournalEntriesService {
   // Expose prisma for raw queries
   public prisma = prisma;
@@ -353,6 +370,112 @@ class JournalEntriesService {
       };
     } catch (error) {
       console.error('Error calculating account balance:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Create General Journal Entry (Multiple Lines with Balance Validation)
+   * Per TSD FITUR 3.4.C - Jurnal Umum untuk transaksi non-proyek
+   */
+  async createGeneralJournal(data: CreateGeneralJournalDto) {
+    try {
+      // Validasi: Harus ada minimal 2 baris (debit dan credit)
+      if (!data.lines || data.lines.length < 2) {
+        throw new Error('General journal must have at least 2 lines (debit and credit)');
+      }
+
+      // Validasi: Hitung total debit dan credit
+      let totalDebit = 0;
+      let totalCredit = 0;
+      
+      for (const line of data.lines) {
+        if (!line.debit && !line.credit) {
+          throw new Error('Each line must have either debit or credit amount');
+        }
+        if (line.debit && line.credit) {
+          throw new Error('Each line cannot have both debit and credit');
+        }
+        
+        totalDebit += Number(line.debit || 0);
+        totalCredit += Number(line.credit || 0);
+      }
+
+      // Validasi keseimbangan: Total Debit = Total Credit
+      const difference = Math.abs(totalDebit - totalCredit);
+      if (difference > 0.01) { // Toleransi pembulatan 1 sen
+        throw new Error(`Journal not balanced. Debit: ${totalDebit}, Credit: ${totalCredit}, Difference: ${difference}`);
+      }
+
+      // Validasi: Semua akun harus ada
+      const accountIds = data.lines.map(line => line.account_id);
+      const accounts = await prisma.chartOfAccounts.findMany({
+        where: { id: { in: accountIds } }
+      });
+
+      if (accounts.length !== accountIds.length) {
+        throw new Error('One or more accounts not found');
+      }
+
+      // Generate reference_id untuk grouping entry ini
+      // Jika ada reference_id dari caller (e.g., invoiceId), gunakan itu
+      // Jika tidak, generate UUID baru
+      const { v4: uuidv4 } = await import('uuid');
+      const referenceId = data.reference_id || uuidv4();
+
+      // Gunakan transaksi database untuk memastikan atomicity
+      const result = await prisma.$transaction(async (tx) => {
+        const createdEntries = [];
+
+        for (const line of data.lines) {
+          const query = `
+            INSERT INTO journal_entries (
+              transaction_date, description, account_id, debit, credit,
+              reference_id, reference_type, created_by, created_at, updated_at
+            ) VALUES (
+              $1::date, $2, $3, $4, $5, $6::uuid, $7, $8, NOW(), NOW()
+            ) RETURNING *
+          `;
+
+          const params = [
+            data.transaction_date,
+            line.description || data.description,
+            line.account_id,
+            line.debit || null,
+            line.credit || null,
+            referenceId,
+            data.reference_type || 'GENERAL_JOURNAL',
+            data.created_by || 'system'
+          ];
+
+          const inserted: any[] = await tx.$queryRawUnsafe(query, ...params);
+          createdEntries.push(inserted[0]);
+        }
+
+        return createdEntries;
+      });
+
+      // Ambil detail lengkap dengan account info
+      const entriesWithAccounts: any[] = await prisma.$queryRawUnsafe(`
+        SELECT je.*, ca.account_code, ca.account_name, ca.account_type
+        FROM journal_entries je
+        LEFT JOIN "ChartOfAccounts" ca ON je.account_id = ca.id
+        WHERE je.reference_id = $1::uuid
+        ORDER BY je.id
+      `, referenceId);
+
+      console.log(`✅ Created general journal with ${entriesWithAccounts.length} lines. Reference: ${referenceId}`);
+
+      return {
+        reference_id: referenceId,
+        transaction_date: data.transaction_date,
+        description: data.description,
+        total_debit: totalDebit,
+        total_credit: totalCredit,
+        lines: entriesWithAccounts,
+      };
+    } catch (error) {
+      console.error('Error creating general journal:', error);
       throw error;
     }
   }
