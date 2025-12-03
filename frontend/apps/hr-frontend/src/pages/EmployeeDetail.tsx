@@ -42,7 +42,7 @@ export default function EmployeeDetail() {
 
 
   useEffect(() => {
-    fetch(`http://localhost:3002/api/v1/employees/${id}`)
+    fetch(`http://localhost:4004/api/v1/employees/${id}`)
       .then(res => res.json())
       .then(data => {
         setEmployee(data.data || null);
@@ -150,3 +150,4 @@ export default function EmployeeDetail() {
       </Layout>
   );
 }
+

@@ -5,9 +5,10 @@ export async function getHRStats(req: Request, res: Response) {
   try {
     const prisma = getPrisma();
 
-    const totalEmployees = await prisma.hr_employees.count();
+    // FIX: Use employees table, not hr_employees
+    const totalEmployees = await prisma.employees.count();
 
-    const activeEmployees = await prisma.hr_employees.count({
+    const activeEmployees = await prisma.employees.count({
       where: { status: 'ACTIVE' },
     });
 
@@ -22,7 +23,7 @@ export async function getHRStats(req: Request, res: Response) {
           gte: today,
           lt: tomorrow,
         },
-        check_in: {
+        check_in_time: {
           not: null,
         },
       },
