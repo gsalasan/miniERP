@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import Layout from '../../components/Layout';
-import { Edit2, Trash2, Eye, AlertCircle } from 'lucide-react';
+import { Edit2, Trash2, Eye, AlertCircle, ArrowLeft } from 'lucide-react';
 import { fetchAllUsers, updateUser, deleteUser } from '../../api/userApi';
 
 interface User {
@@ -323,7 +323,16 @@ export default function UserManagement() {
               {/* Modal Content */}
               {modalType === 'view' && selectedUser && (
                 <>
-                  <h2 className="text-2xl font-bold text-[#06103A] mb-4">View User</h2>
+                  <div className="flex items-center gap-3 mb-4">
+                    <button
+                      onClick={() => setShowModal(false)}
+                      className="p-2 hover:bg-gray-100 rounded-lg transition-all"
+                      title="Back"
+                    >
+                      <ArrowLeft size={20} className="text-[#06103A]" />
+                    </button>
+                    <h2 className="text-2xl font-bold text-[#06103A]">View User</h2>
+                  </div>
                   <div className="space-y-4">
                     <div>
                       <label className="block text-sm font-medium text-[#6B6E70] mb-1">Email</label>
@@ -350,20 +359,21 @@ export default function UserManagement() {
                       </p>
                     </div>
                   </div>
-                  <div className="mt-8 flex gap-3">
-                    <button
-                      onClick={() => setShowModal(false)}
-                      className="flex-1 px-4 py-2.5 border border-[#E5E7EB] rounded-lg font-medium text-[#06103A] hover:bg-[#F9FAFB] transition-all"
-                    >
-                      Close
-                    </button>
-                  </div>
                 </>
               )}
 
               {modalType === 'edit' && selectedUser && (
                 <>
-                  <h2 className="text-2xl font-bold text-[#06103A] mb-4">Edit User</h2>
+                  <div className="flex items-center gap-3 mb-4">
+                    <button
+                      onClick={() => setShowModal(false)}
+                      className="p-2 hover:bg-gray-100 rounded-lg transition-all"
+                      title="Back"
+                    >
+                      <ArrowLeft size={20} className="text-[#06103A]" />
+                    </button>
+                    <h2 className="text-2xl font-bold text-[#06103A]">Edit User</h2>
+                  </div>
                   <div className="space-y-4">
                     <div>
                       <label className="block text-sm font-medium text-[#6B6E70] mb-2">Email</label>
@@ -411,10 +421,19 @@ export default function UserManagement() {
 
               {modalType === 'delete' && selectedUser && (
                 <>
+                  <div className="flex items-center gap-3 mb-4">
+                    <button
+                      onClick={() => setShowModal(false)}
+                      className="p-2 hover:bg-gray-100 rounded-lg transition-all"
+                      title="Back"
+                    >
+                      <ArrowLeft size={20} className="text-[#06103A]" />
+                    </button>
+                    <h2 className="text-2xl font-bold text-[#06103A]">Delete User</h2>
+                  </div>
                   <div className="flex items-center justify-center w-12 h-12 rounded-full bg-red-100 mx-auto mb-4">
                     <AlertCircle size={24} className="text-red-600" />
                   </div>
-                  <h2 className="text-2xl font-bold text-[#06103A] mb-2 text-center">Delete User</h2>
                   <p className="text-[#6B6E70] text-center mb-6">
                     Are you sure you want to delete <strong>{selectedUser.email}</strong>? This action cannot be undone.
                   </p>
