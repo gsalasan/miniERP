@@ -426,10 +426,20 @@ export class PipelineService {
    * Based on PIPELINE_STATUS_TRANSITIONS.md documentation
    */
   private async validateStatusTransition(project: any, newStatus: string): Promise<void> {
-    const currentStatus = project.status;
-    
-    // If status not changing, allow it
-    if (currentStatus === newStatus) {
+    let currentStatus = (project.status || '').toString().toUpperCase();
+    const desiredStatus = (newStatus || '').toString().toUpperCase();
+
+    // Normalize legacy/alternate status values
+    // Treat 'NEW' as equivalent to the leftmost pipeline status 'PROSPECT'
+    if (currentStatus === 'NEW') currentStatus = 'PROSPECT';
+    if (desiredStatus === 'NEW') {
+      // If client tried to move to 'NEW', interpret as 'PROSPECT'
+      // (we do not want a distinct final/locked 'NEW' state)
+      // Note: we won't mutate the caller's newStatus variable here; use desiredStatus below.
+    }
+
+    // If status not changing (after normalization), allow it
+    if (currentStatus === desiredStatus) {
       return;
     }
 
@@ -447,8 +457,11 @@ export class PipelineService {
     // Get allowed transitions for current status
     const allowed = allowedTransitions[currentStatus] || [];
 
+    // If desiredStatus was 'NEW' map to 'PROSPECT' for transition check
+    const targetStatus = desiredStatus === 'NEW' ? 'PROSPECT' : desiredStatus;
+
     // Check if transition is in the allowed list
-    if (!allowed.includes(newStatus)) {
+    if (!allowed.includes(targetStatus)) {
       const statusNames: Record<string, string> = {
         'PROSPECT': 'Prospek',
         'MEETING_SCHEDULED': 'Meeting Terjadwal',
@@ -460,7 +473,7 @@ export class PipelineService {
       };
 
       const currentName = statusNames[currentStatus] || currentStatus;
-      const newName = statusNames[newStatus] || newStatus;
+      const newName = statusNames[targetStatus] || targetStatus;
       const allowedNames = allowed.map(s => statusNames[s] || s).join(', ');
 
       if (allowed.length === 0) {
@@ -552,6 +565,8 @@ export class PipelineService {
         activity_type: 'STATUS_CHANGE',
         description,
         performed_by: user.id,
+        // Explicitly set performed_at for status-change activities only
+        performed_at: new Date(),
         metadata: {
           old_status: oldStatus,
           new_status: newStatus,
@@ -641,19 +656,26 @@ export class PipelineService {
     ]);
     const normalizedType = activityType && allowedTypes.has(activityType) ? activityType : 'NOTE_ADDED';
 
-    const created = await prisma.projectActivity.create({
-      data: {
-        project_id: projectId,
-        activity_type: normalizedType as any,
-        description,
-        performed_by: user.id,
-        metadata: {
-          ...(metadata || {}),
-          changed_by_name: actorName,
-          changed_by_id: user.id,
-        },
-      }
-    });
+    const dataToInsert: any = {
+      project_id: projectId,
+      activity_type: normalizedType as any,
+      description,
+      performed_by: user.id,
+      metadata: {
+        ...(metadata || {}),
+        changed_by_name: actorName,
+        changed_by_id: user.id,
+      },
+    };
+
+    // Only set performed_at for status-change activities. For other types leave it NULL.
+    if (normalizedType === 'STATUS_CHANGE') {
+      dataToInsert.performed_at = new Date();
+    } else {
+      dataToInsert.performed_at = null;
+    }
+
+    const created = await prisma.projectActivity.create({ data: dataToInsert });
 
     return created;
   }
@@ -679,7 +701,7 @@ export class PipelineService {
 
     // Try create, handle unique conflict on project_number
     try {
-      return await prisma.project.create({
+      const created = await prisma.project.create({
         data: dataToCreate,
         include: {
           customer: {
@@ -687,6 +709,23 @@ export class PipelineService {
           }
         }
       });
+
+      // Record initial creation as an activity (audit trail for status timestamp)
+      try {
+        // Record a non-timestamped creation note (performed_at should be reserved for board/status moves)
+        await this.createProjectActivity(
+          created.id,
+          'NOTE_ADDED',
+          `Project created with status ${created.status}`,
+          { initial_status: created.status },
+          user
+        );
+      } catch (e) {
+        // don't fail creation if activity logging fails
+        console.warn('Failed to create initial project activity note:', e instanceof Error ? e.message : e);
+      }
+
+      return created;
     } catch (err: any) {
       // If duplicate on project_number
       if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === 'P2002') {

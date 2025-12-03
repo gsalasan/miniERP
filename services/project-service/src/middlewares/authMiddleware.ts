@@ -66,10 +66,8 @@ export const requireRoles = (allowedRoles: string[]) => {
       });
     }
 
-    // Normalize roles comparison to be case-insensitive and permissive about formats
-    const userRoles = (user.roles || (user.role ? [user.role] : [])).map((r: string) => (r || '').toString().toUpperCase());
-    const normalizedAllowed = allowedRoles.map(r => r.toString().toUpperCase());
-    const hasRole = userRoles.some((role: string) => normalizedAllowed.includes(role));
+    const userRoles = user.roles || (user.role ? [user.role] : []);
+    const hasRole = userRoles.some(role => allowedRoles.includes(role));
 
     if (!hasRole) {
       return res.status(403).json({ 

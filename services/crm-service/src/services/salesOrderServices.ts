@@ -141,17 +141,28 @@ class SalesOrderServices {
       );
     }
 
-    // Step 4: Create Sales Order
+    // Step 4: Create Sales Order (use relation connects instead of raw FK fields)
     const salesOrder = await prisma.sales_orders.create({
       data: {
         so_number: soNumber,
-        project_id: projectId,
-        customer_po_number: customerPoNumber,
-        order_date: new Date(orderDate),
-        top_days_agreed: topDaysAgreed || null,
-        contract_value: contractValue,
-        po_document_url: poDocumentUrl || null,
-        created_by_user_id: createdByUserId,
+        customer_po_number: customerPoNumber || soNumber,
+        project: { connect: { id: projectId } },
+        project_name: project.project_name || '',
+        // connect customer if available
+        ...(project.customer_id
+          ? { customer: { connect: { id: project.customer_id } } }
+          : {}),
+        signed_date: new Date(orderDate),
+        top_days: topDaysAgreed ?? null,
+        total_value: contractValue,
+        pdf_url: poDocumentUrl ?? null,
+        // connect sales_pic user if available
+        ...(project.sales_user_id
+          ? { sales_pic_user: { connect: { id: project.sales_user_id } } }
+          : {}),
+        status: 'Signed',
+        // set created_by relation
+        created_by_user: { connect: { id: createdByUserId } },
       },
     });
 
@@ -174,7 +185,6 @@ class SalesOrderServices {
         performed_by: createdByUserId,
         metadata: {
           soNumber,
-          customerPoNumber,
           contractValue: contractValue.toString(),
         },
       },
@@ -307,7 +317,7 @@ class SalesOrderServices {
     const updated = await prisma.sales_orders.update({
       where: { id },
       data: {
-        po_document_url: poDocumentUrl,
+        pdf_url: poDocumentUrl,
         updated_at: new Date(),
       },
     });
