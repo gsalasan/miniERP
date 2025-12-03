@@ -595,138 +595,138 @@ export default function EmployeeNew({ onClose }: Props) {
             </div>
           </div>
         );
-      case 4:
-        return (
-          <div className="space-y-6">
-            <div className="text-center mb-6">
-              <Shield className="w-12 h-12 text-blue-500 mx-auto mb-3" />
-              <h3 className="text-lg font-semibold text-blue-900">Account & Tax Information</h3>
-              <p className="text-sm text-gray-600 mt-1">Employee bank account and tax data</p>
-            </div>
+      // case 4:
+      //   return (
+      //     <div className="space-y-6">
+      //       <div className="text-center mb-6">
+      //         <Shield className="w-12 h-12 text-blue-500 mx-auto mb-3" />
+      //         <h3 className="text-lg font-semibold text-blue-900">Account & Tax Information</h3>
+      //         <p className="text-sm text-gray-600 mt-1">Employee bank account and tax data</p>
+      //       </div>
             
-            <div className="bg-blue-50 border border-blue-200 rounded-xl p-6 space-y-4">
-              <h4 className="font-semibold text-blue-900 mb-3">Bank Account Information</h4>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className="block mb-2 text-blue-900 font-medium">Bank Name</label>
-                  <input 
-                    name="bank_name" 
-                    value={form.bank_name} 
-                    onChange={handleChange} 
-                    className="w-full border border-blue-200 rounded-lg px-4 py-2.5 bg-white focus:ring-2 focus:ring-blue-400 focus:border-transparent" 
-                    placeholder="Example: BCA, Mandiri"
-                  />
-                </div>
-                <div>
-                  <label className="block mb-2 text-blue-900 font-medium">Account Number</label>
-                  <input 
-                    name="bank_account_number" 
-                    value={form.bank_account_number} 
-                    onChange={handleChange} 
-                    className="w-full border border-blue-200 rounded-lg px-4 py-2.5 bg-white focus:ring-2 focus:ring-blue-400 focus:border-transparent" 
-                    placeholder="Bank account number"
-                  />
-                </div>
-              </div>
-            </div>
+      //       <div className="bg-blue-50 border border-blue-200 rounded-xl p-6 space-y-4">
+      //         <h4 className="font-semibold text-blue-900 mb-3">Bank Account Information</h4>
+      //         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      //           <div>
+      //             <label className="block mb-2 text-blue-900 font-medium">Bank Name</label>
+      //             <input 
+      //               name="bank_name" 
+      //               value={form.bank_name} 
+      //               onChange={handleChange} 
+      //               className="w-full border border-blue-200 rounded-lg px-4 py-2.5 bg-white focus:ring-2 focus:ring-blue-400 focus:border-transparent" 
+      //               placeholder="Example: BCA, Mandiri"
+      //             />
+      //           </div>
+      //           <div>
+      //             <label className="block mb-2 text-blue-900 font-medium">Account Number</label>
+      //             <input 
+      //               name="bank_account_number" 
+      //               value={form.bank_account_number} 
+      //               onChange={handleChange} 
+      //               className="w-full border border-blue-200 rounded-lg px-4 py-2.5 bg-white focus:ring-2 focus:ring-blue-400 focus:border-transparent" 
+      //               placeholder="Bank account number"
+      //             />
+      //           </div>
+      //         </div>
+      //       </div>
             
-            <div className="bg-amber-50 border border-amber-200 rounded-xl p-6 space-y-4">
-              <h4 className="font-semibold text-amber-900 mb-3">Tax Information</h4>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className="block mb-2 text-amber-900 font-medium">NPWP</label>
-                  <input 
-                    name="npwp" 
-                    value={form.npwp} 
-                    onChange={handleChange} 
-                    className={`w-full border rounded-lg px-4 py-2.5 bg-white focus:ring-2 focus:ring-amber-400 focus:border-transparent ${npwpError ? 'border-red-400' : 'border-amber-200'}`} 
-                    placeholder="00.000.000.0-000.000"
-                  />
-                  {npwpError ? (
-                    <p className="text-xs text-red-600 mt-1">{npwpError}</p>
-                  ) : (
-                    <p className="text-xs text-amber-700 mt-1">Optional. Without NPWP, PPh21 estimate increases by 20%.</p>
-                  )}
-                </div>
-                <div>
-                  <label className="block mb-2 text-amber-900 font-medium">PTKP Status</label>
-                  <select
-                    name="ptkp"
-                    value={form.ptkp}
-                    onChange={handleChange}
-                    className="w-full border border-amber-200 rounded-lg px-4 py-2.5 bg-white focus:ring-2 focus:ring-amber-400 focus:border-transparent"
-                  >
-                    <option value="">Select PTKP status</option>
-                    {PTKP_OPTIONS.map((opt) => (
-                      <option key={opt.code} value={opt.code}>{opt.label}</option>
-                    ))}
-                  </select>
-                  <p className="text-xs text-amber-700 mt-1">PTKP reduces tax base. If empty, TK/0 is assumed for estimation.</p>
-                </div>
-              </div>
-              {/* Estimator */}
-              <div className="mt-2 grid grid-cols-1 md:grid-cols-3 gap-3">
-                <div className="rounded-lg bg-white border border-amber-200 p-3">
-                  <p className="text-xs text-amber-700">Gross / month</p>
-                  <p className="text-base font-semibold text-amber-900">{formatCurrencyID(brutoMonthly)}</p>
-                </div>
-                <div className="rounded-lg bg-white border border-amber-200 p-3">
-                  <p className="text-xs text-amber-700">PPh21 estimate / month</p>
-                  <p className="text-base font-semibold text-amber-900">{formatCurrencyID(monthlyTaxEstimate)}</p>
-                </div>
-                <div className="rounded-lg bg-white border border-amber-200 p-3">
-                  <p className="text-xs text-amber-700">Take Home Pay (estimate)</p>
-                  <p className="text-base font-semibold text-amber-900">{formatCurrencyID(takeHomeMonthly)}</p>
-                </div>
-              </div>
-            </div>
+      //       <div className="bg-amber-50 border border-amber-200 rounded-xl p-6 space-y-4">
+      //         <h4 className="font-semibold text-amber-900 mb-3">Tax Information</h4>
+      //         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      //           <div>
+      //             <label className="block mb-2 text-amber-900 font-medium">NPWP</label>
+      //             <input 
+      //               name="npwp" 
+      //               value={form.npwp} 
+      //               onChange={handleChange} 
+      //               className={`w-full border rounded-lg px-4 py-2.5 bg-white focus:ring-2 focus:ring-amber-400 focus:border-transparent ${npwpError ? 'border-red-400' : 'border-amber-200'}`} 
+      //               placeholder="00.000.000.0-000.000"
+      //             />
+      //             {npwpError ? (
+      //               <p className="text-xs text-red-600 mt-1">{npwpError}</p>
+      //             ) : (
+      //               <p className="text-xs text-amber-700 mt-1">Optional. Without NPWP, PPh21 estimate increases by 20%.</p>
+      //             )}
+      //           </div>
+      //           <div>
+      //             <label className="block mb-2 text-amber-900 font-medium">PTKP Status</label>
+      //             <select
+      //               name="ptkp"
+      //               value={form.ptkp}
+      //               onChange={handleChange}
+      //               className="w-full border border-amber-200 rounded-lg px-4 py-2.5 bg-white focus:ring-2 focus:ring-amber-400 focus:border-transparent"
+      //             >
+      //               <option value="">Select PTKP status</option>
+      //               {PTKP_OPTIONS.map((opt) => (
+      //                 <option key={opt.code} value={opt.code}>{opt.label}</option>
+      //               ))}
+      //             </select>
+      //             <p className="text-xs text-amber-700 mt-1">PTKP reduces tax base. If empty, TK/0 is assumed for estimation.</p>
+      //           </div>
+      //         </div>
+      //         {/* Estimator */}
+      //         <div className="mt-2 grid grid-cols-1 md:grid-cols-3 gap-3">
+      //           <div className="rounded-lg bg-white border border-amber-200 p-3">
+      //             <p className="text-xs text-amber-700">Gross / month</p>
+      //             <p className="text-base font-semibold text-amber-900">{formatCurrencyID(brutoMonthly)}</p>
+      //           </div>
+      //           <div className="rounded-lg bg-white border border-amber-200 p-3">
+      //             <p className="text-xs text-amber-700">PPh21 estimate / month</p>
+      //             <p className="text-base font-semibold text-amber-900">{formatCurrencyID(monthlyTaxEstimate)}</p>
+      //           </div>
+      //           <div className="rounded-lg bg-white border border-amber-200 p-3">
+      //             <p className="text-xs text-amber-700">Take Home Pay (estimate)</p>
+      //             <p className="text-base font-semibold text-amber-900">{formatCurrencyID(takeHomeMonthly)}</p>
+      //           </div>
+      //         </div>
+      //       </div>
             
-            <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
-              <p className="text-xs text-gray-600">
-                <strong>Info:</strong> This data will be stored in the database and can be used for payroll and tax calculations.
-              </p>
-            </div>
-          </div>
-        );
-      case 5:
-        return (
-          <div className="space-y-6">
-            <div>
-              <label className="block mb-2 text-blue-900 font-semibold">Password <span className="text-red-500">*</span></label>
-              <input name="password" type="password" value={form.password} onChange={handleChange} required className="w-full border border-blue-200 rounded-xl px-4 py-3 bg-blue-50" placeholder="Minimum 8 characters" />
-            </div>
-            <div>
-              <label className="block mb-2 text-blue-900 font-semibold">System Role <span className="text-red-500">*</span></label>
-              <select name="roles" value={form.roles[0]} onChange={handleChange} className="w-full border border-blue-200 rounded-xl px-4 py-3 bg-blue-50">
-                <option value="EMPLOYEE">Employee</option>
-                <option value="HR_ADMIN">HR Admin</option>
-                <option value="FINANCE_ADMIN">Finance Admin</option>
-                <option value="PROJECT_MANAGER">Project Manager</option>
-                <option value="PROJECT_ENGINEER">Project Engineer</option>
-                <option value="SALES">Sales</option>
-                <option value="SALES_MANAGER">Sales Manager</option>
-                <option value="PROCUREMENT_ADMIN">Procurement Admin</option>
-                <option value="ASSET_ADMIN">Asset Admin</option>
-                <option value="SYSTEM_ADMIN">System Admin</option>
-                <option value="CEO">CEO</option>
-                <option value="OPERATIONAL_MANAGER">Operational Manager</option>
-                <option value="SUPPORT_MANAGER">Support Manager</option>
-                <option value="ENGINEERING_MANAGER">Engineering Manager</option>
-                <option value="ADMIN_SALES">Admin Sales</option>
-                <option value="ADMIN_PROJECT">Admin Project</option>
-                <option value="SUPERVISOR">Supervisor</option>
-                <option value="TECHNICIAN">Technician</option>
-              </select>
-              <p className="text-xs text-blue-600 mt-1">Role determines system access for the employee</p>
-            </div>
-            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mt-4">
-              <p className="text-sm text-blue-900 font-medium mb-2">ℹ️ Account Information</p>
-              <p className="text-xs text-blue-700">
-                After the employee is saved, the account will be automatically created and the employee can log in using the email and password provided.
-              </p>
-            </div>
-          </div>
-        );
+      //       <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
+      //         <p className="text-xs text-gray-600">
+      //           <strong>Info:</strong> This data will be stored in the database and can be used for payroll and tax calculations.
+      //         </p>
+      //       </div>
+      //     </div>
+      //   );
+      // case 5:
+      //   return (
+      //     <div className="space-y-6">
+      //       <div>
+      //         <label className="block mb-2 text-blue-900 font-semibold">Password <span className="text-red-500">*</span></label>
+      //         <input name="password" type="password" value={form.password} onChange={handleChange} required className="w-full border border-blue-200 rounded-xl px-4 py-3 bg-blue-50" placeholder="Minimum 8 characters" />
+      //       </div>
+      //       <div>
+      //         <label className="block mb-2 text-blue-900 font-semibold">System Role <span className="text-red-500">*</span></label>
+      //         <select name="roles" value={form.roles[0]} onChange={handleChange} className="w-full border border-blue-200 rounded-xl px-4 py-3 bg-blue-50">
+      //           <option value="EMPLOYEE">Employee</option>
+      //           <option value="HR_ADMIN">HR Admin</option>
+      //           <option value="FINANCE_ADMIN">Finance Admin</option>
+      //           <option value="PROJECT_MANAGER">Project Manager</option>
+      //           <option value="PROJECT_ENGINEER">Project Engineer</option>
+      //           <option value="SALES">Sales</option>
+      //           <option value="SALES_MANAGER">Sales Manager</option>
+      //           <option value="PROCUREMENT_ADMIN">Procurement Admin</option>
+      //           <option value="ASSET_ADMIN">Asset Admin</option>
+      //           <option value="SYSTEM_ADMIN">System Admin</option>
+      //           <option value="CEO">CEO</option>
+      //           <option value="OPERATIONAL_MANAGER">Operational Manager</option>
+      //           <option value="SUPPORT_MANAGER">Support Manager</option>
+      //           <option value="ENGINEERING_MANAGER">Engineering Manager</option>
+      //           <option value="ADMIN_SALES">Admin Sales</option>
+      //           <option value="ADMIN_PROJECT">Admin Project</option>
+      //           <option value="SUPERVISOR">Supervisor</option>
+      //           <option value="TECHNICIAN">Technician</option>
+      //         </select>
+      //         <p className="text-xs text-blue-600 mt-1">Role determines system access for the employee</p>
+      //       </div>
+      //       <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mt-4">
+      //         <p className="text-sm text-blue-900 font-medium mb-2">ℹ️ Account Information</p>
+      //         <p className="text-xs text-blue-700">
+      //           After the employee is saved, the account will be automatically created and the employee can log in using the email and password provided.
+      //         </p>
+      //       </div>
+      //     </div>
+      //   );
       default:
         return null;
     }

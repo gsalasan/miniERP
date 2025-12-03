@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 // API utilities and endpoints for Finance module// API utilities and endpoints for Finance module
 
 import { API_ENDPOINTS } from '../config';
@@ -93,19 +92,6 @@ export const chartOfAccountsAPI = {
   },
 };
 
-// Journal Entry Types
-export interface JournalEntry {
-=======
-// API utilities and endpoints for Finance module
-
-// ...existing code...
-// API utilities and endpoints for Finance module
-export type ChartOfAccount = {
-  id: number;
-  account_code: string;
-  account_name: string;
-};
-
 export type JournalEntry = {
   id: string;
   transaction_date: string;
@@ -129,32 +115,32 @@ export type TaxRate = {
 export type CreateTaxRateDto = Omit<TaxRate, 'id'>;
 export type UpdateTaxRateDto = Partial<CreateTaxRateDto>;
 
-export const chartOfAccountsAPI = {
-  async getAll() {
-    const res = await fetch(`${API_BASE}/chartofaccounts`);
-    return res.json();
-  },
-  async create(payload: Partial<ChartOfAccount>) {
-    const res = await fetch(`${API_BASE}/chartofaccounts`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload),
-    });
-    return res.json();
-  },
-  async update(id: number, payload: Partial<ChartOfAccount>) {
-    const res = await fetch(`${API_BASE}/chartofaccounts/${id}`, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload),
-    });
-    return res.json();
-  },
-  async delete(id: number) {
-    const res = await fetch(`${API_BASE}/chartofaccounts/${id}`, { method: 'DELETE' });
-    return res.json();
-  },
-};
+// export const chartOfAccountsAPI = {
+//   async getAll() {
+//     const res = await fetch(`${API_BASE}/chartofaccounts`);
+//     return res.json();
+//   },
+//   async create(payload: Partial<ChartOfAccount>) {
+//     const res = await fetch(`${API_BASE}/chartofaccounts`, {
+//       method: 'POST',
+//       headers: { 'Content-Type': 'application/json' },
+//       body: JSON.stringify(payload),
+//     });
+//     return res.json();
+//   },
+//   async update(id: number, payload: Partial<ChartOfAccount>) {
+//     const res = await fetch(`${API_BASE}/chartofaccounts/${id}`, {
+//       method: 'PUT',
+//       headers: { 'Content-Type': 'application/json' },
+//       body: JSON.stringify(payload),
+//     });
+//     return res.json();
+//   },
+//   async delete(id: number) {
+//     const res = await fetch(`${API_BASE}/chartofaccounts/${id}`, { method: 'DELETE' });
+//     return res.json();
+//   },
+// };
 
 export type GeneralJournalLine = {
   account_id: number;

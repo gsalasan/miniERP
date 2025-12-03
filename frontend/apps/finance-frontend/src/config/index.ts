@@ -8,4 +8,6 @@ export const ACCOUNT_TYPES = [
   { value: 'EXPENSE', label: 'Expense' },
 ];
 
+export const API_ENDPOINTS = import.meta.env.VITE_API_URL || "http://localhost:4002"
+
 export default ACCOUNT_TYPES;
