@@ -1,5 +1,6 @@
 import prisma from '../utils/prisma';
 import { NotificationService } from '../utils/notifications';
+import { randomUUID } from 'crypto';
 
 interface AssignPmData {
   pmUserId: string;
@@ -15,34 +16,44 @@ interface CreateBomData {
   items: BomItem[];
 }
 
+interface CreateRfpData {
+  items: Array<{
+    itemId: string;
+    itemType: 'MATERIAL' | 'SERVICE';
+    quantity: number;
+    unit?: string;
+    notes?: string;
+  }>;
+  notes?: string;
+}
+
 export class ProjectService {
   /**
    * Get project by ID with all relations
    */
   async getProjectById(projectId: string) {
-    const project = await prisma.project.findUnique({
+    const project = await prisma.projects.findUnique({
       where: { id: projectId },
       include: {
-        customer: true,
-        pm_user: {
-          include: {
-            employee: true,
-          },
-        },
-        sales_user: {
-          include: {
-            employee: true,
+        customers: {
+          select: {
+            id: true,
+            customer_name: true,
+            channel: true,
+            city: true,
+            status: true,
+            top_days: true,
           },
         },
         sales_orders: true,
         estimations: {
           include: {
-            items: true,
+            estimation_items: true,
           },
         },
         project_boms: true,
         project_milestones: true,
-        activities: {
+        project_activities: {
           orderBy: {
             performed_at: 'desc',
           },
@@ -55,9 +66,53 @@ export class ProjectService {
       return null;
     }
 
+    // Fetch PM user separately if exists (no relation in schema)
+    const pmUser = project.pm_user_id ? await prisma.users.findUnique({
+      where: { id: project.pm_user_id },
+      include: {
+        employees: {
+          select: {
+            id: true,
+            full_name: true,
+            position: true,
+            email: true,
+          },
+        },
+      },
+    }) : null;
+
+    // Fetch sales user separately if exists
+    const salesUser = project.sales_user_id ? await prisma.users.findUnique({
+      where: { id: project.sales_user_id },
+      include: {
+        employees: {
+          select: {
+            id: true,
+            full_name: true,
+            position: true,
+            email: true,
+          },
+        },
+      },
+    }) : null;
+
+    // Normalize response: customers -> customer (singular), add user objects
+    const normalizedProject = {
+      ...project,
+      customer: project.customers,
+      pm_user: pmUser,
+      sales_user: salesUser,
+      // Transform estimation_items to items for frontend compatibility
+      estimations: project.estimations?.map(est => ({
+        ...est,
+        items: est.estimation_items || [],
+      })),
+    };
+    delete (normalizedProject as any).customers;
+
     // Enrich estimation items with Material/Service names
-    if (project.estimations && project.estimations.length > 0) {
-      for (const estimation of project.estimations) {
+    if (normalizedProject.estimations && normalizedProject.estimations.length > 0) {
+      for (const estimation of normalizedProject.estimations) {
         for (const item of estimation.items) {
           if (item.item_type === 'MATERIAL') {
             const material = await prisma.material.findUnique({
@@ -95,7 +150,120 @@ export class ProjectService {
       }
     }
 
-    return project;
+    return normalizedProject;
+  }
+
+  /**
+   * Create Request For Purchase (RFP) for selected BOM items.
+   * Ensures caller is the project's assigned PM.
+   */
+  async createRfp(projectId: string, data: CreateRfpData, loggedInUserId: string) {
+    const project = await prisma.projects.findUnique({ where: { id: projectId } });
+    if (!project) throw new Error('Project not found');
+
+    if (project.pm_user_id !== loggedInUserId) {
+      throw new Error('Forbidden: Only the assigned PM can create RFP');
+    }
+
+    if (!data.items || !Array.isArray(data.items) || data.items.length === 0) {
+      throw new Error('items array is required');
+    }
+
+    const result = await prisma.$transaction(async (tx) => {
+      // Generate RFP number
+      const rfpNumber = await this.generateRfpNumber(tx);
+
+      // Create RFP header
+      const rfp = await tx.request_for_purchases.create({
+        data: {
+          rfp_number: rfpNumber,
+          project_id: projectId,
+          project_name: project.project_name,
+          requester_id: loggedInUserId,
+          requester_name: (await tx.users.findUnique({ where: { id: loggedInUserId } }))?.email || 'unknown',
+          notes: data.notes || null,
+        },
+      });
+
+      // Create items and update BOM statuses
+      const createdItems = [] as any[];
+      for (const it of data.items) {
+        let itemName = it.itemId;
+        if (it.itemType === 'MATERIAL') {
+          const material = await tx.material.findUnique({ where: { id: it.itemId }, select: { item_name: true } });
+          itemName = material?.item_name || it.itemId;
+        } else if (it.itemType === 'SERVICE') {
+          const service = await tx.service.findUnique({ where: { id: it.itemId }, select: { service_name: true } });
+          itemName = service?.service_name || it.itemId;
+        }
+
+        const created = await tx.rfp_items.create({
+          data: {
+            rfp_id: rfp.id,
+            item_name: itemName,
+            item_type: it.itemType === 'MATERIAL' ? 'MATERIAL' : 'SERVICE',
+            material_id: it.itemType === 'MATERIAL' ? it.itemId : null,
+            service_id: it.itemType === 'SERVICE' ? it.itemId : null,
+            quantity: it.quantity,
+            unit: it.unit || '',
+            notes: it.notes || null,
+          },
+        });
+        createdItems.push(created);
+
+        // Try to update corresponding ProjectBOM if exists
+        const bom = await tx.project_boms.findFirst({ where: { project_id: projectId, item_id: it.itemId } });
+        if (bom) {
+          const need = (Number(it.quantity) - Number(bom.available_stock || 0));
+          await tx.project_boms.update({
+            where: { id: bom.id },
+            data: {
+              procurement_need: need > 0 ? need : 0,
+              procurement_status: 'RFP_SUBMITTED',
+            },
+          });
+        }
+      }
+
+      // Log activity
+      await tx.project_activities.create({
+        data: {
+          id: randomUUID(),
+          project_id: projectId,
+          activity_type: 'NOTE_ADDED',
+          description: `RFP ${rfpNumber} created with ${data.items.length} items`,
+          performed_by: loggedInUserId,
+          metadata: { rfpId: rfp.id, itemCount: data.items.length },
+        },
+      });
+
+      // Notify procurement/admin users
+      const recipients = await tx.users.findMany({ where: { roles: { has: 'PROCUREMENT_ADMIN' }, is_active: true }, select: { id: true } });
+      const recipientIds = recipients.map((r) => r.id);
+      if (recipientIds.length > 0) {
+        await NotificationService.sendToMultiple(recipientIds, `New RFP ${rfpNumber} created for project ${project.project_name}.`, `/projects/${projectId}`);
+      }
+
+      // return full RFP with items
+      const full = await tx.request_for_purchases.findUnique({
+        where: { id: rfp.id },
+        include: { items: true },
+      });
+
+      return full;
+    });
+
+    return result;
+  }
+
+  private async generateRfpNumber(tx: any) {
+    // Simple generator: RFP-{YYYY}{MM}{DD}-{timestampSuffix}
+    const now = new Date();
+    const y = now.getFullYear();
+    const m = String(now.getMonth() + 1).padStart(2, '0');
+    const d = String(now.getDate()).padStart(2, '0');
+    const suffix = String(Date.now()).slice(-6);
+    return `RFP-${y}${m}${d}-${suffix}`;
   }
 
   /**
@@ -126,7 +294,7 @@ export class ProjectService {
     // Verify PM user exists and has PM role
     const pmUser = await prisma.users.findUnique({
       where: { id: data.pmUserId },
-      include: { employee: true },
+      include: { employees: true },
     });
 
     if (!pmUser) {
@@ -138,13 +306,13 @@ export class ProjectService {
     }
 
     // Fetch current project to capture previous status
-    const existingProjectForStatus = await prisma.project.findUnique({
+    const existingProjectForStatus = await prisma.projects.findUnique({
       where: { id: projectId },
       select: { status: true },
     });
     const previousStatus = existingProjectForStatus?.status || 'New';
     // Update project
-    const updatedProject = await prisma.project.update({
+    const updatedProject = await prisma.projects.update({
       where: { id: projectId },
       data: {
         pm_user_id: data.pmUserId,
@@ -153,17 +321,55 @@ export class ProjectService {
         updated_by: loggedInUserId,
       },
       include: {
-        customer: true,
-        pm_user: { include: { employee: true } },
+        customers: {
+          select: {
+            id: true,
+            customer_name: true,
+            channel: true,
+            city: true,
+            status: true,
+          },
+        },
       },
     });
 
+    // Fetch PM user separately (no relation in schema)
+    const pmUserForResponse = data.pmUserId ? await prisma.users.findUnique({
+      where: { id: data.pmUserId },
+      include: {
+        employees: {
+          select: {
+            id: true,
+            full_name: true,
+            position: true,
+            email: true,
+          },
+        },
+      },
+    }) : null;
+
+    // Fetch sales user separately if exists
+    const salesUserForResponse = updatedProject.sales_user_id ? await prisma.users.findUnique({
+      where: { id: updatedProject.sales_user_id },
+      include: {
+        employees: {
+          select: {
+            id: true,
+            full_name: true,
+            position: true,
+            email: true,
+          },
+        },
+      },
+    }) : null;
+
     // Create activity log
-    await prisma.projectActivity.create({
+    await prisma.project_activities.create({
       data: {
+        id: randomUUID(),
         project_id: projectId,
         activity_type: 'STATUS_CHANGE',
-        description: `Project Manager assigned: ${pmUser.employee?.full_name || pmUser.email}`,
+        description: `Project Manager assigned: ${pmUser.employees?.full_name || pmUser.email}`,
         performed_by: loggedInUserId,
         metadata: {
           old_status: previousStatus,
@@ -181,7 +387,16 @@ export class ProjectService {
       type: 'info',
     });
 
-    return updatedProject;
+    // Normalize response: customers -> customer (singular), add user objects
+    const normalizedProject = {
+      ...updatedProject,
+      customer: updatedProject.customers,
+      pm_user: pmUserForResponse,
+      sales_user: salesUserForResponse,
+    };
+    delete (normalizedProject as any).customers;
+
+    return normalizedProject;
   }
 
   /**
@@ -193,7 +408,7 @@ export class ProjectService {
     loggedInUserId: string
   ) {
     // Check project exists and user is the PM
-    const project = await prisma.project.findUnique({
+    const project = await prisma.projects.findUnique({
       where: { id: projectId },
     });
 
@@ -208,15 +423,16 @@ export class ProjectService {
     // Use transaction to ensure atomicity
     const result = await prisma.$transaction(async (tx) => {
       // Delete existing BoM items
-      await tx.projectBOM.deleteMany({
+      await tx.project_boms.deleteMany({
         where: { project_id: projectId },
       });
 
       // Create new BoM items
       const bomItems = await Promise.all(
         data.items.map((item) =>
-          tx.projectBOM.create({
+          tx.project_boms.create({
             data: {
+              id: randomUUID(),
               project_id: projectId,
               item_id: item.itemId,
               item_type: item.itemType,
@@ -227,8 +443,9 @@ export class ProjectService {
       );
 
       // Create activity log
-      await tx.projectActivity.create({
+      await tx.project_activities.create({
         data: {
+          id: randomUUID(),
           project_id: projectId,
           activity_type: 'NOTE_ADDED',
           description: `BoM updated with ${data.items.length} items`,
@@ -268,27 +485,64 @@ export class ProjectService {
       where.sales_user_id = filters.salesUserId;
     }
 
-    const projects = await prisma.project.findMany({
+    const projects = await prisma.projects.findMany({
       where,
       include: {
-        customer: true,
-        pm_user: {
-          include: {
-            employee: true,
+        customers: {
+          select: {
+            id: true,
+            customer_name: true,
+            channel: true,
+            city: true,
+            status: true,
+            top_days: true,
           },
         },
-        sales_user: {
-          include: {
-            employee: true,
-          },
-        },
+        estimations: true,
+        project_activities: true,
+        project_milestones: true,
+        sales_orders: true,
       },
       orderBy: {
         created_at: 'desc',
       },
     });
 
-    return projects;
+    // Fetch all unique user IDs for PM and sales
+    const pmUserIds = [...new Set(projects.map(p => p.pm_user_id).filter(Boolean))] as string[];
+    const salesUserIds = [...new Set(projects.map(p => p.sales_user_id).filter(Boolean))] as string[];
+    const allUserIds = [...new Set([...pmUserIds, ...salesUserIds])];
+
+    // Fetch all users in one query for efficiency
+    const users = await prisma.users.findMany({
+      where: {
+        id: { in: allUserIds },
+      },
+      include: {
+        employees: {
+          select: {
+            id: true,
+            full_name: true,
+            position: true,
+            email: true,
+          },
+        },
+      },
+    });
+
+    // Create user map for quick lookup
+    const userMap = new Map(users.map(u => [u.id, u]));
+
+    // Normalize response: customers -> customer (singular) for each project, add user objects
+    const normalizedProjects = projects.map(project => ({
+      ...project,
+      customer: project.customers,
+      pm_user: project.pm_user_id ? userMap.get(project.pm_user_id) || null : null,
+      sales_user: project.sales_user_id ? userMap.get(project.sales_user_id) || null : null,
+      customers: undefined,
+    }));
+
+    return normalizedProjects;
   }
 
   /**
@@ -303,7 +557,7 @@ export class ProjectService {
         is_active: true,
       },
       include: {
-        employee: true,
+        employees: true,
       },
       orderBy: {
         email: 'asc',
