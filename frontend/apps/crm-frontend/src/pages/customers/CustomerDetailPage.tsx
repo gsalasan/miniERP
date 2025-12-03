@@ -52,7 +52,7 @@ const CustomerDetailPage: React.FC = () => {
   ) || false;
 
   // Check if user is CEO - CEO cannot edit/delete customers
-  const isCEO = user?.roles?.includes("CEO") || false;
+  // const isCEO = user?.roles?.includes("CEO") || false;
 
   // Load customer data
   const loadCustomer = async () => {
