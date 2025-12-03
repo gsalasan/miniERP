@@ -59,6 +59,9 @@ export interface Employee {
   bank_account_number?: string | null;
   npwp?: string | null;
   ptkp?: string | null;
+  // Manager relationship
+  manager_id?: string | null;
+  manager?: { full_name: string; position: string } | null;
 }
 
 interface EmployeeDetailModalProps {
@@ -72,7 +75,7 @@ export default function EmployeeDetailModal({ id, onClose }: EmployeeDetailModal
   const [activeTab, setActiveTab] = useState<'info' | 'finance'>('info');
   
   useEffect(() => {
-    fetch(`http://localhost:3002/api/v1/employees/${id}`)
+    fetch(`http://localhost:4004/api/v1/employees/${id}`)
       .then(res => res.json())
       .then(data => {
         console.log('Employee detail response:', data);
@@ -227,6 +230,16 @@ export default function EmployeeDetailModal({ id, onClose }: EmployeeDetailModal
                   <div className="font-medium text-gray-500 flex items-center gap-2 mb-1 text-sm"><FaCheckCircle className="text-green-600" /> Employee Status</div>
                   <div className="text-gray-800">{employee.status ? EmployeeStatusLabels[employee.status] || employee.status : '-'}</div>
                 </div>
+                <div>
+                  <div className="font-medium text-gray-500 flex items-center gap-2 mb-1 text-sm"><FaUserShield className="text-orange-500" /> Direct Manager</div>
+                  <div className="text-gray-800">
+                    {employee.manager ? (
+                      <span>{employee.manager.full_name} - {employee.manager.position}</span>
+                    ) : (
+                      <span className="italic text-gray-400">No manager assigned</span>
+                    )}
+                  </div>
+                </div>
               </div>
             )}
 
@@ -326,3 +339,4 @@ export default function EmployeeDetailModal({ id, onClose }: EmployeeDetailModal
     </div>
   );
 }
+

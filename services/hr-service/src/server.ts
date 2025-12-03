@@ -17,19 +17,6 @@ const HOST = '0.0.0.0';
 
 const prisma = new PrismaClient();
 
-// Subscribe to customer events
-eventBus.subscribe<CustomerCreatedPayload>(EventNames.CUSTOMER_CREATED, async (payload) => {
-  console.log(`[HR Service] Received customer created: ${payload.data.customerId} - ${payload.data.customerName}`);
-  // TODO: Implement logic for potential employee assignments
-  // For example, if customer is created with assigned_sales_id, track that relationship
-});
-
-eventBus.subscribe<CustomerUpdatedPayload>(EventNames.CUSTOMER_UPDATED, async (payload) => {
-  console.log(`[HR Service] Received customer updated: ${payload.data.customerId}`);
-  // TODO: Update employee-customer relationships if assigned_sales_id changes
-  // For example, update sales employee's customer assignments
-});
-
 (async () => {
   try {
     await prisma.$connect();

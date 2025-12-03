@@ -1,6 +1,6 @@
 
 import React, { createContext, useContext, useState } from 'react';
-import { LogOut } from 'lucide-react';
+import { FaHome, FaSignOutAlt } from 'react-icons/fa';
 import Sidebar from './Sidebar';
 
 // Context untuk sinkronisasi collapse sidebar
@@ -19,12 +19,22 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         <Sidebar />
         <main className="flex-1 w-full flex flex-col min-h-screen">
           {/* Top Navbar */}
-          <header className="sticky top-0 z-20 bg-white border-b border-blue-100 shadow-sm">
-            <div className="px-4 md:px-8 lg:px-10 py-3 flex items-center justify-between">
+          <header className="sticky top-0 z-20 bg-white border-b border-gray-200 shadow-sm">
+            <div className="px-4 md:px-8 lg:px-10 py-4 flex items-center justify-between">
               <div className="flex items-center gap-3">
                 {/* No title text per request */}
               </div>
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-4">
+                <button
+                  onClick={() => {
+                    window.location.href = 'http://localhost:3000/dashboard';
+                  }}
+                  className="p-2 hover:bg-gray-100 text-gray-700 rounded-lg transition-all inline-flex items-center"
+                  title="Dashboard Utama"
+                  aria-label="Dashboard Utama"
+                >
+                  <FaHome size={20} />
+                </button>
                 <button
                   onClick={() => {
                     try {
@@ -35,11 +45,11 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                     } catch {}
                     window.location.href = 'http://localhost:3000';
                   }}
-                  className="p-0 mr-1 md:mr-2 bg-transparent text-black hover:text-neutral-700 transition-colors inline-flex items-center"
+                  className="p-2 hover:bg-gray-100 text-gray-700 rounded-lg transition-all inline-flex items-center"
                   title="Keluar"
                   aria-label="Keluar"
                 >
-                  <LogOut size={20} strokeWidth={2.75} />
+                  <FaSignOutAlt size={20} />
                 </button>
               </div>
             </div>

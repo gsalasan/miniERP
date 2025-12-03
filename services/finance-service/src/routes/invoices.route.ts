@@ -4,24 +4,36 @@ import {
   getInvoiceById,
   createInvoice,
   updateInvoice,
-  deleteInvoice
+  deleteInvoice,
+  getARSummary,
+  sendInvoice,
+  recordPayment
 } from "../controllers/invoices.controllers";
 
 const router = express.Router();
 
 // GET all invoices (dengan query params: status, customer_name, page, limit)
-router.get("/invoices", getInvoices);
+router.get("/", getInvoices);
+
+// GET AR Summary - MUST BE BEFORE /:id to avoid conflict
+router.get("/summary/ar", getARSummary);
 
 // GET invoice by ID
-router.get("/invoices/:id", getInvoiceById);
+router.get("/:id", getInvoiceById);
 
 // POST create new invoice
-router.post("/invoices", createInvoice);
+router.post("/", createInvoice);
 
 // PUT update invoice
-router.put("/invoices/:id", updateInvoice);
+router.put("/:id", updateInvoice);
 
 // DELETE invoice
-router.delete("/invoices/:id", deleteInvoice);
+router.delete("/:id", deleteInvoice);
+
+// PUT send invoice (change status to SENT, trigger journal)
+router.put("/:id/send", sendInvoice);
+
+// POST record payment
+router.post("/:id/payments", recordPayment);
 
 export default router;
