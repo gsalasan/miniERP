@@ -7,9 +7,11 @@ import {
 } from "../controllers/chartofaccounts.controllers";
 
 const router = express.Router();
-router.get("/chart-of-accounts", getChartOfAccounts);
-router.post("/chart-of-accounts", createChartOfAccount);
-router.put("/chart-of-accounts/:id", updateChartOfAccount);
-router.delete("/chart-of-accounts/:id", deleteChartOfAccount);
+
+// Route endpoints for Chart of Accounts
+router.get("/chartofaccounts", getChartOfAccounts);
+router.post("/chartofaccounts", createChartOfAccount);
+router.put("/chartofaccounts/:id", updateChartOfAccount);
+router.delete("/chartofaccounts/:id", deleteChartOfAccount);
 
 export default router;

@@ -439,7 +439,9 @@ export const EstimationQueuePage: React.FC = () => {
                       <TableCell>
                         {estimation.gross_margin_percentage !== undefined &&
                         estimation.gross_margin_percentage !== null
-                          ? estimation.gross_margin_percentage.toFixed(2)
+                          ? typeof estimation.gross_margin_percentage === 'number'
+                            ? estimation.gross_margin_percentage.toFixed(2)
+                            : parseFloat(String(estimation.gross_margin_percentage)).toFixed(2)
                           : "-"}
                       </TableCell>
                       <TableCell>

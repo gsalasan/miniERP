@@ -178,9 +178,11 @@ export const ApprovalQueuePage: React.FC = () => {
           </Typography>
         </Box>
         <Tooltip title="Refresh">
-          <IconButton onClick={fetchApprovalQueue} disabled={loading}>
-            <RefreshIcon />
-          </IconButton>
+          <span>
+            <IconButton onClick={fetchApprovalQueue} disabled={loading}>
+              <RefreshIcon />
+            </IconButton>
+          </span>
         </Tooltip>
       </Box>
 
@@ -324,14 +326,19 @@ export const ApprovalQueuePage: React.FC = () => {
                         </Typography>
                       </TableCell>
                       <TableCell align="center">
-                        <Button
-                          variant="contained"
-                          size="small"
-                          startIcon={<VisibilityIcon />}
-                          onClick={() => handleReview(est.id)}
-                        >
-                          Review
-                        </Button>
+                        <Tooltip title={canApprove ? "Review" : "Tidak ada akses"}>
+                          <span>
+                            <Button
+                              variant="contained"
+                              size="small"
+                              startIcon={<VisibilityIcon />}
+                              onClick={() => handleReview(est.id)}
+                              disabled={!canApprove}
+                            >
+                              Review
+                            </Button>
+                          </span>
+                        </Tooltip>
                       </TableCell>
                     </TableRow>
                   ))}

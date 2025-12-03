@@ -21,13 +21,15 @@ identityClient.interceptors.request.use((config) => {
   if (!token) {
     try {
       const params = new URLSearchParams(window.location.search);
-      const t = params.get("token");
+      // Accept both 'token' and 'cross_app_token'
+      const t = params.get("token") || params.get("cross_app_token");
       if (t) {
         localStorage.setItem("token", t);
         token = t;
         // token loaded from URL
-        // remove token from URL
+        // remove both possible token params from URL
         params.delete("token");
+        params.delete("cross_app_token");
         const newSearch = params.toString();
         const newUrl =
           window.location.pathname + (newSearch ? `?${newSearch}` : "") + window.location.hash;
@@ -66,13 +68,7 @@ export interface UserProfile {
 class IdentityService {
   // Identity service exposes current user under auth routes
   private readonly meUrl = "/api/v1/auth/me";
-  private readonly loginUrl = "/api/v1/auth/login";
   private readonly usersUrl = "/api/v1/users";
-
-  // Login user
-  async login(email: string, password: string) {
-    return await identityClient.post(this.loginUrl, { email, password });
-  }
 
   // Get current user profile
   async getCurrentUser(): Promise<UserProfile> {

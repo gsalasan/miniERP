@@ -129,10 +129,10 @@ export function validateCustomerData(
 
   // Optional fields validation
   if (
-    data.assigned_sales_id !== undefined &&
-    typeof data.assigned_sales_id !== 'string'
+    data.sales_pic !== undefined &&
+    typeof data.sales_pic !== 'string'
   ) {
-    errors.push('Assigned sales ID harus berupa string');
+    errors.push('Sales PIC harus berupa string');
   }
 
   if (

@@ -56,10 +56,10 @@ class QuotationController {
   }
 
   async generateQuotation(req: Request, res: Response): Promise<void> {
+    const { estimationId, discountPercentage } = req.body;
+    const userId = (req as any).user?.id || (req as any).user?.userId || (req as any).user?.sub;
+    
     try {
-      const { estimationId, discountPercentage } = req.body;
-      const userId = (req as any).user?.id || (req as any).user?.userId || (req as any).user?.sub; // Get userId from auth middleware
-
       // Debug log
       console.log('[generateQuotation] Request:', {
         estimationId,
@@ -89,6 +89,15 @@ class QuotationController {
       });
     } catch (error) {
       const err = error as Error;
+      
+      // Detailed error logging
+      console.error('[quotationController] Error generating quotation:', {
+        error: err.message,
+        stack: err.stack,
+        estimationId,
+        discountPercentage,
+        userId,
+      });
 
       if (
         err.message === 'Project not found' ||

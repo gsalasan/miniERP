@@ -2,6 +2,8 @@ import React, { useEffect, useState } from 'react';
  
 import Layout from '../components/Layout';
 import { Users, Clock, Calendar, TrendingUp } from 'lucide-react';
+import DashboardMenu from '../components/DashboardMenu';
+// Dummy data for attendance records (for demo)
 
 interface HRStats {
   totalEmployees: number;
@@ -25,7 +27,7 @@ export default function Dashboard() {
 
   useEffect(() => {
     // Fetch HR statistics from backend
-    fetch('http://localhost:3002/api/v1/hr/stats')
+    fetch('http://localhost:4004/api/v1/hr/stats')
       .then(res => res.json())
       .then(data => {
         if (data.success) {
@@ -39,7 +41,7 @@ export default function Dashboard() {
       });
 
     // Also fetch employee count as fallback
-    fetch('http://localhost:3002/api/v1/employees')
+    fetch('http://localhost:4004/api/v1/employees')
       .then(res => res.json())
       .then(data => {
         if (data.data) {
@@ -69,7 +71,7 @@ export default function Dashboard() {
 
   return (
     <Layout>
-      <div className="min-h-screen bg-[#F4F4F4] px-2 py-8">
+      <div className="min-h-screen bg-[#F4F4F4] px-12 py-8">
         <div className="max-w-7xl mx-auto">
           {/* Header */}
           <div className="mb-8">
@@ -80,6 +82,7 @@ export default function Dashboard() {
               Unais Creaasindo Multiverse
             </p>
           </div>
+
 
           {/* Statistics Cards */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
@@ -140,4 +143,5 @@ export default function Dashboard() {
     </Layout>
   );
 }
+
 

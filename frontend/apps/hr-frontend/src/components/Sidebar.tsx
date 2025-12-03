@@ -2,11 +2,12 @@
 import { useContext } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { useSidebarCollapse } from './Layout';
-import { FaUsers, FaHome } from 'react-icons/fa';
+import { FaUsers, FaHome, FaClipboardList } from 'react-icons/fa';
 
 const navItems = [
   { label: 'Dashboard', path: '/hr/dashboard', icon: <FaHome size={18} /> },
   { label: 'Employee List', path: '/hr/employees', icon: <FaUsers size={18} /> },
+  { label: 'Manajemen Absensi', path: '/hr/attendances', icon: <FaClipboardList size={18} /> },
   // Example other menus:
   // { label: 'Add Employee', path: '/hr/employees/new', icon: <FaUserPlus size={18} /> },
   // { label: 'HR Profile', path: '/hr/profile', icon: <FaRegIdBadge size={18} /> },

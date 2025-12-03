@@ -1,0 +1,401 @@
+import { Router } from "express";
+const assetsController = require("../controllers/assetsController");
+
+const router = Router();
+
+/**
+ * FITUR 3.4.E - Asset Management & Depreciation
+ * TSD: Manage fixed assets dengan automatic depreciation calculation
+ * Connected to Database via Prisma
+ */
+
+/**
+ * GET /api/assets
+ * Get all fixed assets
+ */
+router.get("/", async (req: Request, res: Response) => {
+  try {
+    const { status, category } = req.query;
+
+    let filteredAssets = [...assets];
+
+    if (status) {
+      filteredAssets = filteredAssets.filter((a) => a.status === status);
+    }
+
+    if (category) {
+      filteredAssets = filteredAssets.filter((a) => a.category === category);
+    }
+
+    // Calculate summary
+    const summary = {
+      total_assets: filteredAssets.length,
+      total_acquisition_cost: filteredAssets.reduce((sum, a) => sum + a.acquisition_cost, 0),
+      total_book_value: filteredAssets.reduce((sum, a) => sum + a.current_book_value, 0),
+      total_depreciation: filteredAssets.reduce((sum, a) => sum + a.accumulated_depreciation, 0),
+      by_category: {
+        BUILDING: filteredAssets.filter((a) => a.category === "BUILDING").length,
+        EQUIPMENT: filteredAssets.filter((a) => a.category === "EQUIPMENT").length,
+        VEHICLE: filteredAssets.filter((a) => a.category === "VEHICLE").length,
+        FURNITURE: filteredAssets.filter((a) => a.category === "FURNITURE").length,
+        COMPUTER: filteredAssets.filter((a) => a.category === "COMPUTER").length,
+      },
+      by_status: {
+        ACTIVE: filteredAssets.filter((a) => a.status === "ACTIVE").length,
+        DISPOSED: filteredAssets.filter((a) => a.status === "DISPOSED").length,
+        FULLY_DEPRECIATED: filteredAssets.filter((a) => a.status === "FULLY_DEPRECIATED").length,
+      },
+    };
+
+    return res.json({
+      success: true,
+      data: filteredAssets,
+      summary,
+    });
+  } catch (error: any) {
+    return res.status(500).json({
+      success: false,
+      message: "Failed to fetch assets",
+      error: error.message,
+    });
+  }
+});
+
+/**
+ * GET /api/assets/:id
+ * Get asset by ID
+ */
+router.get("/:id", async (req: Request, res: Response) => {
+  try {
+    const asset = assets.find((a) => a.id === parseInt(req.params.id));
+
+    if (!asset) {
+      return res.status(404).json({
+        success: false,
+        message: "Asset not found",
+      });
+    }
+
+    return res.json({
+      success: true,
+      data: asset,
+    });
+  } catch (error: any) {
+    return res.status(500).json({
+      success: false,
+      message: "Failed to fetch asset",
+      error: error.message,
+    });
+  }
+});
+
+/**
+ * POST /api/assets
+ * Create new asset
+ */
+router.post("/", async (req: Request, res: Response) => {
+  try {
+    const {
+      asset_name,
+      asset_code,
+      category,
+      acquisition_date,
+      acquisition_cost,
+      residual_value,
+      useful_life_years,
+      depreciation_method,
+      location,
+      notes,
+    } = req.body;
+
+    // Validation
+    if (!asset_name || !category || !acquisition_date || !acquisition_cost || !useful_life_years) {
+      return res.status(400).json({
+        success: false,
+        message: "Missing required fields",
+      });
+    }
+
+    const newAsset: Asset = {
+      id: nextAssetId++,
+      asset_name,
+      asset_code: asset_code || `ASSET-${String(nextAssetId).padStart(3, "0")}`,
+      category,
+      acquisition_date,
+      acquisition_cost,
+      residual_value: residual_value || 0,
+      useful_life_years,
+      depreciation_method: depreciation_method || "STRAIGHT_LINE",
+      current_book_value: acquisition_cost, // Initial = acquisition cost
+      accumulated_depreciation: 0,
+      status: "ACTIVE",
+      location,
+      notes,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    };
+
+    assets.push(newAsset);
+
+    // TODO: Create journal entry for asset acquisition
+    // Debit: Fixed Asset (asset_code)
+    // Credit: Cash/Bank
+
+    return res.status(201).json({
+      success: true,
+      message: "Asset created successfully",
+      data: newAsset,
+    });
+  } catch (error: any) {
+    return res.status(500).json({
+      success: false,
+      message: "Failed to create asset",
+      error: error.message,
+    });
+  }
+});
+
+/**
+ * GET /api/assets/:id/depreciation-history
+ * Get depreciation history for specific asset
+ */
+router.get("/:id/depreciation-history", async (req: Request, res: Response) => {
+  try {
+    const assetId = parseInt(req.params.id);
+    const history = depreciationHistory.filter((h) => h.asset_id === assetId);
+
+    return res.json({
+      success: true,
+      data: history,
+    });
+  } catch (error: any) {
+    return res.status(500).json({
+      success: false,
+      message: "Failed to fetch depreciation history",
+      error: error.message,
+    });
+  }
+});
+
+/**
+ * POST /api/assets/:id/depreciate
+ * Manually trigger depreciation for an asset
+ */
+router.post("/:id/depreciate", async (req: Request, res: Response) => {
+  try {
+    const assetId = parseInt(req.params.id);
+    const { period } = req.body; // YYYY-MM format
+
+    const asset = assets.find((a) => a.id === assetId);
+
+    if (!asset) {
+      return res.status(404).json({
+        success: false,
+        message: "Asset not found",
+      });
+    }
+
+    if (asset.status === "FULLY_DEPRECIATED") {
+      return res.status(400).json({
+        success: false,
+        message: "Asset is already fully depreciated",
+      });
+    }
+
+    // Calculate monthly depreciation (Straight Line Method)
+    const depreciableAmount = asset.acquisition_cost - asset.residual_value;
+    const monthlyDepreciation = depreciableAmount / (asset.useful_life_years * 12);
+
+    const newAccumulatedDepreciation = asset.accumulated_depreciation + monthlyDepreciation;
+    const newBookValue = asset.acquisition_cost - newAccumulatedDepreciation;
+
+    // Update asset
+    asset.accumulated_depreciation = newAccumulatedDepreciation;
+    asset.current_book_value = newBookValue;
+    asset.updated_at = new Date().toISOString();
+
+    // Check if fully depreciated
+    if (newBookValue <= asset.residual_value) {
+      asset.status = "FULLY_DEPRECIATED";
+    }
+
+    // Create depreciation history record
+    const historyRecord: DepreciationHistory = {
+      id: nextDepreciationId++,
+      asset_id: assetId,
+      period: period || new Date().toISOString().substring(0, 7),
+      depreciation_expense: monthlyDepreciation,
+      accumulated_depreciation: newAccumulatedDepreciation,
+      book_value: newBookValue,
+      created_at: new Date().toISOString(),
+    };
+
+    depreciationHistory.push(historyRecord);
+
+    // TODO: Create automatic journal entry
+    // Debit: Depreciation Expense
+    // Credit: Accumulated Depreciation
+
+    return res.json({
+      success: true,
+      message: "Depreciation recorded successfully",
+      data: {
+        asset,
+        depreciation: historyRecord,
+      },
+    });
+  } catch (error: any) {
+    return res.status(500).json({
+      success: false,
+      message: "Failed to record depreciation",
+      error: error.message,
+    });
+  }
+});
+
+/**
+ * POST /api/assets/run-monthly-depreciation
+ * Run depreciation for all active assets (Cron job endpoint)
+ */
+router.post("/run-monthly-depreciation", async (req: Request, res: Response) => {
+  try {
+    const { period } = req.body; // YYYY-MM format
+    const targetPeriod = period || new Date().toISOString().substring(0, 7);
+
+    const activeAssets = assets.filter((a) => a.status === "ACTIVE");
+    const results = [];
+
+    for (const asset of activeAssets) {
+      // Calculate monthly depreciation
+      const depreciableAmount = asset.acquisition_cost - asset.residual_value;
+      const monthlyDepreciation = depreciableAmount / (asset.useful_life_years * 12);
+
+      const newAccumulatedDepreciation = asset.accumulated_depreciation + monthlyDepreciation;
+      const newBookValue = asset.acquisition_cost - newAccumulatedDepreciation;
+
+      // Update asset
+      asset.accumulated_depreciation = newAccumulatedDepreciation;
+      asset.current_book_value = newBookValue;
+      asset.updated_at = new Date().toISOString();
+
+      // Check if fully depreciated
+      if (newBookValue <= asset.residual_value) {
+        asset.status = "FULLY_DEPRECIATED";
+      }
+
+      // Create history record
+      const historyRecord: DepreciationHistory = {
+        id: nextDepreciationId++,
+        asset_id: asset.id,
+        period: targetPeriod,
+        depreciation_expense: monthlyDepreciation,
+        accumulated_depreciation: newAccumulatedDepreciation,
+        book_value: newBookValue,
+        created_at: new Date().toISOString(),
+      };
+
+      depreciationHistory.push(historyRecord);
+      results.push({
+        asset_id: asset.id,
+        asset_name: asset.asset_name,
+        depreciation_expense: monthlyDepreciation,
+      });
+    }
+
+    return res.json({
+      success: true,
+      message: `Monthly depreciation completed for period ${targetPeriod}`,
+      data: {
+        period: targetPeriod,
+        assets_processed: results.length,
+        total_depreciation_expense: results.reduce((sum, r) => sum + r.depreciation_expense, 0),
+        details: results,
+      },
+    });
+  } catch (error: any) {
+    return res.status(500).json({
+      success: false,
+      message: "Failed to run monthly depreciation",
+      error: error.message,
+    });
+  }
+});
+
+/**
+ * PUT /api/assets/:id
+ * Update asset
+ */
+router.put("/:id", async (req: Request, res: Response) => {
+  try {
+    const assetId = parseInt(req.params.id);
+    const asset = assets.find((a) => a.id === assetId);
+
+    if (!asset) {
+      return res.status(404).json({
+        success: false,
+        message: "Asset not found",
+      });
+    }
+
+    // Update allowed fields
+    const { asset_name, location, notes, status } = req.body;
+
+    if (asset_name) asset.asset_name = asset_name;
+    if (location) asset.location = location;
+    if (notes) asset.notes = notes;
+    if (status) asset.status = status;
+
+    asset.updated_at = new Date().toISOString();
+
+    return res.json({
+      success: true,
+      message: "Asset updated successfully",
+      data: asset,
+    });
+  } catch (error: any) {
+    return res.status(500).json({
+      success: false,
+      message: "Failed to update asset",
+      error: error.message,
+    });
+  }
+});
+
+/**
+ * DELETE /api/assets/:id
+ * Dispose asset
+ */
+router.delete("/:id", async (req: Request, res: Response) => {
+  try {
+    const assetId = parseInt(req.params.id);
+    const asset = assets.find((a) => a.id === assetId);
+
+    if (!asset) {
+      return res.status(404).json({
+        success: false,
+        message: "Asset not found",
+      });
+    }
+
+    asset.status = "DISPOSED";
+    asset.updated_at = new Date().toISOString();
+
+    // TODO: Create journal entry for disposal
+    // If sold: Debit: Cash, Debit: Accumulated Depreciation, Credit: Asset, Credit/Debit: Gain/Loss on Disposal
+    // If scrapped: Debit: Accumulated Depreciation, Debit: Loss on Disposal, Credit: Asset
+
+    return res.json({
+      success: true,
+      message: "Asset disposed successfully",
+      data: asset,
+    });
+  } catch (error: any) {
+    return res.status(500).json({
+      success: false,
+      message: "Failed to dispose asset",
+      error: error.message,
+    });
+  }
+});
+
+export default router;

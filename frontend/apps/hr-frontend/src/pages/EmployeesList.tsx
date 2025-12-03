@@ -33,7 +33,7 @@ export default function EmployeesList() {
   const [deleteId, setDeleteId] = useState<string | null>(null);
 
   useEffect(() => {
-    fetch('http://localhost:3002/api/v1/employees')
+    fetch('http://localhost:4004/api/v1/employees')
       .then(res => res.json())
       .then(data => {
         console.log('Employee data received:', data.data?.length || 0, 'employees');
@@ -73,7 +73,7 @@ export default function EmployeesList() {
     if (!deleteId) return;
     setDeletingId(deleteId);
     try {
-      const res = await fetch(`http://localhost:3002/api/v1/employees/${deleteId}`, { method: 'DELETE' });
+      const res = await fetch(`http://localhost:4004/api/v1/employees/${deleteId}`, { method: 'DELETE' });
       if (res.ok) {
         setEmployees(prev => prev.filter(e => e.id !== deleteId));
         setShowDeleteModal(false);
@@ -97,7 +97,7 @@ export default function EmployeesList() {
           <EmployeeNew onClose={() => {
             setShowNewModal(false);
             // Refresh list after creating
-            fetch('http://localhost:3002/api/v1/employees')
+            fetch('http://localhost:4004/api/v1/employees')
               .then(res => res.json())
               .then(data => setEmployees(data.data || []));
           }} />
@@ -110,7 +110,7 @@ export default function EmployeesList() {
             onClose={() => {
               setEditId(null);
               // Refresh list after editing
-              fetch('http://localhost:3002/api/v1/employees')
+              fetch('http://localhost:4004/api/v1/employees')
                 .then(res => res.json())
                 .then(data => setEmployees(data.data || []));
             }} 
@@ -155,8 +155,8 @@ export default function EmployeesList() {
 
         {/* Delete Success Toast */}
         {deleteSuccess && (
-          <div className="fixed top-8 left-1/2 -translate-x-1/2 bg-white border-l-4 border-green-500 shadow-2xl rounded-xl p-5 z-[60] animate-fade-in flex items-center gap-4 min-w-[350px]">
-            <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center flex-shrink-0">
+          <div className="fixed top-8 left-1/2 -translate-x-1/2 bg-white border-l-4 border-green-500 shadow-2xl rounded-xl p-5 z-60 animate-fade-in flex items-center gap-4 min-w-[350px]">
+            <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center shrink-0">
               <svg className="w-7 h-7 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M5 13l4 4L19 7" />
               </svg>
@@ -337,3 +337,5 @@ function stringToColor(str: string) {
   const color = `hsl(${hash % 360}, 70%, 60%)`;
   return color;
 }
+
+

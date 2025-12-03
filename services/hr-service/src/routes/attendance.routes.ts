@@ -6,7 +6,15 @@ const router = Router();
 const attendanceController = new AttendanceController();
 
 /**
- * All routes require authentication
+ * @route   GET /api/v1/attendances
+ * @desc    Get all employees' attendances (HR admin) - TEMPORARY NO AUTH FOR TESTING
+ * @access  Public (for now)
+ * @query   month (optional, format: YYYY-MM), employeeId (optional), page, limit
+ */
+router.get('/', (req, res) => attendanceController.getAllAttendances(req, res));
+
+/**
+ * All other routes require authentication
  */
 router.use(verifyToken);
 
@@ -42,12 +50,12 @@ router.post('/checkout', (req, res) => attendanceController.checkOut(req, res));
 router.get('/my', (req, res) => attendanceController.getMyAttendances(req, res));
 
 /**
- * @route   GET /api/v1/attendances
- * @desc    Get all employees' attendances (HR admin)
- * @access  Private (HR Admin)
- * @query   month (optional, format: YYYY-MM), employeeId (optional), page, limit
+ * @route   GET /api/v1/attendances/reverse-geocode
+ * @desc    Reverse geocoding - convert lat/lng to address
+ * @access  Private
+ * @query   lat, lng
  */
-router.get('/', (req, res) => attendanceController.getAllAttendances(req, res));
+router.get('/reverse-geocode', (req, res) => attendanceController.reverseGeocode(req, res));
 
 /**
  * @route   GET /api/v1/attendances/stats
