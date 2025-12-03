@@ -12,18 +12,18 @@ import {
 } from './OverheadEngine.service';
 
 export const getEstimations = async () => {
-  return prisma.estimation.findMany({
+  return prisma.estimations.findMany({
     include: { 
-      items: true 
+      estimation_items: true 
     },
   });
 };
 
 export const getEstimationById = async (id: string) => {
-  return prisma.estimation.findUnique({
+  return prisma.estimations.findUnique({
     where: { id },
     include: { 
-      items: true 
+      estimation_items: true 
     },
   });
 };
@@ -31,18 +31,18 @@ export const getEstimationById = async (id: string) => {
 export const createEstimation = async (
   data: Prisma.EstimationCreateInput | Prisma.EstimationUncheckedCreateInput,
 ) => {
-  return prisma.estimation.create({ data });
+  return prisma.estimations.create({ data });
 };
 
 export const updateEstimation = async (
   id: string,
   data: Prisma.EstimationUpdateInput | Prisma.EstimationUncheckedUpdateInput,
 ) => {
-  return prisma.estimation.update({ where: { id }, data });
+  return prisma.estimations.update({ where: { id }, data });
 };
 
 export const deleteEstimation = async (id: string) => {
-  return prisma.estimation.delete({ where: { id } });
+  return prisma.estimations.delete({ where: { id } });
 };
 
 interface CalculationItem {
@@ -281,7 +281,7 @@ export const calculateEstimation = async (input: CalculationInput): Promise<Calc
         },
       },
       include: {
-        items: true,
+        estimation_items: true,
       },
     });
 

@@ -30,6 +30,7 @@ app.use(
           origin: [
             'http://localhost:3000', // main-frontend
             'http://localhost:3011', // engineering-frontend
+            'http://localhost:3016', // project-frontend
             'http://localhost:3001', // identity-service (if needed)
           ],
           credentials: true,
