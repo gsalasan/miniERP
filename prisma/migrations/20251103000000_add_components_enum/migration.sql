@@ -1,3 +1,0 @@
--- Placeholder migration: 20251103000000_add_components_enum
--- Created to match migration history stored in the database.
--- Replace with original migration SQL if available. This file is intentionally a no-op placeholder.

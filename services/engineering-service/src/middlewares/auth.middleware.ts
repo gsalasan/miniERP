@@ -7,6 +7,7 @@ export const verifyToken = (
   next: NextFunction
 ) => {
   const authHeader = req.headers.authorization ?? '';
+  console.log(req.headers.authorization)
   
   if (!authHeader.startsWith('Bearer ')) {
     return res

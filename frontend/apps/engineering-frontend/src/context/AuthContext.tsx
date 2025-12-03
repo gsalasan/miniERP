@@ -54,17 +54,18 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   // Central bootstrap: always prefer URL token if present, otherwise localStorage. If token changes, refresh user.
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
-    const tokenFromUrl = urlParams.get("token");
+    const tokenFromUrl = urlParams.get("cross_app_token");
+    console.log('token', tokenFromUrl)
 
     console.log("🚀 AuthContext init - tokenFromUrl:", !!tokenFromUrl);
 
     if (tokenFromUrl) {
       // Always override token if provided in URL
       console.log("✅ Token found in URL, saving to localStorage");
-      localStorage.setItem("token", tokenFromUrl);
+      localStorage.setItem("authToken", tokenFromUrl);
       setToken(tokenFromUrl);
       // Remove token param from URL
-      urlParams.delete("token");
+      urlParams.delete("cross_app_token");
       const newSearch = urlParams.toString();
       const newUrl = window.location.pathname + (newSearch ? `?${newSearch}` : "");
       window.history.replaceState({}, document.title, newUrl);
