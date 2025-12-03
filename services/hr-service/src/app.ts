@@ -8,7 +8,12 @@ import express from 'express';
 import cors from 'cors';
 import employeeRoutes from './routes/employee.routes';
 import attendanceRoutes from './routes/attendance.routes';
+import permissionRoutes from './routes/permission.routes';
+import overtimeRoutes from './routes/overtime.routes';
+import reimbursementRoutes from './routes/reimbursement.routes';
+import leaveRoutes from './routes/leave.routes';
 import hrRoutes from './routes/hr.routes';
+import approvalRoutes from './routes/approval.routes';
 import { getPrisma } from './utils/prisma';
 import { startAutoCheckoutJob } from './jobs/auto-checkout.job';
 
@@ -39,7 +44,7 @@ app.get('/api/v1/test-hr-models', async (req, res) => {
   try {
     const prisma = getPrisma();
     // Test HR models are accessible
-    const employeeCount = await prisma.hr_employees.count();
+    const employeeCount = await prisma.employees.count();
     const attendanceCount = await prisma.hr_attendances.count();
     const leaveCount = await prisma.hr_leave_requests.count();
 
@@ -47,7 +52,7 @@ app.get('/api/v1/test-hr-models', async (req, res) => {
       success: true,
       message: 'HR models are working correctly',
       data: {
-        hr_employees: employeeCount,
+        employees: employeeCount,
         hr_attendances: attendanceCount,
         hr_leave_requests: leaveCount,
       },
@@ -64,12 +69,12 @@ app.get('/api/v1/test-hr-models', async (req, res) => {
 // API routes
 app.use('/api/v1', employeeRoutes);
 app.use('/api/v1/attendances', attendanceRoutes);
+app.use('/api/v1/permissions', permissionRoutes);
+app.use('/api/v1/overtimes', overtimeRoutes);
+app.use('/api/v1/reimbursements', reimbursementRoutes);
+app.use('/api/v1/leaves', leaveRoutes);
 app.use('/api/v1/hr', hrRoutes);
-// API routes will be added here
-// app.use('/api/v1/employees', employeeRoutes);
-
-// app.use('/api/v1/leaves', leaveRoutes);
-// app.use('/api/v1/performance', performanceRoutes);
+app.use('/api/v1/approvals', approvalRoutes);
 
 // 404 handler
 app.use('*', (req, res) => {
