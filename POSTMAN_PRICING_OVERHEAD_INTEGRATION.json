@@ -1,0 +1,206 @@
+{
+  "info": {
+    "name": "Engineering Service - Pricing & Overhead Integration",
+    "description": "API collection for testing PricingEngine and OverheadEngine integration",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "_postman_id": "pricing-overhead-integration-001",
+    "version": "1.0.0"
+  },
+  "item": [
+    {
+      "name": "Calculate Modular Estimation",
+      "item": [
+        {
+          "name": "Basic Calculation - System Policy",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}",
+                "description": "JWT token from login"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"sections\": [\n    {\n      \"type\": \"MATERIAL\",\n      \"items\": [\n        {\n          \"item_id\": \"mat-001\",\n          \"item_name\": \"Cable NYY 3x2.5mm\",\n          \"quantity\": 100,\n          \"hpp_per_unit\": 50000,\n          \"total_hpp\": 5000000,\n          \"category\": \"ELECTRICAL\"\n        },\n        {\n          \"item_id\": \"mat-002\",\n          \"item_name\": \"MCB 3P 32A\",\n          \"quantity\": 50,\n          \"hpp_per_unit\": 75000,\n          \"total_hpp\": 3750000,\n          \"category\": \"MATERIAL_DEFAULT\"\n        }\n      ]\n    },\n    {\n      \"type\": \"SERVICE\",\n      \"serviceGroups\": [\n        {\n          \"group_name\": \"Installation\",\n          \"items\": [\n            {\n              \"item_id\": \"srv-001\",\n              \"item_name\": \"Cable Installation\",\n              \"quantity\": 20,\n              \"hpp_per_unit\": 200000,\n              \"total_hpp\": 4000000,\n              \"category\": \"INSTALLATION\"\n            }\n          ]\n        }\n      ]\n    }\n  ],\n  \"overhead_percentage\": 0,\n  \"profit_margin_percentage\": 10\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/estimations/calculate-modular",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "estimations", "calculate-modular"]
+            },
+            "description": "Test basic calculation with system overhead policy (15%)"
+          },
+          "response": []
+        },
+        {
+          "name": "Custom Overhead Percentage",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"sections\": [\n    {\n      \"type\": \"MATERIAL\",\n      \"items\": [\n        {\n          \"item_id\": \"mat-003\",\n          \"item_name\": \"Panel Box 400x600mm\",\n          \"quantity\": 10,\n          \"hpp_per_unit\": 1500000,\n          \"total_hpp\": 15000000,\n          \"category\": \"MECHANICAL\"\n        }\n      ]\n    }\n  ],\n  \"overhead_percentage\": 20,\n  \"profit_margin_percentage\": 15\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/estimations/calculate-modular",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "estimations", "calculate-modular"]
+            },
+            "description": "Test with custom overhead 20% and profit margin 15%"
+          },
+          "response": []
+        },
+        {
+          "name": "Multiple Materials & Services",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"sections\": [\n    {\n      \"type\": \"MATERIAL\",\n      \"items\": [\n        {\n          \"item_id\": \"mat-004\",\n          \"item_name\": \"Cable NYY 4x6mm\",\n          \"quantity\": 200,\n          \"hpp_per_unit\": 85000,\n          \"total_hpp\": 17000000,\n          \"category\": \"ELECTRICAL\"\n        },\n        {\n          \"item_id\": \"mat-005\",\n          \"item_name\": \"Cable Tray 300mm\",\n          \"quantity\": 50,\n          \"hpp_per_unit\": 350000,\n          \"total_hpp\": 17500000,\n          \"category\": \"MATERIAL_DEFAULT\"\n        },\n        {\n          \"item_id\": \"mat-006\",\n          \"item_name\": \"Conduit PVC 2 inch\",\n          \"quantity\": 100,\n          \"hpp_per_unit\": 25000,\n          \"total_hpp\": 2500000,\n          \"category\": \"INSTALLATION_MATERIAL\"\n        }\n      ]\n    },\n    {\n      \"type\": \"SERVICE\",\n      \"serviceGroups\": [\n        {\n          \"group_name\": \"Engineering Design\",\n          \"items\": [\n            {\n              \"item_id\": \"srv-002\",\n              \"item_name\": \"Electrical Design\",\n              \"quantity\": 80,\n              \"hpp_per_unit\": 500000,\n              \"total_hpp\": 40000000,\n              \"category\": \"ENGINEERING_DESIGN\"\n            },\n            {\n              \"item_id\": \"srv-003\",\n              \"item_name\": \"Shop Drawing\",\n              \"quantity\": 40,\n              \"hpp_per_unit\": 300000,\n              \"total_hpp\": 12000000,\n              \"category\": \"ENGINEERING_DESIGN\"\n            }\n          ]\n        },\n        {\n          \"group_name\": \"Installation\",\n          \"items\": [\n            {\n              \"item_id\": \"srv-004\",\n              \"item_name\": \"Cable Installation\",\n              \"quantity\": 100,\n              \"hpp_per_unit\": 150000,\n              \"total_hpp\": 15000000,\n              \"category\": \"INSTALLATION\"\n            },\n            {\n              \"item_id\": \"srv-005\",\n              \"item_name\": \"Panel Wiring\",\n              \"quantity\": 50,\n              \"hpp_per_unit\": 400000,\n              \"total_hpp\": 20000000,\n              \"category\": \"INSTALLATION\"\n            }\n          ]\n        },\n        {\n          \"group_name\": \"Commissioning\",\n          \"items\": [\n            {\n              \"item_id\": \"srv-006\",\n              \"item_name\": \"System Testing\",\n              \"quantity\": 20,\n              \"hpp_per_unit\": 1000000,\n              \"total_hpp\": 20000000,\n              \"category\": \"COMMISSIONING\"\n            }\n          ]\n        }\n      ]\n    }\n  ],\n  \"overhead_percentage\": 0,\n  \"profit_margin_percentage\": 12\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/estimations/calculate-modular",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "estimations", "calculate-modular"]
+            },
+            "description": "Complex estimation with 3 materials, 3 service groups, 6 services"
+          },
+          "response": []
+        },
+        {
+          "name": "Large Project Simulation",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"sections\": [\n    {\n      \"type\": \"MATERIAL\",\n      \"items\": [\n        {\n          \"item_id\": \"mat-large-001\",\n          \"item_name\": \"Main Equipment - Transformer 1000kVA\",\n          \"quantity\": 2,\n          \"hpp_per_unit\": 150000000,\n          \"total_hpp\": 300000000,\n          \"category\": \"MAIN_EQUIPMENT\"\n        },\n        {\n          \"item_id\": \"mat-large-002\",\n          \"item_name\": \"Supporting Equipment - LV Panel\",\n          \"quantity\": 5,\n          \"hpp_per_unit\": 25000000,\n          \"total_hpp\": 125000000,\n          \"category\": \"SUPPORTING_EQUIPMENT\"\n        },\n        {\n          \"item_id\": \"mat-large-003\",\n          \"item_name\": \"Installation Materials\",\n          \"quantity\": 1,\n          \"hpp_per_unit\": 50000000,\n          \"total_hpp\": 50000000,\n          \"category\": \"INSTALLATION_MATERIAL\"\n        }\n      ]\n    },\n    {\n      \"type\": \"SERVICE\",\n      \"serviceGroups\": [\n        {\n          \"group_name\": \"Engineering\",\n          \"items\": [\n            {\n              \"item_id\": \"srv-large-001\",\n              \"item_name\": \"Detailed Engineering Design\",\n              \"quantity\": 200,\n              \"hpp_per_unit\": 500000,\n              \"total_hpp\": 100000000,\n              \"category\": \"ENGINEERING_DESIGN\"\n            }\n          ]\n        },\n        {\n          \"group_name\": \"Installation & Commissioning\",\n          \"items\": [\n            {\n              \"item_id\": \"srv-large-002\",\n              \"item_name\": \"Installation Services\",\n              \"quantity\": 300,\n              \"hpp_per_unit\": 300000,\n              \"total_hpp\": 90000000,\n              \"category\": \"INSTALLATION\"\n            },\n            {\n              \"item_id\": \"srv-large-003\",\n              \"item_name\": \"Commissioning & Testing\",\n              \"quantity\": 100,\n              \"hpp_per_unit\": 800000,\n              \"total_hpp\": 80000000,\n              \"category\": \"COMMISSIONING\"\n            }\n          ]\n        }\n      ]\n    }\n  ],\n  \"overhead_percentage\": 0,\n  \"profit_margin_percentage\": 10\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/estimations/calculate-modular",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "estimations", "calculate-modular"]
+            },
+            "description": "Large project: Total Direct HPP ~745 Million"
+          },
+          "response": []
+        },
+        {
+          "name": "Edge Case - Zero Overhead",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"sections\": [\n    {\n      \"type\": \"MATERIAL\",\n      \"items\": [\n        {\n          \"item_id\": \"mat-edge-001\",\n          \"item_name\": \"Test Material\",\n          \"quantity\": 10,\n          \"hpp_per_unit\": 100000,\n          \"total_hpp\": 1000000,\n          \"category\": \"MATERIAL_DEFAULT\"\n        }\n      ]\n    }\n  ],\n  \"overhead_percentage\": 0,\n  \"profit_margin_percentage\": 0\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/estimations/calculate-modular",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "estimations", "calculate-modular"]
+            },
+            "description": "Edge case: Use system overhead but zero profit margin"
+          },
+          "response": []
+        },
+        {
+          "name": "Error Test - Empty Sections",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"sections\": [],\n  \"overhead_percentage\": 0,\n  \"profit_margin_percentage\": 10\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/estimations/calculate-modular",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "estimations", "calculate-modular"]
+            },
+            "description": "Should return with 0 amounts"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Health Check",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/health",
+          "host": ["{{base_url}}"],
+          "path": ["health"]
+        },
+        "description": "Check if service is running"
+      },
+      "response": []
+    }
+  ],
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://localhost:3000",
+      "type": "string"
+    },
+    {
+      "key": "auth_token",
+      "value": "",
+      "type": "string",
+      "description": "JWT token from login endpoint"
+    }
+  ]
+}

@@ -47,4 +47,11 @@ router.put('/:id', journalEntriesController.updateJournalEntry);
  */
 router.delete('/:id', journalEntriesController.deleteJournalEntry);
 
+/**
+ * @route   POST /api/finance/journal-entries/general
+ * @desc    Create a general journal entry with multiple lines (double-entry)
+ * @access  Finance Admin
+ */
+router.post('/general', journalEntriesController.createGeneralJournal);
+
 export default router;
