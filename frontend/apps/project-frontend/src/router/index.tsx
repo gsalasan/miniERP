@@ -4,9 +4,12 @@ import {
   Routes,
   Route,
   Navigate,
+  useLocation,
 } from 'react-router-dom';
 import ProjectsListPage from '../pages/ProjectsListPage';
 import ProjectDetailPage from '../pages/ProjectDetailPage';
+import ProjectDashboardPage from '../pages/ProjectDashboardPage';
+import OperationsDashboardPage from '../pages/OperationsDashboardPage';
 import { useAuth } from '../contexts/AuthContext';
 
 // Protected Route Component
@@ -99,19 +102,46 @@ const ProtectedRoute: React.FC<{ element: React.ReactElement }> = ({
   return element;
 };
 
+// Redirect component that preserves any existing search/query string
+const RedirectPreserveSearch: React.FC<{ to: string }> = ({ to }) => {
+  const location = useLocation();
+  return <Navigate to={{ pathname: to, search: location.search }} replace />;
+};
+
 const AppRouter: React.FC = () => {
   return (
     <Router>
       <Routes>
+        {/* New canonical list route at /project (singular) */}
         <Route
-          path="/"
+          path="/project"
           element={<ProtectedRoute element={<ProjectsListPage />} />}
         />
+
+        {/* Project detail route unchanged */}
         <Route
           path="/projects/:projectId"
           element={<ProtectedRoute element={<ProjectDetailPage />} />}
         />
-        <Route path="*" element={<Navigate to="/" replace />} />
+
+        {/* Project dashboard */}
+        <Route
+          path="/projects/:projectId/dashboard"
+          element={<ProtectedRoute element={<ProjectDashboardPage />} />}
+        />
+
+        {/* Operations dashboard (Operational Manager) */}
+        <Route
+          path="/dashboard/operations"
+          element={<ProtectedRoute element={<OperationsDashboardPage />} />}
+        />
+
+        {/* Root redirects to /project so the list page is served at /project
+            Preserve query string (e.g. cross_app_token) so AuthProvider can read it */}
+        <Route path="/" element={<RedirectPreserveSearch to="/project" />} />
+
+        {/* Fallback - also preserve any search */}
+        <Route path="*" element={<RedirectPreserveSearch to="/project" />} />
       </Routes>
     </Router>
   );

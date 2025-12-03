@@ -109,6 +109,9 @@ export interface ProjectTask {
   id: string;
   project_id: string;
   milestone_id?: string;
+  parent_task_id?: string | null;
+  task_type?: 'phase' | 'activity' | 'subtask' | string | null;
+  weight_pct?: number | null;
   name: string;
   description?: string;
   assignee_id?: string;

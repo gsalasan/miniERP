@@ -19,11 +19,15 @@ interface CreateTaskModalProps {
     name: string;
     status: string;
     milestone_id: string;
+    parent_task_id?: string;
+    task_type?: string;
+    weight_pct?: number;
     start_date?: string;
     due_date?: string;
     description?: string;
   }) => void;
   milestones: Milestone[];
+  tasks?: any[]; // used to select parent task
 }
 
 const CreateTaskModal = ({
@@ -31,6 +35,7 @@ const CreateTaskModal = ({
   onClose,
   onCreate,
   milestones,
+  tasks = [],
 }: CreateTaskModalProps) => {
   const [name, setName] = useState('');
   const [status, setStatus] = useState('TODO');
@@ -38,6 +43,9 @@ const CreateTaskModal = ({
   const [startDate, setStartDate] = useState('');
   const [dueDate, setDueDate] = useState('');
   const [description, setDescription] = useState('');
+  const [taskType, setTaskType] = useState('subtask');
+  const [parentTaskId, setParentTaskId] = useState('');
+  const [weightPct, setWeightPct] = useState<number | ''>('');
 
   const handleSubmit = () => {
     if (!name.trim()) {
@@ -59,6 +67,9 @@ const CreateTaskModal = ({
       name: name.trim(),
       status,
       milestone_id: milestoneId,
+      parent_task_id: parentTaskId || undefined,
+      task_type: taskType || undefined,
+      weight_pct: weightPct === '' ? undefined : Number(weightPct),
       start_date: startDate ? new Date(startDate).toISOString() : undefined,
       due_date: dueDate ? new Date(dueDate).toISOString() : undefined,
       description: description.trim() || undefined,
@@ -68,6 +79,9 @@ const CreateTaskModal = ({
     setName('');
     setStatus('TODO');
     setMilestoneId('');
+    setTaskType('subtask');
+    setParentTaskId('');
+    setWeightPct('');
     setStartDate('');
     setDueDate('');
     setDescription('');
@@ -78,6 +92,9 @@ const CreateTaskModal = ({
     setName('');
     setStatus('TODO');
     setMilestoneId('');
+    setTaskType('subtask');
+    setParentTaskId('');
+    setWeightPct('');
     setStartDate('');
     setDueDate('');
     setDescription('');
@@ -124,6 +141,44 @@ const CreateTaskModal = ({
               </MenuItem>
             ))}
           </TextField>
+
+          <TextField
+            label="Task Type"
+            value={taskType}
+            onChange={(e) => setTaskType(e.target.value)}
+            select
+            fullWidth
+          >
+            <MenuItem value="phase">Phase</MenuItem>
+            <MenuItem value="activity">Activity</MenuItem>
+            <MenuItem value="subtask">Sub-task</MenuItem>
+          </TextField>
+
+          <TextField
+            label="Parent Task (optional)"
+            value={parentTaskId}
+            onChange={(e) => setParentTaskId(e.target.value)}
+            select
+            fullWidth
+            helperText="Pilih parent task jika ini adalah activity atau sub-task"
+          >
+            <MenuItem value="">(No parent)</MenuItem>
+            {(tasks || []).map((t) => (
+              <MenuItem key={t.id} value={t.id}>
+                {t.name}
+              </MenuItem>
+            ))}
+          </TextField>
+
+          <TextField
+            label="Weight % (optional)"
+            value={weightPct}
+            onChange={(e) => setWeightPct(e.target.value === '' ? '' : Number(e.target.value))}
+            type="number"
+            fullWidth
+            InputProps={{ inputProps: { min: 0, max: 100 } }}
+            helperText="Bobot tugas saat menghitung physical progress"
+          />
 
           <TextField
             label="Start Date"
