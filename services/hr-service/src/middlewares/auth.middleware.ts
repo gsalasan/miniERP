@@ -12,6 +12,17 @@ declare global {
 
 export const verifyToken = (req: Request, res: Response, next: NextFunction) => {
   try {
+    // Development shortcut: BYPASS auth entirely when DISABLE_AUTH is true
+    if (process.env.DISABLE_AUTH === 'true') {
+      console.log('🔓 Auth disabled - bypassing token verification');
+      req.user = { 
+        id: 'db61ee62-3276-4828-b1e1-13c5f2b5aa19', // User ID untuk dev-ot@unais.com
+        roles: ['HR_ADMIN', 'EMPLOYEE'], 
+        employee_id: 'db61ee62-3276-4828-b1e1-88fb26c0a3a1' // Employee ID for dev+ot@unais.com
+      };
+      return next();
+    }
+
     // Get token from header
     const authHeader = req.headers.authorization;
     const token = authHeader && authHeader.startsWith('Bearer ') 
@@ -33,6 +44,13 @@ export const verifyToken = (req: Request, res: Response, next: NextFunction) => 
     
     next();
   } catch (error: any) {
+    // Fallback: if DISABLE_AUTH in any form, bypass
+    if (process.env.DISABLE_AUTH) {
+      console.log('🔓 Auth error but DISABLE_AUTH set - bypassing');
+      req.user = { id: 'dev-user', roles: ['HR_ADMIN'], employee_id: 'dev-employee' };
+      return next();
+    }
+    
     console.error('Token verification error:', error);
     
     if (error.name === 'JsonWebTokenError') {

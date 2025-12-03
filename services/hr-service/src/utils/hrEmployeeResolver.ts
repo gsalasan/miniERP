@@ -3,6 +3,7 @@ import type { PrismaClient } from '@prisma/client';
 interface ResolveOptions {
   userId?: string;
   email?: string;
+  employeeId?: string; // Direct employee ID (for dev mode)
 }
 
 interface HrEmployeeResult {
@@ -12,15 +13,28 @@ interface HrEmployeeResult {
 /**
  * Resolve the employee record associated with the current user.
  * Priority order:
- * 1. Match by userId -> users table -> employee_id -> employees
- * 2. Direct employee_id if provided
+ * 1. Direct employeeId if provided (dev mode)
+ * 2. Match by userId -> users table -> employee_id -> employees
  */
 export async function resolveHrEmployee(
   prisma: PrismaClient,
-  { userId, email }: ResolveOptions
+  { userId, email, employeeId }: ResolveOptions
 ): Promise<HrEmployeeResult> {
   let employeeReference: string | undefined;
 
+  // Priority 1: Direct employee ID (for development mode)
+  if (employeeId) {
+    const employee = await prisma.employees.findUnique({
+      where: { id: employeeId },
+      select: { id: true },
+    });
+
+    if (employee) {
+      return employee;
+    }
+  }
+
+  // Priority 2: Lookup via userId
   if (userId) {
     const user = await prisma.users.findUnique({
       where: { id: userId },

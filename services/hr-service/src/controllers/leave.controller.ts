@@ -22,6 +22,7 @@ export class LeaveController {
       const hrEmployee = await resolveHrEmployee(prisma, {
         userId,
         email: req.user?.email,
+        employeeId: req.user?.employee_id,
       });
 
       const leave = await leaveService.createLeaveRequest(hrEmployee.id, req.body);
@@ -57,6 +58,7 @@ export class LeaveController {
       const hrEmployee = await resolveHrEmployee(prisma, {
         userId,
         email: req.user?.email,
+        employeeId: req.user?.employee_id,
       });
 
       const { status } = req.query;
@@ -150,6 +152,7 @@ export class LeaveController {
       const hrEmployee = await resolveHrEmployee(prisma, {
         userId,
         email: req.user?.email,
+        employeeId: req.user?.employee_id,
       });
 
       const { id } = req.params;
@@ -200,6 +203,7 @@ export class LeaveController {
       const hrEmployee = await resolveHrEmployee(prisma, {
         userId,
         email: req.user?.email,
+        employeeId: req.user?.employee_id,
       });
 
       const { id } = req.params;

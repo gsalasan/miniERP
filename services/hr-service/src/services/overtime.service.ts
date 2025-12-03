@@ -179,6 +179,30 @@ export class OvertimeService {
    * Update overtime request status (approve/reject)
    */
   async updateOvertimeStatus(id: string, data: UpdateOvertimeStatus) {
+    const overtime = await this.prisma.hr_overtime_requests.findUnique({
+      where: { id },
+    });
+
+    if (!overtime) {
+      throw new Error('Overtime request not found');
+    }
+
+    // Calculate amount if approved
+    let calculatedAmount = null;
+    let approvedHours = null;
+    let calculationMeta = null;
+
+    if (data.status === 'APPROVED') {
+      const calculation = this.calculateOvertimeAmount(
+        overtime.overtime_code as 'L1' | 'L2' | 'L3' | 'L4',
+        Number(overtime.duration_hours)
+      );
+      
+      calculatedAmount = calculation.amount;
+      approvedHours = calculation.approved_hours;
+      calculationMeta = calculation.meta;
+    }
+
     return await this.prisma.hr_overtime_requests.update({
       where: { id },
       data: {
@@ -186,6 +210,84 @@ export class OvertimeService {
         approved_by: data.approved_by,
         approved_at: data.status === 'APPROVED' ? new Date() : undefined,
         rejection_reason: data.rejection_reason,
+        approved_hours: approvedHours,
+        calculated_amount: calculatedAmount,
+        calculation_meta: calculationMeta as any,
+      },
+      include: {
+        employee: {
+          select: {
+            id: true,
+            full_name: true,
+            position: true,
+            department: true,
+          },
+        },
+      },
+    });
+  }
+
+  /**
+   * Calculate overtime amount based on overtime code
+   * L1 & L3: Rp 250,000
+   * L2 & L4: Rp 100,000
+   */
+  private calculateOvertimeAmount(
+    overtimeCode: 'L1' | 'L2' | 'L3' | 'L4',
+    durationHours: number
+  ) {
+    const rates: { [key: string]: number } = {
+      L1: 250000, // Weekday 8 jam
+      L2: 100000, // Weekday 4 jam
+      L3: 250000, // Weekend 8 jam
+      L4: 100000, // Weekend 4 jam
+    };
+
+    const ratePerSession = rates[overtimeCode];
+    const amount = ratePerSession;
+
+    return {
+      amount,
+      approved_hours: durationHours,
+      meta: {
+        overtime_code: overtimeCode,
+        rate_per_session: ratePerSession,
+        duration_hours: durationHours,
+        calculation_date: new Date().toISOString(),
+        calculation_note: `${overtimeCode} = Rp ${ratePerSession.toLocaleString('id-ID')} per session`,
+      },
+    };
+  }
+
+  /**
+   * Calculate overtime amount for existing approved request
+   * Useful for recalculation or batch processing
+   */
+  async calculateAndUpdateAmount(id: string) {
+    const overtime = await this.prisma.hr_overtime_requests.findUnique({
+      where: { id },
+    });
+
+    if (!overtime) {
+      throw new Error('Overtime request not found');
+    }
+
+    if (overtime.status !== 'APPROVED') {
+      throw new Error('Only approved overtime can be calculated');
+    }
+
+    const calculation = this.calculateOvertimeAmount(
+      overtime.overtime_code as 'L1' | 'L2' | 'L3' | 'L4',
+      Number(overtime.duration_hours)
+    );
+
+    return await this.prisma.hr_overtime_requests.update({
+      where: { id },
+      data: {
+        approved_hours: calculation.approved_hours,
+        calculated_amount: calculation.amount,
+        calculation_meta: calculation.meta as any,
+        status: 'CALCULATED',
       },
       include: {
         employee: {
@@ -239,7 +341,7 @@ export class OvertimeService {
     const overtimes = await this.prisma.hr_overtime_requests.findMany({
       where: {
         employee_id: employeeId,
-        status: 'APPROVED',
+        status: { in: ['APPROVED', 'CALCULATED'] },
         overtime_date: {
           gte: startDate,
           lte: endDate,
@@ -249,23 +351,44 @@ export class OvertimeService {
 
     // Group by overtime code
     const summary = {
-      L1: { count: 0, total_hours: 0 },
-      L2: { count: 0, total_hours: 0 },
-      L3: { count: 0, total_hours: 0 },
-      L4: { count: 0, total_hours: 0 },
+      L1: { count: 0, total_hours: 0, total_amount: 0 },
+      L2: { count: 0, total_hours: 0, total_amount: 0 },
+      L3: { count: 0, total_hours: 0, total_amount: 0 },
+      L4: { count: 0, total_hours: 0, total_amount: 0 },
+    };
+
+    const rates = {
+      L1: 250000,
+      L2: 100000,
+      L3: 250000,
+      L4: 100000,
     };
 
     overtimes.forEach((ot: any) => {
       const code = ot.overtime_code as 'L1' | 'L2' | 'L3' | 'L4';
       summary[code].count++;
       summary[code].total_hours += Number(ot.duration_hours);
+      
+      // Use calculated_amount if available, otherwise calculate
+      const amount = ot.calculated_amount 
+        ? Number(ot.calculated_amount) 
+        : rates[code];
+      summary[code].total_amount += amount;
     });
+
+    const totalAmount = Object.values(summary).reduce((sum, s) => sum + s.total_amount, 0);
+    const totalHours = Object.values(summary).reduce((sum, s) => sum + s.total_hours, 0);
 
     return {
       month,
       employee_id: employeeId,
       summary,
-      total_overtime_hours: Object.values(summary).reduce((sum, s) => sum + s.total_hours, 0),
+      total_overtime_hours: totalHours,
+      total_overtime_amount: totalAmount,
+      breakdown: {
+        L1_L3: (summary.L1.total_amount + summary.L3.total_amount),
+        L2_L4: (summary.L2.total_amount + summary.L4.total_amount),
+      },
     };
   }
 }

@@ -60,4 +60,12 @@ router.put('/:id/status', (req, res) => overtimeController.updateOvertimeStatus(
  */
 router.post('/:id/cancel', (req, res) => overtimeController.cancelOvertime(req, res));
 
+/**
+ * @route   POST /api/v1/overtimes/:id/calculate
+ * @desc    Calculate overtime amount (set calculated_amount and status to CALCULATED)
+ * @access  Private (HR/Payroll)
+ * @note    Auto-calculates: L1/L3 = Rp 250,000, L2/L4 = Rp 100,000
+ */
+router.post('/:id/calculate', (req, res) => overtimeController.calculateOvertimeAmount(req, res));
+
 export default router;

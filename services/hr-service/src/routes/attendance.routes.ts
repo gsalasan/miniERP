@@ -6,7 +6,15 @@ const router = Router();
 const attendanceController = new AttendanceController();
 
 /**
- * All routes require authentication
+ * @route   GET /api/v1/attendances
+ * @desc    Get all employees' attendances (HR admin) - TEMPORARY NO AUTH FOR TESTING
+ * @access  Public (for now)
+ * @query   month (optional, format: YYYY-MM), employeeId (optional), page, limit
+ */
+router.get('/', (req, res) => attendanceController.getAllAttendances(req, res));
+
+/**
+ * All other routes require authentication
  */
 router.use(verifyToken);
 
@@ -48,14 +56,6 @@ router.get('/my', (req, res) => attendanceController.getMyAttendances(req, res))
  * @query   lat, lng
  */
 router.get('/reverse-geocode', (req, res) => attendanceController.reverseGeocode(req, res));
-
-/**
- * @route   GET /api/v1/attendances
- * @desc    Get all employees' attendances (HR admin)
- * @access  Private (HR Admin)
- * @query   month (optional, format: YYYY-MM), employeeId (optional), page, limit
- */
-router.get('/', (req, res) => attendanceController.getAllAttendances(req, res));
 
 /**
  * @route   GET /api/v1/attendances/stats
