@@ -52,13 +52,21 @@ const BalanceSheetTab: React.FC = () => {
         url += `?asOfDate=${asOfDate}`;
       }
 
+      console.log('📡 Fetching Balance Sheet:', url);
       const response = await fetch(url);
+      
       if (response.ok) {
         const data = await response.json();
+        console.log('✅ Balance Sheet data from DB:', data);
+        console.log('📊 Total Assets:', data.assets?.total);
+        console.log('📊 Total Liabilities:', data.liabilities?.total);
+        console.log('📊 Total Equity:', data.equity?.total);
         setBalanceSheetData(data);
+      } else {
+        console.error('❌ Failed to fetch balance sheet:', response.status);
       }
     } catch (error) {
-      console.error('Error fetching balance sheet:', error);
+      console.error('❌ Error fetching balance sheet:', error);
     } finally {
       setLoading(false);
     }

@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Token Flow Test</title>
+    <style>
+        body {
+            font-family: monospace;
+            margin: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        .step {
+            margin: 20px 0;
+            padding: 10px;
+            border-left: 4px solid #007bff;
+            background: #f9f9f9;
+        }
+        .success { border-left-color: #28a745; }
+        .error { border-left-color: #dc3545; }
+        code {
+            background: #f4f4f4;
+            padding: 2px 6px;
+            border-radius: 3px;
+        }
+        button {
+            background: #007bff;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        button:hover {
+            background: #0056b3;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Project Frontend - Token Flow Test</h1>
+        
+        <div id="status"></div>
+        
+        <button onclick="runTest()">Run Test</button>
+        <button onclick="goToProjectFrontend()">Go to Project Frontend</button>
+        
+        <div id="output"></div>
+    </div>
+
+    <script>
+        async function runTest() {
+            const output = document.getElementById('output');
+            output.innerHTML = '';
+            
+            try {
+                // 1. Login
+                addOutput('1. Logging in to identity service...', 'step');
+                const loginRes = await fetch('http://localhost:4000/api/v1/auth/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        email: 'raisa@unais.com',
+                        password: 'unais2025'
+                    })
+                });
+                
+                if (!loginRes.ok) {
+                    throw new Error(`Login failed: ${loginRes.status}`);
+                }
+                
+                const loginData = await loginRes.json();
+                const token = loginData.data?.token || loginData.token;
+                addOutput('✓ Token received: ' + token.substring(0, 40) + '...', 'success');
+                
+                // 2. Verify token
+                addOutput('2. Verifying token...', 'step');
+                const verifyRes = await fetch('http://localhost:4000/api/v1/auth/me', {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                
+                if (!verifyRes.ok) {
+                    throw new Error(`Verify failed: ${verifyRes.status}`);
+                }
+                
+                const verifyData = await verifyRes.json();
+                const user = verifyData.data || verifyData;
+                addOutput('✓ User verified: ' + user.email, 'success');
+                addOutput('  Roles: ' + user.roles.join(', '), 'success');
+                
+                // 3. Generate URL
+                addOutput('3. Generating project frontend URL...', 'step');
+                const url = `http://localhost:3017/?token=${encodeURIComponent(token)}`;
+                addOutput('✓ URL ready', 'success');
+                
+                // Store for later use
+                window.testToken = token;
+                window.testUrl = url;
+                
+                addOutput('\n✓ All tests passed! Click "Go to Project Frontend" button.', 'success');
+                
+            } catch (error) {
+                addOutput('✗ Error: ' + error.message, 'error');
+            }
+        }
+        
+        function addOutput(text, className = '') {
+            const output = document.getElementById('output');
+            const div = document.createElement('div');
+            div.className = 'step ' + className;
+            div.textContent = text;
+            output.appendChild(div);
+        }
+        
+        function goToProjectFrontend() {
+            if (window.testUrl) {
+                window.location.href = window.testUrl;
+            } else {
+                alert('Please run test first');
+            }
+        }
+        
+        // Auto-run on load
+        window.addEventListener('load', runTest);
+    </script>
+</body>
+</html>
