@@ -8,6 +8,10 @@ import NewVendorPage from "./pages/vendors/NewVendorPage";
 import NewVendorPricePage from "./pages/vendor-pricelist/NewVendorPricePage";
 import VendorDetailPage from "./pages/vendors/VendorDetailPage";
 import EditVendorPage from "./pages/vendors/EditVendorPage";
+import RFPQueuePage from "./pages/rfp/RFPQueuePage";
+import RFPDetailPage from "./pages/rfp/RFPDetailPage";
+import ConvertRFPPage from "./pages/rfp/ConvertRFPPage";
+import PurchaseListPage from "./pages/PurchaseListPage";
 import MainLayout from "./layouts/MainLayout";
 
 function App() {
@@ -33,6 +37,10 @@ function App() {
             <Route path="/vendors/:id" element={<VendorDetailPage />} />
             <Route path="/vendors/:id/edit" element={<EditVendorPage />} />
             <Route path="/vendor-pricelist/new" element={<NewVendorPricePage />} />
+            <Route path="/rfp-queue" element={<RFPQueuePage />} />
+            <Route path="/rfp/:id" element={<RFPDetailPage />} />
+            <Route path="/rfp/:id/convert" element={<ConvertRFPPage />} />
+            <Route path="/purchases" element={<PurchaseListPage />} />
           </Routes>
         </MainLayout>
       </Router>

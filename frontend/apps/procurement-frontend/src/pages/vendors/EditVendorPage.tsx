@@ -11,30 +11,25 @@ import {
   FormControlLabel,
   Switch,
   MenuItem,
+  IconButton,
+  Tooltip,
 } from "@mui/material";
-import { ArrowBack as ArrowBackIcon, Save as SaveIcon } from "@mui/icons-material";
+import { 
+  ArrowBack as ArrowBackIcon, 
+  Save as SaveIcon,
+  Settings as SettingsIcon,
+} from "@mui/icons-material";
 import { vendorsApi } from "../../api/vendors";
+import { vendorLookupsApi } from "../../api/vendorLookups";
 import { Vendor } from "../../types/vendor";
 import { LoadingSpinner } from "../../components";
 import { useNotification } from "../../hooks/useNotification";
+import ManageVendorLookupsDialog from "../../components/ManageVendorLookupsDialog";
 
-// Category: Jenis produk/layanan yang disediakan vendor
-const categoryOptions = [
-  { value: "Material", label: "Material - Bahan fisik (kabel, pipa, sensor, besi)" },
-  { value: "Service", label: "Service - Jasa (instalasi, maintenance, konsultasi)" },
-  { value: "Equipment", label: "Equipment - Alat, mesin, perangkat" },
-  { value: "Logistics", label: "Logistics - Transportasi & pengiriman" },
-  { value: "Subcontractor", label: "Subcontractor - Pelaksana pekerjaan proyek" },
-];
-
-// Classification: Tipe hubungan kerja atau asal vendor
-const classificationOptions = [
-  { value: "Local", label: "Local - Vendor dalam negeri" },
-  { value: "International", label: "International - Vendor luar negeri (impor)" },
-  { value: "Principal", label: "Principal - Produsen utama/merek asli" },
-  { value: "Distributor", label: "Distributor - Penyalur resmi dari principal" },
-  { value: "Freelance", label: "Freelance - Penyedia jasa individu" },
-];
+interface LookupItem {
+  value: string;
+  label: string;
+}
 
 const EditVendorPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -43,13 +38,34 @@ const EditVendorPage: React.FC = () => {
   const [vendor, setVendor] = useState<Vendor | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [categoryOptions, setCategoryOptions] = useState<LookupItem[]>([]);
+  const [classificationOptions, setClassificationOptions] = useState<LookupItem[]>([]);
+  const [openManageDialog, setOpenManageDialog] = useState(false);
 
-  const [formData, setFormData] = useState<Partial<Vendor>>({
+  const [formData, setFormData] = useState<{
+    vendor_name: string;
+    category: string;
+    classification: string;
+    is_preferred: boolean;
+  }>({
     vendor_name: "",
     category: "",
     classification: "",
     is_preferred: false,
   });
+
+  const loadLookups = async () => {
+    try {
+      const [cats, classifs] = await Promise.all([
+        vendorLookupsApi.getCategories(),
+        vendorLookupsApi.getClassifications(),
+      ]);
+      setCategoryOptions(cats);
+      setClassificationOptions(classifs);
+    } catch (err) {
+      notification.error("Gagal memuat data category dan classification");
+    }
+  };
 
   const loadVendor = async () => {
     if (!id) return;
@@ -74,6 +90,7 @@ const EditVendorPage: React.FC = () => {
   };
 
   useEffect(() => {
+    loadLookups();
     loadVendor();
   }, [id]);
 
@@ -102,11 +119,11 @@ const EditVendorPage: React.FC = () => {
       }
 
       // Prepare clean payload
-      const payload = {
+      const payload: Partial<Vendor> = {
         vendor_name: formData.vendor_name.trim(),
-        category: formData.category.trim(),
-        classification: formData.classification.trim(),
-        is_preferred: formData.is_preferred || false,
+        category: formData.category.trim() || undefined,
+        classification: formData.classification as any,
+        is_preferred: !!formData.is_preferred,
       };
 
       await vendorsApi.updateVendor(id, payload);
@@ -228,45 +245,67 @@ const EditVendorPage: React.FC = () => {
             variant="outlined"
           />
 
-          <TextField
-            fullWidth
-            select
-            label="Category"
-            value={formData.category || ""}
-            onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-            disabled={saving}
-            variant="outlined"
-            helperText="Jenis produk atau layanan yang disediakan"
-          >
-            <MenuItem value="">
-              <em>Pilih kategori</em>
-            </MenuItem>
-            {categoryOptions.map((option) => (
-              <MenuItem key={option.value} value={option.value}>
-                {option.label}
+          <Box sx={{ display: "flex", gap: 1, alignItems: "flex-start" }}>
+            <TextField
+              fullWidth
+              select
+              label="Category"
+              value={formData.category || ""}
+              onChange={(e) => setFormData({ ...formData, category: e.target.value })}
+              disabled={saving}
+              variant="outlined"
+              helperText="Jenis produk atau layanan yang disediakan"
+            >
+              <MenuItem value="">
+                <em>-- Pilih kategori --</em>
               </MenuItem>
-            ))}
-          </TextField>
+              {categoryOptions.map((option) => (
+                <MenuItem key={option.value} value={option.value}>
+                  {option.label}
+                </MenuItem>
+              ))}
+            </TextField>
+            <Tooltip title="Kelola Category & Classification">
+              <IconButton 
+                onClick={() => setOpenManageDialog(true)} 
+                color="primary"
+                sx={{ mt: 0.5 }}
+              >
+                <SettingsIcon />
+              </IconButton>
+            </Tooltip>
+          </Box>
 
-          <TextField
-            fullWidth
-            select
-            label="Classification"
-            value={formData.classification || ""}
-            onChange={(e) => setFormData({ ...formData, classification: e.target.value })}
-            disabled={saving}
-            variant="outlined"
-            helperText="Tipe hubungan kerja atau asal vendor"
-          >
-            <MenuItem value="">
-              <em>Pilih klasifikasi</em>
-            </MenuItem>
-            {classificationOptions.map((option) => (
-              <MenuItem key={option.value} value={option.value}>
-                {option.label}
+          <Box sx={{ display: "flex", gap: 1, alignItems: "flex-start" }}>
+            <TextField
+              fullWidth
+              select
+              label="Classification"
+              value={formData.classification || ""}
+              onChange={(e) => setFormData({ ...formData, classification: e.target.value })}
+              disabled={saving}
+              variant="outlined"
+              helperText="Tipe hubungan kerja atau asal vendor"
+            >
+              <MenuItem value="">
+                <em>-- Pilih klasifikasi --</em>
               </MenuItem>
-            ))}
-          </TextField>
+              {classificationOptions.map((option) => (
+                <MenuItem key={option.value} value={option.value}>
+                  {option.label}
+                </MenuItem>
+              ))}
+            </TextField>
+            <Tooltip title="Kelola Category & Classification">
+              <IconButton 
+                onClick={() => setOpenManageDialog(true)} 
+                color="primary"
+                sx={{ mt: 0.5 }}
+              >
+                <SettingsIcon />
+              </IconButton>
+            </Tooltip>
+          </Box>
 
           <FormControlLabel
             control={
@@ -280,6 +319,12 @@ const EditVendorPage: React.FC = () => {
           />
         </Box>
       </Paper>
+
+      <ManageVendorLookupsDialog
+        open={openManageDialog}
+        onClose={() => setOpenManageDialog(false)}
+        onUpdated={loadLookups}
+      />
     </Box>
   );
 };

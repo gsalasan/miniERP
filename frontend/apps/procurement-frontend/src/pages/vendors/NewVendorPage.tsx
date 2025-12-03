@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   Box,
@@ -13,33 +13,31 @@ import {
   Checkbox,
   Stack,
   Divider,
+  IconButton,
+  Tooltip,
 } from "@mui/material";
-import { ArrowBack as ArrowBackIcon, Save as SaveIcon } from "@mui/icons-material";
+import { 
+  ArrowBack as ArrowBackIcon, 
+  Save as SaveIcon,
+  Settings as SettingsIcon,
+} from "@mui/icons-material";
 import { vendorsApi } from "../../api/vendors";
+import { vendorLookupsApi } from "../../api/vendorLookups";
 import { useNotification } from "../../hooks/useNotification";
+import ManageVendorLookupsDialog from "../../components/ManageVendorLookupsDialog";
 
-// Category: Jenis produk/layanan yang disediakan vendor
-const categoryOptions = [
-  { value: "Material", label: "Material - Bahan fisik (kabel, pipa, sensor, besi)" },
-  { value: "Service", label: "Service - Jasa (instalasi, maintenance, konsultasi)" },
-  { value: "Equipment", label: "Equipment - Alat, mesin, perangkat" },
-  { value: "Logistics", label: "Logistics - Transportasi & pengiriman" },
-  { value: "Subcontractor", label: "Subcontractor - Pelaksana pekerjaan proyek" },
-];
-
-// Classification: Tipe hubungan kerja atau asal vendor
-const classificationOptions = [
-  { value: "Local", label: "Local - Vendor dalam negeri" },
-  { value: "International", label: "International - Vendor luar negeri (impor)" },
-  { value: "Principal", label: "Principal - Produsen utama/merek asli" },
-  { value: "Distributor", label: "Distributor - Penyalur resmi dari principal" },
-  { value: "Freelance", label: "Freelance - Penyedia jasa individu" },
-];
+interface LookupItem {
+  value: string;
+  label: string;
+}
 
 const NewVendorPage: React.FC = () => {
   const navigate = useNavigate();
   const notification = useNotification();
   const [loading, setLoading] = useState(false);
+  const [categoryOptions, setCategoryOptions] = useState<LookupItem[]>([]);
+  const [classificationOptions, setClassificationOptions] = useState<LookupItem[]>([]);
+  const [openManageDialog, setOpenManageDialog] = useState(false);
 
   const [formData, setFormData] = useState({
     vendor_name: "",
@@ -47,6 +45,23 @@ const NewVendorPage: React.FC = () => {
     classification: "",
     is_preferred: false,
   });
+
+  useEffect(() => {
+    loadLookups();
+  }, []);
+
+  const loadLookups = async () => {
+    try {
+      const [cats, classifs] = await Promise.all([
+        vendorLookupsApi.getCategories(),
+        vendorLookupsApi.getClassifications(),
+      ]);
+      setCategoryOptions(cats);
+      setClassificationOptions(classifs);
+    } catch (err) {
+      notification.error("Gagal memuat data category dan classification");
+    }
+  };
 
   const handleSave = async () => {
     try {
@@ -158,45 +173,65 @@ const NewVendorPage: React.FC = () => {
                 helperText="Nama perusahaan pemasok"
               />
 
-              <TextField
-                select
-                label="Category"
-                value={formData.category}
-                onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-                fullWidth
-                size="small"
-                required
-                helperText="Jenis produk atau layanan yang disediakan"
-              >
-                <MenuItem value="">
-                  <em>Pilih kategori</em>
-                </MenuItem>
-                {categoryOptions.map((option) => (
-                  <MenuItem key={option.value} value={option.value}>
-                    {option.label}
+              <Box sx={{ display: "flex", gap: 1, alignItems: "flex-start" }}>
+                <TextField
+                  select
+                  label="Category"
+                  value={formData.category}
+                  onChange={(e) => setFormData({ ...formData, category: e.target.value })}
+                  fullWidth
+                  size="small"
+                  helperText="Jenis produk atau layanan yang disediakan"
+                >
+                  <MenuItem value="">
+                    <em>-- Pilih kategori --</em>
                   </MenuItem>
-                ))}
-              </TextField>
+                  {categoryOptions.map((option) => (
+                    <MenuItem key={option.value} value={option.value}>
+                      {option.label}
+                    </MenuItem>
+                  ))}
+                </TextField>
+                <Tooltip title="Kelola Category & Classification">
+                  <IconButton 
+                    onClick={() => setOpenManageDialog(true)} 
+                    color="primary"
+                    sx={{ mt: 0.5 }}
+                  >
+                    <SettingsIcon />
+                  </IconButton>
+                </Tooltip>
+              </Box>
 
-              <TextField
-                select
-                label="Classification"
-                value={formData.classification}
-                onChange={(e) => setFormData({ ...formData, classification: e.target.value })}
-                fullWidth
-                size="small"
-                required
-                helperText="Tipe hubungan kerja atau asal vendor"
-              >
-                <MenuItem value="">
-                  <em>Pilih klasifikasi</em>
-                </MenuItem>
-                {classificationOptions.map((option) => (
-                  <MenuItem key={option.value} value={option.value}>
-                    {option.label}
+              <Box sx={{ display: "flex", gap: 1, alignItems: "flex-start" }}>
+                <TextField
+                  select
+                  label="Classification"
+                  value={formData.classification}
+                  onChange={(e) => setFormData({ ...formData, classification: e.target.value })}
+                  fullWidth
+                  size="small"
+                  helperText="Tipe hubungan kerja atau asal vendor"
+                >
+                  <MenuItem value="">
+                    <em>-- Pilih klasifikasi --</em>
                   </MenuItem>
-                ))}
-              </TextField>
+                  {classificationOptions.map((option) => (
+                    <MenuItem key={option.value} value={option.value}>
+                      {option.label}
+                    </MenuItem>
+                  ))}
+                </TextField>
+                <Tooltip title="Kelola Category & Classification">
+                  <IconButton 
+                    onClick={() => setOpenManageDialog(true)} 
+                    color="primary"
+                    sx={{ mt: 0.5 }}
+                  >
+                    <SettingsIcon />
+                  </IconButton>
+                </Tooltip>
+              </Box>
 
               <FormControlLabel
                 control={
@@ -241,6 +276,12 @@ const NewVendorPage: React.FC = () => {
           </Box>
         </Box>
       </Paper>
+
+      <ManageVendorLookupsDialog
+        open={openManageDialog}
+        onClose={() => setOpenManageDialog(false)}
+        onUpdated={loadLookups}
+      />
     </Box>
   );
 };

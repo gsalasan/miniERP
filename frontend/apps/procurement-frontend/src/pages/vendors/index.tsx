@@ -14,6 +14,7 @@ import {
   Stack,
   Chip,
   Tooltip,
+  IconButton,
 } from "@mui/material";
 import { DataGrid, GridColDef, GridActionsCellItem, GridRenderCellParams } from "@mui/x-data-grid";
 import {
@@ -24,12 +25,15 @@ import {
   FilterList as FilterListIcon,
 } from "@mui/icons-material";
 import { vendorsApi } from "../../api/vendors";
+import { vendorLookupsApi } from "../../api/vendorLookups";
 import { vendorPricelistApi } from "../../api/vendorPricelist";
 import { materialsApi } from "../../api/materials";
 import { Vendor } from "../../types/vendor";
 import { VendorPrice } from "../../types/vendorPricelist";
 import type { Material } from "../../types/material";
 import { StatusBadge, LoadingSpinner, EmptyState } from "../../components";
+import ManageVendorLookupsDialog from "../../components/ManageVendorLookupsDialog";
+import { Settings as SettingsIcon } from "@mui/icons-material";
 import { useNavigate, useLocation } from "react-router-dom";
 
 const VendorsPage: React.FC = () => {
@@ -45,6 +49,9 @@ const VendorsPage: React.FC = () => {
   const [tab, setTab] = useState(0);
   const [categoryFilter, setCategoryFilter] = useState<string>("");
   const [classificationFilter, setClassificationFilter] = useState<string>("");
+  const [categories, setCategories] = useState<{ value: string; label?: string }[]>([]);
+  const [classifications, setClassifications] = useState<{ value: string; label?: string }[]>([]);
+  const [manageDialogOpen, setManageDialogOpen] = useState(false);
   const [vendorFilter, setVendorFilter] = useState("");
   const [materialFilter, setMaterialFilter] = useState("");
   const theme = useTheme();
@@ -75,7 +82,22 @@ const VendorsPage: React.FC = () => {
 
   useEffect(() => {
     loadVendors();
+    loadLookups();
   }, []);
+
+  const loadLookups = async () => {
+    try {
+      const [cats, classifs] = await Promise.all([
+        vendorLookupsApi.getCategories(),
+        vendorLookupsApi.getClassifications(),
+      ]);
+      setCategories(cats || []);
+      setClassifications(classifs || []);
+    } catch (err) {
+      // eslint-disable-next-line no-console
+      console.error("Failed to load vendor lookups:", err);
+    }
+  };
 
   useEffect(() => {
     // load pricelist when pricelist tab is shown
@@ -479,11 +501,11 @@ const VendorsPage: React.FC = () => {
                 sx={{ width: 180 }}
               >
                 <MenuItem value="">All</MenuItem>
-                <MenuItem value="Material">Material (Bahan fisik)</MenuItem>
-                <MenuItem value="Service">Service (Jasa/layanan)</MenuItem>
-                <MenuItem value="Equipment">Equipment (Alat/peralatan)</MenuItem>
-                <MenuItem value="Logistics">Logistics (Pengiriman/transportasi)</MenuItem>
-                <MenuItem value="Subcontractor">Subcontractor (Subkontraktor)</MenuItem>
+                {categories.map((c) => (
+                  <MenuItem key={c.value} value={c.value}>
+                    {c.label || c.value}
+                  </MenuItem>
+                ))}
               </TextField>
               <TextField
                 select
@@ -494,12 +516,15 @@ const VendorsPage: React.FC = () => {
                 sx={{ width: 180 }}
               >
                 <MenuItem value="">All</MenuItem>
-                <MenuItem value="Local">Local (Lokal)</MenuItem>
-                <MenuItem value="International">International (Internasional)</MenuItem>
-                <MenuItem value="Principal">Principal (Prinsipal/utama)</MenuItem>
-                <MenuItem value="Distributor">Distributor (Distributor)</MenuItem>
-                <MenuItem value="Freelance">Freelance (Perorangan/freelance)</MenuItem>
+                {classifications.map((c) => (
+                  <MenuItem key={c.value} value={c.value}>
+                    {c.label || c.value}
+                  </MenuItem>
+                ))}
               </TextField>
+              <IconButton size="small" onClick={() => setManageDialogOpen(true)}>
+                <SettingsIcon fontSize="small" />
+              </IconButton>
             </Box>
 
             {filteredVendors.length === 0 ? (
@@ -652,8 +677,21 @@ const VendorsPage: React.FC = () => {
           </>
         )}
       </Box>
+      <ManageVendorLookupsDialog
+        open={manageDialogOpen}
+        onClose={() => setManageDialogOpen(false)}
+        onUpdated={async () => {
+          await loadLookups();
+          await loadVendors();
+          setManageDialogOpen(false);
+        }}
+      />
     </Box>
   );
 };
 
 export default VendorsPage;
+
+// Manage Vendor Lookups dialog (outside render tree above)
+// Note: rendering here so it shares component state and can refresh lookups
+// (Manage dialog is rendered inside the component)

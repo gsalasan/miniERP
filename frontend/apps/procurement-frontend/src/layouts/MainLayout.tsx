@@ -22,6 +22,7 @@ import {
   ShoppingCart as PurchasesIcon,
   Home as HomeIcon,
   Logout as LogoutIcon,
+  Assignment as RFPIcon,
   } from "@mui/icons-material";
 import { useNavigate, useLocation } from "react-router-dom";
 import { NAVIGATION } from "../config/environments";
@@ -55,6 +56,7 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
   const menuItems = [
     { text: "Dashboard", icon: <DashboardIcon />, path: "/" },
     { text: "Vendors", icon: <VendorsIcon />, path: "/vendors" },
+    { text: "Antrian RFP", icon: <RFPIcon />, path: "/rfp-queue" },
     { text: "Purchases", icon: <PurchasesIcon />, path: "/purchases" },
   ];
 
