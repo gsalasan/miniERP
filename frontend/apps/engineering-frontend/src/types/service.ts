@@ -33,6 +33,8 @@ export interface Service {
   rekomendasi_tim_name?: string;
   fase_proyek_name?: string;
   sbu_name?: string;
+  // New field from schema migration
+  category?: string | null;
   unit: ServiceUnit;
   default_duration?: number;
   is_active?: boolean;
