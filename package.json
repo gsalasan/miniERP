@@ -10,14 +10,22 @@
   ],
   "scripts": {
     "dev:identity": "npm --prefix services/identity-service run dev",
-<<<<<<< HEAD
-    "dev:frontend": "npm --prefix frontend run dev",
-=======
     "dev:crm": "npm --prefix services/crm-service run dev",
+    "dev:hr": "npm --prefix services/hr-service run dev",
+    "dev:project": "npm --prefix services/project-service run dev",
+    "dev:procurement": "npm --prefix services/procurement-service run dev",
+    "dev:finance": "npm --prefix services/finance-service run dev",
+    "dev:engineering": "npm --prefix services/engineering-service run dev",
     "dev:frontend/crm": "npm --prefix frontend/apps/crm-frontend run dev",
+    "dev:frontend/hr": "npm --prefix frontend/apps/hr-frontend run dev",
+    "dev:frontend/identity": "npm --prefix frontend/apps/identity-frontend run dev",  
+    "dev:frontend/project": "npm --prefix frontend/apps/project-frontend run dev",
+    "dev:frontend/procurement": "npm --prefix frontend/apps/procurement-frontend run dev",
+    "dev:frontend/finance": "npm --prefix frontend/apps/finance-frontend run dev",
+    "dev:frontend/engineering": "npm --prefix frontend/apps/engineering-frontend run dev",
+    "dev:frontend/main": "npm --prefix frontend/apps/main-frontend run dev",
     "dev:frontend": "npm --prefix frontend run dev",
     "dev:all": "concurrently \"npm run dev:identity\" \"npm run dev:crm\" \"npm run dev:frontend/crm\"",
->>>>>>> main
     "build:frontend": "npm --prefix frontend run build",
     "build:services": "npm run build --workspaces --if-present",
     "lint": "npm run lint --workspaces --if-present",

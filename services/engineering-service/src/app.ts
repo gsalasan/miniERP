@@ -20,17 +20,23 @@ app.get('/health', (_req: express.Request, res: express.Response) => {
 });
 
 // CORS configuration - allow requests from frontend
+// CORS: allow all origins in development to simplify local debugging;
+// in production keep a restricted whitelist for security.
 app.use(
-  cors({
-    origin: [
-      'http://localhost:3000', // main-frontend
-      'http://localhost:3011', // engineering-frontend
-      'http://localhost:3001', // identity-service (if needed)
-    ],
-    credentials: true,
-    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization', 'x-requested-with'],
-  })
+  cors(
+    process.env.NODE_ENV === 'development'
+      ? { origin: true, credentials: true }
+      : {
+          origin: [
+            'http://localhost:3000', // main-frontend
+            'http://localhost:3011', // engineering-frontend
+            'http://localhost:3001', // identity-service (if needed)
+          ],
+          credentials: true,
+          methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+          allowedHeaders: ['Content-Type', 'Authorization', 'x-requested-with'],
+        }
+  )
 );
 
 app.use(express.json());

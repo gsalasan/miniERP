@@ -2,7 +2,40 @@
 import { Request, Response } from 'express';
 import bcrypt from 'bcryptjs';
 import { generateToken } from '../services/auth.service';
-import { findUserByEmail, createUser } from '../services/auth.service';
+import { findUserByEmail, createUser, getAllUsers, updateUserById, deleteUserById } from '../services/auth.service';
+// UPDATE USER
+export const updateUser = async (req: Request, res: Response) => {
+  const { id } = req.params;
+  const { email, roles, is_active } = req.body;
+  try {
+    const updated = await updateUserById(id, { email, roles, is_active });
+    if (!updated) return res.status(404).json({ success: false, message: 'User tidak ditemukan' });
+    return res.json({ success: true, data: updated });
+  } catch (err: any) {
+    return res.status(500).json({ success: false, message: 'Gagal update user', error: err.message });
+  }
+};
+
+// DELETE USER
+export const deleteUser = async (req: Request, res: Response) => {
+  const { id } = req.params;
+  try {
+    const deleted = await deleteUserById(id);
+    if (!deleted) return res.status(404).json({ success: false, message: 'User tidak ditemukan' });
+    return res.json({ success: true, message: 'User berhasil dihapus' });
+  } catch (err: any) {
+    return res.status(500).json({ success: false, message: 'Gagal hapus user', error: err.message });
+  }
+};
+// GET ALL USERS
+export const getUsers = async (req: Request, res: Response) => {
+  try {
+    const users = await getAllUsers();
+    return res.json({ success: true, data: users });
+  } catch (err: any) {
+    return res.status(500).json({ success: false, message: 'Gagal mengambil data users', error: err.message });
+  }
+};
 
 
 // REGISTER
@@ -64,13 +97,19 @@ export const login = async (req: Request, res: Response) => {
     id: user.id,
     email: user.email,
     roles: user.roles,
+    employee_id: user.employee_id,
   });
 
   return res.json({
     success: true,
     message: 'Login berhasil',
     token,
-    data: { id: user.id, email: user.email, roles: user.roles },
+    data: { 
+      id: user.id, 
+      email: user.email, 
+      roles: user.roles,
+      employee_id: user.employee_id 
+    },
   });
 };
 

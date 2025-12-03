@@ -16,7 +16,6 @@ interface CreateEmployeeData {
   basic_salary: number | string;
   allowances?: any;
   // Optional extended fields
-  department?: string;
   gender?: string;
   marital_status?: string;
   blood_type?: string;
@@ -27,6 +26,7 @@ interface CreateEmployeeData {
   bank_account_number?: string;
   npwp?: string;
   ptkp?: string;
+  manager_id?: string;
 }
 
 interface CreateUserData {
@@ -81,7 +81,9 @@ export const createEmployeeWithUser = async (data: CreateEmployeeWithUserRequest
       if (employee.bank_name) employeeCreateData.bank_name = employee.bank_name;
       if (employee.bank_account_number) employeeCreateData.bank_account_number = employee.bank_account_number;
       if (employee.npwp) employeeCreateData.npwp = employee.npwp;
-      if (employee.ptkp) employeeCreateData.ptkp = employee.ptkp;
+      // Map API field ptkp -> DB column ptkp_status
+      if (employee.ptkp) employeeCreateData.ptkp_status = employee.ptkp;
+      if (employee.manager_id) employeeCreateData.manager_id = employee.manager_id;
 
       const createdEmployee = await tx.employees.create({
         data: employeeCreateData
@@ -274,7 +276,9 @@ export const getAllEmployees = async () => {
           bank_name: true,
           bank_account_number: true,
           npwp: true,
+          // Keep compatibility with old DB: ptkp column
           ptkp: true,
+          manager_id: true,
           users: {
             select: {
               id: true,
@@ -325,16 +329,14 @@ export const getAllEmployees = async () => {
       }
     }
 
-    if (legacy && legacy.length > 0) {
-      console.log(`getAllEmployees: returning ${legacy.length} rows from legacy employees table`);
-      // Normalize basic_salary to string for Decimal safety
-      return legacy.map((emp: any) => ({ ...emp, basic_salary: emp.basic_salary ? String(emp.basic_salary) : null }));
-    }
-
-    // Fallback: try hr_employees (newer schema). This covers cases where data lives in hr_employees.
-    const hr = await prisma.hr_employees.findMany();
-    console.log(`getAllEmployees: legacy empty, returning ${hr.length} rows from hr_employees`);
-    return hr.map((emp: any) => ({ ...emp, basic_salary: emp.basic_salary ? String(emp.basic_salary) : null }));
+    // Normalize basic_salary to string for Decimal safety
+    console.log(`getAllEmployees: returning ${legacy.length} rows from employees table`);
+    return legacy.map((emp: any) => ({
+      ...emp,
+      basic_salary: emp.basic_salary ? String(emp.basic_salary) : null,
+      // expose whichever exists: ptkp_status or ptkp
+      ptkp: (emp as any).ptkp_status ?? (emp as any).ptkp ?? null,
+    }));
   } catch (error: any) {
     console.error('Error fetching employees:', error);
     throw new Error('Gagal mengambil data employee: ' + error.message);
@@ -369,6 +371,13 @@ export const getEmployeeById = async (employeeId: string) => {
           bank_account_number: true,
           npwp: true,
           ptkp: true,
+          manager_id: true,
+          manager: {
+            select: {
+              full_name: true,
+              position: true
+            }
+          },
           users: {
             select: {
               id: true,
@@ -419,19 +428,16 @@ export const getEmployeeById = async (employeeId: string) => {
       }
     }
 
-    if (employee) {
-      console.log(`getEmployeeById: found in legacy employees id=${employeeId}`);
-      return { ...employee, basic_salary: employee.basic_salary ? String(employee.basic_salary) : null } as any;
+    if (!employee) {
+      return null;
     }
 
-    // Fallback to hr_employees
-    const hrEmp = await prisma.hr_employees.findUnique({ where: { id: employeeId } as any });
-    if (hrEmp) {
-      console.log(`getEmployeeById: found in hr_employees id=${employeeId}`);
-      return { ...hrEmp, basic_salary: hrEmp.basic_salary ? String(hrEmp.basic_salary) : null } as any;
-    }
-
-    return null;
+    console.log(`getEmployeeById: found employee id=${employeeId}`);
+    return {
+      ...employee,
+      basic_salary: employee.basic_salary ? String(employee.basic_salary) : null,
+      ptkp: (employee as any).ptkp_status ?? (employee as any).ptkp ?? null,
+    } as any;
   } catch (error: any) {
     console.error('Error fetching employee:', error);
     throw new Error('Gagal mengambil data employee: ' + error.message);
@@ -458,6 +464,7 @@ interface UpdateEmployeeData {
   bank_account_number?: string;
   npwp?: string;
   ptkp?: string;
+  manager_id?: string;
 }
 
 export const updateEmployee = async (employeeId: string, updateData: UpdateEmployeeData) => {
@@ -528,7 +535,12 @@ export const updateEmployee = async (employeeId: string, updateData: UpdateEmplo
       dataToUpdate.npwp = updateData.npwp;
     }
     if (updateData.ptkp !== undefined) {
+      // Write into whichever column exists; prefer ptkp_status but fallback to ptkp
+      dataToUpdate.ptkp_status = updateData.ptkp;
       dataToUpdate.ptkp = updateData.ptkp;
+    }
+    if (updateData.manager_id !== undefined) {
+      dataToUpdate.manager_id = updateData.manager_id || null;
     }
 
     // Update employee with fallbacks for client/schema drift
@@ -555,6 +567,7 @@ export const updateEmployee = async (employeeId: string, updateData: UpdateEmplo
           bank_account_number: true,
           npwp: true,
           ptkp: true,
+          manager_id: true,
           users: {
             select: {
               id: true,
@@ -611,7 +624,7 @@ export const updateEmployee = async (employeeId: string, updateData: UpdateEmplo
         }
       } else if (msg.includes('Unknown arg') || msg.includes('Unknown field')) {
         // Prisma client doesn't know new fields. Drop the new fields from data and select.
-        const { bank_name, bank_account_number, npwp, ptkp, ...legacyData } = dataToUpdate;
+        const { bank_name, bank_account_number, npwp, ptkp_status, ptkp, ...legacyData } = dataToUpdate;
         updatedEmployee = await prisma.employees.update({
           where: { id: employeeId },
           data: legacyData,
@@ -643,7 +656,7 @@ export const updateEmployee = async (employeeId: string, updateData: UpdateEmplo
         });
       } else if (msg.includes('does not exist')) {
         // DB is missing some columns (on older env). Drop the optional fields.
-        const { bank_name, bank_account_number, npwp, ptkp, ...legacyData } = dataToUpdate;
+        const { bank_name, bank_account_number, npwp, ptkp_status, ptkp, ...legacyData } = dataToUpdate;
         updatedEmployee = await prisma.employees.update({
           where: { id: employeeId },
           data: legacyData,
