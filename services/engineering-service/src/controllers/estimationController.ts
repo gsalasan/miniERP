@@ -2,8 +2,6 @@ import { Request, Response } from 'express';
 import * as estimationService from '../services/estimationService';
 import prisma from '../prisma/client';
 import { ItemType, SourceType } from '@prisma/client';
-import { eventBus } from '../utils/eventBus';
-import { EventNames, EstimationApprovedPayload, ProjectStatusChangedPayload } from '../../../shared-event-bus/src/events';
 import { PricingEngine } from '../services/PricingEngine.service';
 import { OverheadEngine } from '../services/OverheadEngine.service';
 
