@@ -22,6 +22,7 @@ export class OvertimeController {
       const hrEmployee = await resolveHrEmployee(prisma, {
         userId,
         email: req.user?.email,
+        employeeId: req.user?.employee_id,
       });
 
       const overtime = await overtimeService.createOvertimeRequest(hrEmployee.id, req.body);
@@ -57,6 +58,7 @@ export class OvertimeController {
       const hrEmployee = await resolveHrEmployee(prisma, {
         userId,
         email: req.user?.email,
+        employeeId: req.user?.employee_id,
       });
 
       const { status } = req.query;
@@ -196,6 +198,7 @@ export class OvertimeController {
       const hrEmployee = await resolveHrEmployee(prisma, {
         userId,
         email: req.user?.email,
+        employeeId: req.user?.employee_id,
       });
 
       const { id } = req.params;
@@ -245,6 +248,30 @@ export class OvertimeController {
       res.status(500).json({
         success: false,
         error: error.message || 'Failed to get overtime summary',
+      });
+    }
+  }
+
+  /**
+   * Calculate overtime amount for approved request
+   * POST /api/v1/overtimes/:id/calculate
+   */
+  async calculateOvertimeAmount(req: Request, res: Response): Promise<void> {
+    try {
+      const { id } = req.params;
+      
+      const overtime = await overtimeService.calculateAndUpdateAmount(id);
+
+      res.json({
+        success: true,
+        message: 'Overtime amount calculated successfully',
+        data: overtime,
+      });
+    } catch (error: any) {
+      console.error('Error calculating overtime amount:', error);
+      res.status(400).json({
+        success: false,
+        error: error.message || 'Failed to calculate overtime amount',
       });
     }
   }

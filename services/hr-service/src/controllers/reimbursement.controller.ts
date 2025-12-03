@@ -22,6 +22,7 @@ export class ReimbursementController {
       const hrEmployee = await resolveHrEmployee(prisma, {
         userId,
         email: req.user?.email,
+        employeeId: req.user?.employee_id,
       });
 
       const reimbursement = await reimbursementService.createReimbursementRequest(
@@ -60,6 +61,7 @@ export class ReimbursementController {
       const hrEmployee = await resolveHrEmployee(prisma, {
         userId,
         email: req.user?.email,
+        employeeId: req.user?.employee_id,
       });
 
       const { status } = req.query;
@@ -222,6 +224,7 @@ export class ReimbursementController {
       const hrEmployee = await resolveHrEmployee(prisma, {
         userId,
         email: req.user?.email,
+        employeeId: req.user?.employee_id,
       });
 
       const { id } = req.params;

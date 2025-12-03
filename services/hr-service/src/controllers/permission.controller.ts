@@ -23,6 +23,7 @@ export class PermissionController {
       const hrEmployee = await resolveHrEmployee(prisma, {
         userId,
         email: req.user?.email,
+        employeeId: req.user?.employee_id,
       });
 
       const permission = await permissionService.createPermissionRequest(hrEmployee.id, req.body);
@@ -58,6 +59,7 @@ export class PermissionController {
       const hrEmployee = await resolveHrEmployee(prisma, {
         userId,
         email: req.user?.email,
+        employeeId: req.user?.employee_id,
       });
 
       const { status } = req.query;
@@ -155,6 +157,7 @@ export class PermissionController {
       const hrEmployee = await resolveHrEmployee(prisma, {
         userId,
         email: req.user?.email,
+        employeeId: req.user?.employee_id,
       });
 
       const { id } = req.params;
@@ -205,6 +208,7 @@ export class PermissionController {
       const hrEmployee = await resolveHrEmployee(prisma, {
         userId,
         email: req.user?.email,
+        employeeId: req.user?.employee_id,
       });
 
       const { id } = req.params;
