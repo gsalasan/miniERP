@@ -1,7 +1,8 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import {
   Box,
   Typography,
+  Divider,
   Grid,
   Card,
   CardContent,
@@ -13,7 +14,11 @@ import {
   ListItemAvatar,
   ListItemText,
   LinearProgress,
+  CircularProgress,
+  Stack,
   Paper,
+  Alert,
+  Badge,
 } from "@mui/material";
 import {
   People as PeopleIcon,
@@ -25,10 +30,15 @@ import {
   Today as TodayIcon,
   ArrowUpward as ArrowUpwardIcon,
   ArrowDownward as ArrowDownwardIcon,
+  NotificationsActive as NotificationIcon,
 } from "@mui/icons-material";
 import { useNavigate } from "react-router-dom";
 import { customersApi } from "../api/customers";
+import { dashboardApi } from "../api/dashboard";
+import IncentiveSimulationCard from "../components/dashboard/IncentiveSimulationCard";
 import { Customer } from "../types/customer";
+import { useAuth } from "../contexts/AuthContext";
+import { config } from "../config";
 
 interface StatCardProps {
   title: string;
@@ -158,8 +168,11 @@ const StatCard: React.FC<StatCardProps> = ({
 
 const HomePage: React.FC = () => {
   const navigate = useNavigate();
+  const { user, token } = useAuth();
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [loading, setLoading] = useState(true);
+  const [dashboardData, setDashboardData] = useState<any>(null);
+  const [pendingDiscounts, setPendingDiscounts] = useState<any[]>([]);
 
   // Load customers data
   useEffect(() => {
@@ -168,6 +181,13 @@ const HomePage: React.FC = () => {
         setLoading(true);
         const data = await customersApi.getAllCustomers();
         setCustomers(data);
+        // also load dashboard analytics (best-effort)
+        try {
+          const db = await dashboardApi.getSalesDashboard();
+          setDashboardData(db.data || db);
+        } catch (e) {
+          console.warn('Failed to load dashboard analytics', e);
+        }
       } catch (error) {
         // eslint-disable-next-line no-console
         console.error("Error loading customers:", error);
@@ -179,10 +199,42 @@ const HomePage: React.FC = () => {
     loadCustomers();
   }, []);
 
+  // Load pending discount approvals for CEO/SALES_MANAGER
+  useEffect(() => {
+    const loadPendingDiscounts = async () => {
+      if (!user || !token) return;
+      
+      const isCEO = user.roles?.includes('CEO');
+      const isSalesManager = user.roles?.includes('SALES_MANAGER');
+      
+      if (!isCEO && !isSalesManager) return;
+
+      try {
+        const response = await fetch(
+          `${config.ENGINEERING_SERVICE_URL}/estimations?status=DISCOUNT_REQUESTED`,
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        );
+
+        if (response.ok) {
+          const result = await response.json();
+          const estimations = result.data || result || [];
+          setPendingDiscounts(estimations);
+        }
+      } catch (error) {
+        console.error('Failed to load pending discount approvals:', error);
+      }
+    };
+
+    loadPendingDiscounts();
+  }, [user, token]);
+
   // Calculate statistics from real data
   const totalCustomers = customers.length;
   const activeCustomers = customers.filter((c) => c.status === "ACTIVE").length;
-  const prospectCustomers = customers.filter((c) => c.status === "PROSPECT").length;
   const inactiveCustomers = customers.filter((c) => c.status === "INACTIVE").length;
 
   // Calculate total contacts
@@ -190,6 +242,11 @@ const HomePage: React.FC = () => {
     (sum, customer) => sum + (customer.customer_contacts?.length || 0),
     0,
   );
+
+  const formatCurrencyNoDecimals = (value: number | null | undefined) => {
+    if (value == null) return '-';
+    return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0, minimumFractionDigits: 0 }).format(Number(value));
+  };
 
   // Get recent customers (last 3 added)
   const recentCustomers = [...customers]
@@ -209,7 +266,7 @@ const HomePage: React.FC = () => {
     },
     {
       title: "Sales Orders",
-      value: "0",
+      value: dashboardData?.summary?.total_sales_orders != null ? String(dashboardData.summary.total_sales_orders) : "0",
       icon: <AssignmentIcon fontSize="large" />,
       color: "#F0AD4E", // Warning
       subtitle: "bulan ini",
@@ -273,8 +330,8 @@ const HomePage: React.FC = () => {
       color: "#06103A",
     },
     {
-      name: "Prospect Conversion",
-      current: totalCustomers > 0 ? Math.round((prospectCustomers / totalCustomers) * 100) : 0,
+      name: "Inactive Rate",
+      current: totalCustomers > 0 ? Math.round((inactiveCustomers / totalCustomers) * 100) : 0,
       target: 100,
       color: "#4E88BE",
     },
@@ -345,6 +402,39 @@ const HomePage: React.FC = () => {
             </Box>
           </Paper>
 
+          {/* Discount Approval Notification */}
+          {pendingDiscounts.length > 0 && (user?.roles?.includes('CEO') || user?.roles?.includes('SALES_MANAGER')) && (
+            <Alert 
+              severity="warning" 
+              icon={<NotificationIcon />}
+              sx={{ 
+                mb: 3,
+                boxShadow: '0 4px 12px rgba(240, 173, 78, 0.2)',
+                border: '1px solid #F0AD4E40',
+              }}
+              action={
+                <Button 
+                  color="inherit" 
+                  size="small" 
+                  onClick={() => navigate('/pipeline')}
+                  sx={{ fontWeight: 600 }}
+                >
+                  Lihat Detail
+                </Button>
+              }
+            >
+              <Typography variant="body1" sx={{ fontWeight: 600, mb: 0.5 }}>
+                <Badge badgeContent={pendingDiscounts.length} color="error" sx={{ mr: 2 }}>
+                  Permintaan Approval Diskon
+                </Badge>
+              </Typography>
+              <Typography variant="body2">
+                Ada {pendingDiscounts.length} estimasi yang memerlukan approval diskon dari Anda.
+                Klik "Lihat Detail" untuk approve atau reject.
+              </Typography>
+            </Alert>
+          )}
+
           {/* Stats Grid */}
           <Grid container spacing={3} mb={4}>
             {stats.map((stat, index) => (
@@ -360,6 +450,111 @@ const HomePage: React.FC = () => {
                 />
               </Grid>
             ))}
+          </Grid>
+
+          {/* Analytic Widgets: Left column stacks Target vs Actual above Sales Funnel; Right column is Activities sidebar */}
+          <Grid container spacing={3} mb={4}>
+            {/* Left column: Target then Funnel (full width now that Activities removed) */}
+            <Grid item xs={12} md={12}>
+              <Grid container spacing={3}>
+                <Grid item xs={12}>
+                  <Card sx={{ height: '100%', borderRadius: 2, boxShadow: '0 6px 18px rgba(6,16,58,0.08)' }}>
+                    <CardContent>
+                      <Typography variant="h6" sx={{ mb: 2, fontWeight: 700 }}>Target vs Actual</Typography>
+                      {dashboardData ? (
+                        <Stack direction="column" spacing={2}>
+                          <Box display="flex" gap={2} alignItems="center">
+                            <Box sx={{ width: 110, height: 110, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                              <Box sx={{ position: 'relative', display: 'inline-flex' }}>
+                                <CircularProgress
+                                  variant="determinate"
+                                  value={Math.min(100, dashboardData.target_vs_actual?.percent ?? 0)}
+                                  size={110}
+                                  thickness={6}
+                                  sx={{ color: '#4E88BE', transition: 'all 600ms ease' }}
+                                />
+                                <Box
+                                  sx={{
+                                    top: 0,
+                                    left: 0,
+                                    bottom: 0,
+                                    right: 0,
+                                    position: 'absolute',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                  }}
+                                >
+                                  <Typography variant="h6" sx={{ fontWeight: 700 }}>
+                                    {`${Math.round(dashboardData.target_vs_actual?.percent ?? 0)}%`}
+                                  </Typography>
+                                </Box>
+                              </Box>
+                            </Box>
+
+                            <Box sx={{ flex: 1 }}>
+                              <Typography variant="subtitle2" color="text.secondary">Target</Typography>
+                              <Typography variant="h6" sx={{ fontWeight: 700 }}>{dashboardData.summary?.total_sales_orders ? `${dashboardData.summary.total_sales_orders} orders` : '-'}</Typography>
+                              <Typography variant="subtitle2" color="text.secondary" sx={{ mt: 1 }}>Actual Revenue</Typography>
+                              <Typography variant="h6" sx={{ fontWeight: 700 }}>{dashboardData.target_vs_actual?.actual != null ? formatCurrencyNoDecimals(dashboardData.target_vs_actual.actual) : '-'}</Typography>
+                              <Typography variant="caption" color="text.secondary" sx={{ mt: 1, display: 'block' }}>{dashboardData.target_vs_actual?.note ?? ''}</Typography>
+                            </Box>
+                          </Box>
+
+                          <Box sx={{ width: '100%' }}>
+                            <LinearProgress variant="determinate" value={Math.min(100, dashboardData.target_vs_actual?.percent ?? 0)} sx={{ height: 10, borderRadius: 6 }} />
+                          </Box>
+
+                          {/* Incentive simulation widget placed under Target vs Actual */}
+                          <IncentiveSimulationCard />
+                        </Stack>
+                      ) : (
+                        <Typography variant="body2">Analitik belum tersedia</Typography>
+                      )}
+                    </CardContent>
+                  </Card>
+                </Grid>
+
+                <Grid item xs={12}>
+                  <Card sx={{ height: '100%', borderRadius: 2, boxShadow: '0 6px 18px rgba(6,16,58,0.08)' }}>
+                    <CardContent>
+                      <Typography variant="h6" sx={{ mb: 2, fontWeight: 700 }}>Sales Funnel</Typography>
+                      {dashboardData?.funnel && dashboardData.funnel.length > 0 ? (
+                        <Box>
+                          {(() => {
+                            const total = dashboardData.funnel.reduce((acc: number, cur: any) => acc + (cur.count || 0), 0) || 1;
+                            return (
+                              <Box display="flex" flexDirection="column" gap={2}>
+                                {dashboardData.funnel.map((f: any, idx: number) => {
+                                  const percent = Math.round(((f.count || 0) / total) * 100);
+                                  const colors = ['#4E88BE', '#C8A870', '#06103A', '#F0AD4E'];
+                                  const color = colors[idx % colors.length];
+                                  return (
+                                    <Box key={f.status}>
+                                      <Box display="flex" justifyContent="space-between" alignItems="center" sx={{ mb: 0.5 }}>
+                                        <Typography variant="body2" sx={{ fontWeight: 600 }}>{f.status}</Typography>
+                                        <Typography variant="body2" color="text.secondary">{f.count}</Typography>
+                                      </Box>
+                                      <Box sx={{ width: '100%', background: '#F4F6F8', borderRadius: 8, height: 18 }}>
+                                        <Box sx={{ width: `${Math.max(6, percent)}%`, height: '100%', background: color, borderRadius: 8, transition: 'width 600ms ease' }} />
+                                      </Box>
+                                    </Box>
+                                  );
+                                })}
+                              </Box>
+                            );
+                          })()}
+                        </Box>
+                      ) : (
+                        <Typography variant="body2">Tidak ada data funnel</Typography>
+                      )}
+                    </CardContent>
+                  </Card>
+                </Grid>
+              </Grid>
+            </Grid>
+
+            {/* Activities removed per request */}
           </Grid>
 
           {/* Main Content */}

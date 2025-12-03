@@ -32,11 +32,14 @@ const CustomerEditDialog: React.FC<CustomerEditDialogProps> = ({
     customer_name: "",
     channel: "",
     city: "",
+    code: "",
+    type: "",
     status: "ACTIVE" as CustomerStatus,
+    province: "",
     district: "",
     alamat: "",
     top_days: 30,
-    assigned_sales_id: "",
+    sales_pic: "",
     credit_limit: 0,
     no_npwp: "",
     sppkp: "",
@@ -49,13 +52,16 @@ const CustomerEditDialog: React.FC<CustomerEditDialogProps> = ({
     if (customer) {
       setFormData({
         customer_name: customer.customer_name || "",
+        code: customer.code || "",
+        type: customer.type || "",
         channel: customer.channel || "",
         city: customer.city || "",
+        province: customer.province || "",
         district: customer.district || "",
         alamat: customer.alamat || "",
         status: customer.status || "ACTIVE",
         top_days: customer.top_days || 30,
-        assigned_sales_id: customer.assigned_sales_id || "",
+        sales_pic: customer.sales_pic || "",
         credit_limit: customer.credit_limit || 0,
         no_npwp: customer.no_npwp || "",
         sppkp: customer.sppkp || "",
@@ -119,8 +125,8 @@ const CustomerEditDialog: React.FC<CustomerEditDialogProps> = ({
       if (formData.alamat?.trim()) cleanData.alamat = formData.alamat.trim();
       if (formData.status) cleanData.status = formData.status;
       if (formData.top_days !== undefined) cleanData.top_days = Number(formData.top_days);
-      if (formData.assigned_sales_id?.trim())
-        cleanData.assigned_sales_id = formData.assigned_sales_id.trim();
+      if (formData.sales_pic?.trim())
+        cleanData.sales_pic = formData.sales_pic.trim();
       if (formData.credit_limit !== undefined)
         cleanData.credit_limit = Number(formData.credit_limit);
       if (formData.no_npwp?.trim()) cleanData.no_npwp = formData.no_npwp.trim();
@@ -205,7 +211,6 @@ const CustomerEditDialog: React.FC<CustomerEditDialogProps> = ({
               <Select value={formData.status} label="Status" onChange={handleInputChange("status")}>
                 <MenuItem value="ACTIVE">Active</MenuItem>
                 <MenuItem value="INACTIVE">Inactive</MenuItem>
-                <MenuItem value="PROSPECT">Prospect</MenuItem>
               </Select>
             </FormControl>
           </Grid>
@@ -236,8 +241,8 @@ const CustomerEditDialog: React.FC<CustomerEditDialogProps> = ({
             <TextField
               fullWidth
               label="Sales ID"
-              value={formData.assigned_sales_id}
-              onChange={handleInputChange("assigned_sales_id")}
+              value={formData.sales_pic}
+              onChange={handleInputChange("sales_pic")}
               variant="outlined"
             />
           </Grid>

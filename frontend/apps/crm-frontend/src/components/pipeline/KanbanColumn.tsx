@@ -6,48 +6,44 @@ import {
   DragIndicator as DragIcon,
 } from "@mui/icons-material";
 import { Droppable, DraggableProvidedDragHandleProps } from "@hello-pangea/dnd";
-import { Project, PipelineColumn, PIPELINE_COLUMNS, ProjectStatus } from "../../types/pipeline";
+import { Opportunity, PipelineStage } from "../../api/opportunity";
 import OpportunityCard from "./OpportunityCard";
 
 interface KanbanColumnProps {
-  status: string;
-  column: PipelineColumn;
-  onCardClick: (project: Project) => void;
-  title?: string;
-  description?: string;
-  color?: string;
+  stage: PipelineStage;
+  opportunities: Opportunity[];
+  totalValue: number;
+  onCardClick: (opportunity: Opportunity) => void;
   onEdit?: () => void;
   onDelete?: () => void;
   deletable?: boolean;
   dragHandleProps?: DraggableProvidedDragHandleProps | null;
-  onDeleteCard?: (projectId: string, status: string) => void;
+  onDeleteCard?: (opportunityId: string) => void;
 }
 
 const KanbanColumn: React.FC<KanbanColumnProps> = ({
-  status,
-  column,
+  stage,
+  opportunities,
+  totalValue,
   onCardClick,
-  title,
-  description,
   onEdit,
-  color,
   onDelete,
   deletable = true,
   dragHandleProps,
   onDeleteCard,
 }) => {
-  const columnConfig = PIPELINE_COLUMNS[status as keyof typeof PIPELINE_COLUMNS];
 
   // Format currency to Indonesian Rupiah
   const formatCurrency = (amount: number): string => {
+    // Ensure amount is a valid number
+    const validAmount = Number(amount) || 0;
+    
     return new Intl.NumberFormat("id-ID", {
       style: "currency",
       currency: "IDR",
       minimumFractionDigits: 0,
       maximumFractionDigits: 0,
-      notation: amount >= 1000000000 ? "compact" : "standard",
-      compactDisplay: "short",
-    }).format(amount);
+    }).format(validAmount);
   };
 
   return (
@@ -68,7 +64,7 @@ const KanbanColumn: React.FC<KanbanColumnProps> = ({
       <Box
         sx={{
           p: 2,
-          backgroundColor: color || columnConfig?.color || "#607D8B",
+          backgroundColor: stage.color || "#607D8B",
           position: "sticky",
           top: 0,
           zIndex: 1,
@@ -84,12 +80,12 @@ const KanbanColumn: React.FC<KanbanColumnProps> = ({
                 <DragIcon sx={{ fontSize: "1.2rem", opacity: 0.7 }} />
               </Box>
               <Typography variant="h6" fontWeight="bold" sx={{ fontSize: "1rem" }}>
-                {title || columnConfig?.title || status}
+                {stage.stage_name}
               </Typography>
             </Box>
 
             {/* Description - Tepat di bawah judul */}
-            {(description || columnConfig?.description) && (
+            {stage.description && (
               <Typography
                 variant="caption"
                 sx={{
@@ -99,20 +95,20 @@ const KanbanColumn: React.FC<KanbanColumnProps> = ({
                   mb: 0.75,
                 }}
               >
-                {description || columnConfig?.description || ""}
+                {stage.description}
               </Typography>
             )}
 
             {/* Total Value - Di bawah description */}
             <Typography variant="body2" fontWeight="medium" sx={{ fontSize: "0.85rem" }}>
-              Total: {formatCurrency(column.totalValue || 0)}
+              Total: {formatCurrency(totalValue)}
             </Typography>
           </Box>
 
           {/* Right: Count + Actions (vertical) */}
           <Box display="flex" flexDirection="column" alignItems="center" gap={0.5}>
             <Chip
-              label={column.count || column.items.length}
+              label={opportunities.length}
               size="small"
               sx={{
                 bgcolor: "rgba(255,255,255,0.25)",
@@ -123,7 +119,7 @@ const KanbanColumn: React.FC<KanbanColumnProps> = ({
             {(onEdit || (onDelete && deletable)) && (
               <Box display="flex" flexDirection="column" gap={0.25}>
                 {onEdit && (
-                  <Tooltip title="Edit board" placement="left">
+                  <Tooltip title="Edit stage" placement="left">
                     <IconButton
                       size="small"
                       onClick={onEdit}
@@ -138,7 +134,7 @@ const KanbanColumn: React.FC<KanbanColumnProps> = ({
                   </Tooltip>
                 )}
                 {onDelete && deletable && (
-                  <Tooltip title="Hapus board" placement="left">
+                  <Tooltip title="Hapus stage" placement="left">
                     <IconButton
                       size="small"
                       onClick={onDelete}
@@ -157,11 +153,8 @@ const KanbanColumn: React.FC<KanbanColumnProps> = ({
           </Box>
         </Box>
       </Box>
-
-      <Divider />
-
       {/* Column Body - Droppable Area */}
-      <Droppable droppableId={status}>
+      <Droppable droppableId={stage.id}>
         {(provided, snapshot) => (
           <Box
             ref={provided.innerRef}
@@ -189,26 +182,20 @@ const KanbanColumn: React.FC<KanbanColumnProps> = ({
             }}
           >
             {/* Cards */}
-            {column.items.map((project, index) => {
-              const projectWithStatus = {
-                ...(project as Project),
-                status: status as ProjectStatus,
-              } as Project;
-              return (
-                <OpportunityCard
-                  key={project.id}
-                  project={projectWithStatus}
-                  index={index}
-                  onCardClick={onCardClick}
-                  onDeleteCard={() => onDeleteCard?.(project.id, status)}
-                />
-              );
-            })}
+            {opportunities.map((opportunity, index) => (
+              <OpportunityCard
+                key={opportunity.id}
+                opportunity={opportunity}
+                index={index}
+                onCardClick={onCardClick}
+                onDeleteCard={() => onDeleteCard?.(opportunity.id)}
+              />
+            ))}
 
             {provided.placeholder}
 
             {/* Empty State */}
-            {column.items.length === 0 && (
+            {opportunities.length === 0 && (
               <Box
                 sx={{
                   textAlign: "center",

@@ -19,7 +19,6 @@ import {
   CheckCircle as WonIcon,
   Cancel as LostIcon,
 } from '@mui/icons-material';
-import CreateSalesOrderModal from './CreateSalesOrderModal';
 import { useAuth } from '../contexts/AuthContext';
 
 interface MarkAsWonLostButtonsProps {
@@ -38,7 +37,6 @@ const MarkAsWonLostButtons: React.FC<MarkAsWonLostButtonsProps> = ({
   onSuccess,
 }) => {
   const { token } = useAuth();
-  const [showWonModal, setShowWonModal] = useState(false);
   const [showLostDialog, setShowLostDialog] = useState(false);
   const [lostReason, setLostReason] = useState('');
   const [loading, setLoading] = useState(false);
@@ -48,6 +46,41 @@ const MarkAsWonLostButtons: React.FC<MarkAsWonLostButtonsProps> = ({
   if (projectStatus !== 'PROPOSAL_DELIVERED') {
     return null;
   }
+
+  const handleMarkAsWon = async () => {
+    setLoading(true);
+    setError(null);
+
+    try {
+      const response = await fetch(
+        `http://localhost:4002/api/v1/pipeline/projects/${projectId}`,
+        {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({
+            status: 'WON',
+          }),
+        }
+      );
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(result.message || 'Failed to mark project as WON');
+      }
+
+      onSuccess();
+    } catch (err) {
+      const error = err as Error;
+      setError(error.message);
+      console.error('Error marking as WON:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleMarkAsLost = async () => {
     if (!lostReason.trim()) {
@@ -94,6 +127,12 @@ const MarkAsWonLostButtons: React.FC<MarkAsWonLostButtonsProps> = ({
 
   return (
     <>
+      {error && (
+        <Alert severity="error" sx={{ mb: 2 }} onClose={() => setError(null)}>
+          {error}
+        </Alert>
+      )}
+
       <Box
         sx={{
           display: 'flex',
@@ -109,11 +148,12 @@ const MarkAsWonLostButtons: React.FC<MarkAsWonLostButtonsProps> = ({
           variant="contained"
           color="success"
           startIcon={<WonIcon />}
-          onClick={() => setShowWonModal(true)}
+          onClick={handleMarkAsWon}
           fullWidth
           sx={{ fontWeight: 600 }}
+          disabled={loading}
         >
-          Tandai sebagai WON
+          {loading ? 'Memproses...' : 'Tandai sebagai WON'}
         </Button>
         <Button
           variant="outlined"
@@ -121,20 +161,11 @@ const MarkAsWonLostButtons: React.FC<MarkAsWonLostButtonsProps> = ({
           startIcon={<LostIcon />}
           onClick={() => setShowLostDialog(true)}
           fullWidth
+          disabled={loading}
         >
           Tandai sebagai LOST
         </Button>
       </Box>
-
-      {/* Modal untuk WON - Buat Sales Order */}
-      <CreateSalesOrderModal
-        open={showWonModal}
-        onClose={() => setShowWonModal(false)}
-        projectId={projectId}
-        projectName={projectName}
-        contractValue={contractValue}
-        onSuccess={onSuccess}
-      />
 
       {/* Dialog untuk LOST */}
       <Dialog
