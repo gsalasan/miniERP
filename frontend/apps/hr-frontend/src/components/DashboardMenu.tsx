@@ -15,6 +15,7 @@ type ModuleItem = {
 const MODULES: ModuleItem[] = [
   { id: 'dashboard', name: 'Dashboard', icon: '📊', route: '/dashboard' },
   { id: 'attendance', name: 'Attendance', icon: '🕒', route: '/attendance' },
+  { id: 'attendances', name: 'Manajemen Absensi', icon: '📋', route: '/hr/attendances' },
   { id: 'employees', name: 'Employees', icon: '👥', route: '/employees' },
   { id: 'payroll', name: 'Payroll', icon: '💸', route: '/payroll' },
   { id: 'leave', name: 'Leave', icon: '🌴', route: '/leave' },
@@ -22,9 +23,9 @@ const MODULES: ModuleItem[] = [
 
 // Mapping of role -> allowed module ids used as fallback when backend is not available.
 const ROLE_MODULES: Record<string, string[]> = {
-  hr: ['dashboard', 'attendance', 'employees', 'leave'],
-  finance: ['dashboard', 'attendance', 'payroll'],
-  manager: ['dashboard', 'attendance', 'employees'],
+  hr: ['dashboard', 'attendance', 'attendances', 'employees', 'leave'],
+  finance: ['dashboard', 'attendance', 'attendances', 'payroll'],
+  manager: ['dashboard', 'attendance', 'attendances', 'employees'],
 };
 
 interface DashboardMenuProps {

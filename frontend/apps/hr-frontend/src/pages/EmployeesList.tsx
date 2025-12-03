@@ -155,8 +155,8 @@ export default function EmployeesList() {
 
         {/* Delete Success Toast */}
         {deleteSuccess && (
-          <div className="fixed top-8 left-1/2 -translate-x-1/2 bg-white border-l-4 border-green-500 shadow-2xl rounded-xl p-5 z-[60] animate-fade-in flex items-center gap-4 min-w-[350px]">
-            <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center flex-shrink-0">
+          <div className="fixed top-8 left-1/2 -translate-x-1/2 bg-white border-l-4 border-green-500 shadow-2xl rounded-xl p-5 z-60 animate-fade-in flex items-center gap-4 min-w-[350px]">
+            <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center shrink-0">
               <svg className="w-7 h-7 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M5 13l4 4L19 7" />
               </svg>
