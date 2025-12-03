@@ -13,6 +13,7 @@ import {
   IconButton,
   FormControlLabel,
   Switch,
+  Checkbox,
   Alert,
   Tooltip,
   Chip,
@@ -83,11 +84,6 @@ const CustomerForm: React.FC<CustomerFormProps> = ({
       // Handle status change
       if (field === "status") {
         const newData = { ...data, [field]: value as CustomerStatus };
-        // Clear tax fields if changing to PROSPECT
-        if (value === "PROSPECT") {
-          newData.no_npwp = "";
-          newData.sppkp = "";
-        }
         onChange(newData);
         return;
       }
@@ -116,6 +112,8 @@ const CustomerForm: React.FC<CustomerFormProps> = ({
       position: "",
       email: "",
       phone: "",
+      whatsapp: "",
+      is_primary: false,
     };
     onChange({ ...data, contacts: [...currentContacts, newContact] });
   };
@@ -170,14 +168,6 @@ const CustomerForm: React.FC<CustomerFormProps> = ({
 
       {/* Status Information - Moved to top */}
       <Grid item xs={12}>
-        {data.status === "PROSPECT" && (
-          <Alert severity="info" sx={{ mb: 2 }}>
-            <Typography variant="body2">
-              <strong>Status Prospect:</strong> Fokus pada data dasar pelanggan. Data pajak bersifat
-              opsional dan dapat diisi nanti saat pelanggan mulai bertransaksi.
-            </Typography>
-          </Alert>
-        )}
         {data.status === "ACTIVE" && (
           <Alert severity="warning" sx={{ mb: 2 }}>
             <Typography variant="body2">
@@ -197,6 +187,29 @@ const CustomerForm: React.FC<CustomerFormProps> = ({
           required={mode === "create"}
           disabled={loading}
           variant="outlined"
+        />
+      </Grid>
+
+      <Grid item xs={12} sm={6}>
+        <TextField
+          fullWidth
+          label="Kode Customer"
+          value={data.code || "Auto-generated"}
+          disabled={true}
+          variant="outlined"
+          helperText="Kode akan dibuat otomatis (Format: CUSTYYMM0001)"
+        />
+      </Grid>
+
+      <Grid item xs={12} sm={6}>
+        <TextField
+          fullWidth
+          label="Tipe Customer"
+          value={data.type || ""}
+          onChange={handleInputChange("type")}
+          disabled={loading}
+          variant="outlined"
+          placeholder="Contoh: Corporate, Retail, Government"
         />
       </Grid>
 
@@ -223,6 +236,18 @@ const CustomerForm: React.FC<CustomerFormProps> = ({
           variant="outlined"
         />
       </Grid>
+
+      <Grid item xs={12} sm={4}>
+        <TextField
+          fullWidth
+          label="Provinsi"
+          value={data.province || ""}
+          onChange={handleInputChange("province")}
+          disabled={loading}
+          variant="outlined"
+        />
+      </Grid>
+
       <Grid item xs={12} sm={4}>
         <TextField
           fullWidth
@@ -233,7 +258,8 @@ const CustomerForm: React.FC<CustomerFormProps> = ({
           variant="outlined"
         />
       </Grid>
-      <Grid item xs={12} sm={4}>
+
+      <Grid item xs={12}>
         <TextField
           fullWidth
           label="Alamat"
@@ -247,12 +273,7 @@ const CustomerForm: React.FC<CustomerFormProps> = ({
       <Grid item xs={12} sm={6}>
         <FormControl fullWidth disabled={loading}>
           <InputLabel>Status</InputLabel>
-          <Select
-            value={data.status || "PROSPECT"}
-            label="Status"
-            onChange={handleInputChange("status")}
-          >
-            <MenuItem value="PROSPECT">Prospect</MenuItem>
+          <Select value={data.status || "ACTIVE"} label="Status" onChange={handleInputChange("status")}>
             <MenuItem value="ACTIVE">Active</MenuItem>
             <MenuItem value="INACTIVE">Inactive</MenuItem>
           </Select>
@@ -293,9 +314,9 @@ const CustomerForm: React.FC<CustomerFormProps> = ({
         <FormControl fullWidth disabled={loading || salesLoading}>
           <InputLabel>Sales yang Ditugaskan</InputLabel>
           <Select
-            value={data.assigned_sales_id || ""}
+            value={data.sales_pic || ""}
             label="Sales yang Ditugaskan"
-            onChange={handleInputChange("assigned_sales_id")}
+            onChange={handleInputChange("sales_pic")}
             displayEmpty
             renderValue={(val) => {
               if (!val) return "Tidak ada sales yang ditugaskan";
@@ -370,7 +391,7 @@ const CustomerForm: React.FC<CustomerFormProps> = ({
                   ? isPKP
                     ? "Wajib diisi untuk PKP"
                     : "Opsional untuk Non-PKP"
-                  : "Opsional untuk Prospect"
+                  : "Opsional"
               }
             />
           </Grid>
@@ -389,31 +410,13 @@ const CustomerForm: React.FC<CustomerFormProps> = ({
                   ? isPKP
                     ? "Wajib diisi untuk PKP"
                     : "Tidak perlu diisi untuk Non-PKP"
-                  : "Opsional untuk Prospect"
+                  : "Opsional"
               }
             />
           </Grid>
         </>
       )}
 
-      {/* Show tax fields button for Prospect */}
-      {!shouldShowTaxFields && data.status === "PROSPECT" && (
-        <Grid item xs={12}>
-          <Button
-            variant="outlined"
-            onClick={() => {
-              // Set both NPWP and SPPKP to empty string to trigger showing tax fields
-              onChange({ ...data, no_npwp: "", sppkp: "" });
-            }}
-            startIcon={<AddIcon />}
-            disabled={loading}
-            fullWidth
-            sx={{ justifyContent: "flex-start" }}
-          >
-            Tambah Informasi Pajak (Opsional)
-          </Button>
-        </Grid>
-      )}
 
       {/* Contacts Section */}
       <Grid item xs={12}>
@@ -491,7 +494,7 @@ const CustomerForm: React.FC<CustomerFormProps> = ({
                   size="small"
                 />
               </Grid>
-              <Grid item xs={12} sm={6}>
+              <Grid item xs={12} sm={4}>
                 <TextField
                   fullWidth
                   label="Email"
@@ -502,7 +505,7 @@ const CustomerForm: React.FC<CustomerFormProps> = ({
                   size="small"
                 />
               </Grid>
-              <Grid item xs={12} sm={6}>
+              <Grid item xs={12} sm={4}>
                 <TextField
                   fullWidth
                   label="Telepon"
@@ -510,6 +513,35 @@ const CustomerForm: React.FC<CustomerFormProps> = ({
                   onChange={(e) => handleContactChange(index, "phone", e.target.value)}
                   disabled={loading}
                   size="small"
+                />
+              </Grid>
+              <Grid item xs={12} sm={4}>
+                <TextField
+                  fullWidth
+                  label="WhatsApp"
+                  value={(contact as any).whatsapp || ""}
+                  onChange={(e) => handleContactChange(index, "whatsapp", e.target.value)}
+                  disabled={loading}
+                  size="small"
+                  placeholder="Format: 628xxx"
+                />
+              </Grid>
+              <Grid item xs={12}>
+                <FormControlLabel
+                  control={
+                    <Checkbox
+                      checked={(contact as any).is_primary || false}
+                      onChange={(e) =>
+                        handleContactChange(
+                          index,
+                          "is_primary",
+                          e.target.checked
+                        )
+                      }
+                      disabled={loading}
+                    />
+                  }
+                  label="Kontak Utama"
                 />
               </Grid>
             </Grid>

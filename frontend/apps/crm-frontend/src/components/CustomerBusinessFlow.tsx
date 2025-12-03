@@ -235,7 +235,7 @@ const CustomerBusinessFlow: React.FC = () => {
           <Box sx={{ display: "flex", alignItems: "center", mb: 2 }}>
             <PersonIcon color="warning" sx={{ mr: 1 }} />
             <Typography variant="h6" fontWeight={600} color="warning.main">
-              assigned_sales_id
+              sales_pic
             </Typography>
             <Chip label="Tahap Pengembangan" color="warning" size="small" sx={{ ml: "auto" }} />
           </Box>

@@ -121,7 +121,7 @@ const CustomersPage: React.FC = () => {
       },
     },
     {
-      field: "assigned_sales_id",
+      field: "sales_pic",
       headerName: "Sales",
       width: 130,
       sortable: true,
@@ -201,7 +201,7 @@ const CustomersPage: React.FC = () => {
     }
   };
 
-  // Load sales users for mapping assigned_sales_id -> name/email
+  // Load sales users for mapping sales_pic -> name/email
   const loadSalesUsers = async () => {
     try {
       const list = await usersApi.getSalesUsers();

@@ -7,6 +7,7 @@ import CustomerDetailPage from "../pages/customers/CustomerDetailPage";
 import EditCustomerPage from "../pages/customers/EditCustomerPage";
 import HomePage from "../pages/HomePage";
 import PipelinePage from "../pages/pipeline/PipelinePage";
+import SalesDashboardPage from "../pages/dashboard/SalesDashboardPage";
 import SalesOrdersPage from "../pages/SalesOrdersPage";
 import { withAuth, useAuth } from "../contexts/AuthContext";
 import { auth } from "../config";
@@ -19,6 +20,7 @@ const ProtectedCustomerDetailPage = withAuth(CustomerDetailPage);
 const ProtectedEditCustomerPage = withAuth(EditCustomerPage);
 const ProtectedHomePage = withAuth(HomePage);
 const ProtectedSalesOrdersPage = withAuth(SalesOrdersPage);
+const ProtectedSalesDashboardPage = withAuth(SalesDashboardPage);
 
 // Component to handle authentication redirect
 const AuthGuard: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -54,6 +56,7 @@ const AppRouter: React.FC = () => {
           <Routes>
             <Route path="/" element={<ProtectedHomePage />} />
             <Route path="/pipeline" element={<ProtectedPipelinePage />} />
+            <Route path="/dashboards/sales" element={<ProtectedSalesDashboardPage />} />
             <Route path="/customers" element={<ProtectedCustomersPage />} />
             <Route path="/customers/new" element={<ProtectedNewCustomerPage />} />
             <Route path="/customers/:id" element={<ProtectedCustomerDetailPage />} />

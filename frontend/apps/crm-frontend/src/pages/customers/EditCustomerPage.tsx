@@ -18,11 +18,14 @@ const EditCustomerPage: React.FC = () => {
 
   const [formData, setFormData] = useState<UpdateCustomerData>({
     customer_name: "",
+    code: "",
+    type: "",
     channel: "",
     city: "",
+    province: "",
     status: "ACTIVE" as CustomerStatus,
     top_days: 30,
-    assigned_sales_id: "",
+    sales_pic: "",
     credit_limit: 0,
     no_npwp: "",
     sppkp: "",
@@ -42,13 +45,16 @@ const EditCustomerPage: React.FC = () => {
       // Initialize form data
       setFormData({
         customer_name: data.customer_name,
-        channel: data.channel,
-        city: data.city,
+        code: data.code || "",
+        type: data.type || "",
+        channel: data.channel || "",
+        city: data.city || "",
+        province: data.province || "",
         district: data.district || "",
         alamat: data.alamat || "",
         status: data.status,
         top_days: data.top_days,
-        assigned_sales_id: data.assigned_sales_id || "",
+        sales_pic: data.sales_pic || "",
         credit_limit: data.credit_limit || 0,
         no_npwp: data.no_npwp || "",
         sppkp: data.sppkp || "",
@@ -59,6 +65,8 @@ const EditCustomerPage: React.FC = () => {
             position: contact.position || "",
             email: contact.email || "",
             phone: contact.phone || "",
+            whatsapp: contact.whatsapp || "",
+            is_primary: contact.is_primary || false,
           })) || [],
         rekenings:
           data.customer_rekenings?.map((r) => ({
@@ -117,14 +125,16 @@ const EditCustomerPage: React.FC = () => {
       // Clean up data - remove empty strings and convert to proper types
       const cleanData: UpdateCustomerData = {};
       if (formData.customer_name?.trim()) cleanData.customer_name = formData.customer_name.trim();
+      if (formData.type?.trim()) cleanData.type = formData.type.trim();
       if (formData.channel?.trim()) cleanData.channel = formData.channel.trim();
       if (formData.city?.trim()) cleanData.city = formData.city.trim();
+      if (formData.province?.trim()) cleanData.province = formData.province.trim();
       if (formData.district?.trim()) cleanData.district = formData.district.trim();
       if (formData.alamat?.trim()) cleanData.alamat = formData.alamat.trim();
       if (formData.status) cleanData.status = formData.status;
       if (formData.top_days !== undefined) cleanData.top_days = Number(formData.top_days);
-      if (formData.assigned_sales_id?.trim())
-        cleanData.assigned_sales_id = formData.assigned_sales_id.trim();
+      if (formData.sales_pic?.trim())
+        cleanData.sales_pic = formData.sales_pic.trim();
       if (formData.credit_limit !== undefined)
         cleanData.credit_limit = Number(formData.credit_limit);
       if (formData.no_npwp?.trim()) cleanData.no_npwp = formData.no_npwp.trim();

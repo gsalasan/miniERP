@@ -62,12 +62,15 @@ import DiscountRequestSection from "../DiscountRequestSection";
 import DiscountDecisionSection from "../DiscountDecisionSection";
 import MarkAsWonLostButtons from "../MarkAsWonLostButtons";
 import SalesOrderDetails from "../SalesOrderDetails";
+import ConvertToSalesOrderButton from "../ConvertToSalesOrderButton";
+import CreateSalesOrderForProject from "../CreateSalesOrderForProject";
 
 interface ProjectDetailModalProps {
   open: boolean;
   onClose: () => void;
   project: Project;
   onProjectUpdate: (project: Project) => void;
+  isOpportunity?: boolean; // Flag to indicate if this is from opportunity (not real project)
 }
 
 interface TabPanelProps {
@@ -97,6 +100,7 @@ const ProjectDetailModal: React.FC<ProjectDetailModalProps> = ({
   onClose,
   project,
   onProjectUpdate,
+  isOpportunity = false,
 }) => {
   const { user, token } = useAuth();
   const userDisplay =
@@ -278,13 +282,28 @@ const ProjectDetailModal: React.FC<ProjectDetailModalProps> = ({
 
   // Load estimations function (defined outside useEffect so it can be reused)
   const loadEstimations = async () => {
-    if (!open || !project?.id) return;
+    if (!open || !project?.id || isOpportunity) return;
     try {
       setEstimationsLoading(true);
       setEstimationError("");
       const list = await estimationsApi.listByProject(project.id);
       console.log('Loaded estimations:', list);
-      setEstimations(list);
+      
+      // Calculate subtotal from items if not present
+      const enrichedList = list.map((est: any) => {
+        if (!est.subtotal && est.items && Array.isArray(est.items)) {
+          const calculatedSubtotal = est.items.reduce((sum: number, item: any) => {
+            const qty = Number(item.quantity) || 0;
+            const price = Number(item.sell_price_at_estimation) || 0;
+            return sum + (qty * price);
+          }, 0);
+          console.log(`Calculated subtotal for estimation ${est.id}:`, calculatedSubtotal);
+          return { ...est, subtotal: calculatedSubtotal };
+        }
+        return est;
+      });
+      
+      setEstimations(enrichedList);
     } catch (err: unknown) {
       const status =
         typeof err === "object" && err !== null && "response" in err
@@ -314,23 +333,24 @@ const ProjectDetailModal: React.FC<ProjectDetailModalProps> = ({
 
   useEffect(() => {
     const loadActivities = async () => {
-      if (!open || !project?.id) return;
+      if (!open || !project?.id || isOpportunity) return;
       try {
         setActivitiesLoading(true);
         const list = await pipelineApi.getProjectActivities(project.id);
         setActivities(Array.isArray(list) ? list : []);
-      } catch {
+      } catch (err) {
+        console.error('Error fetching project activities:', err);
         setActivities([]);
       } finally {
         setActivitiesLoading(false);
       }
     };
     loadActivities();
-  }, [open, project?.id]);
+  }, [open, project?.id, isOpportunity]);
 
   // Helper to refresh activities (used after creating activity entries)
   const refreshActivities = async () => {
-    if (!project?.id) return;
+    if (!project?.id || isOpportunity) return;
     try {
       setActivitiesLoading(true);
       const list = await pipelineApi.getProjectActivities(project.id);
@@ -714,13 +734,11 @@ const ProjectDetailModal: React.FC<ProjectDetailModalProps> = ({
     try {
       setSaving(true);
       const payload: import("../../types/pipeline").UpdateProjectRequest = {
-        project_name: form.project_name,
+        name: form.project_name,
         description: form.description,
         estimated_value: Number(form.estimated_value) || 0,
         lead_score: Number(form.lead_score) || 0,
-        priority: form.priority,
         expected_close_date: form.expected_close_date || undefined,
-        sales_user_id: salesUserId,
       };
       const updated = await pipelineApi.updateProject(project.id, payload);
       setEditMode(false);
@@ -952,6 +970,24 @@ const ProjectDetailModal: React.FC<ProjectDetailModalProps> = ({
 
       <Divider />
 
+      {/* Convert to Sales Order Button - Show prominently for WON opportunities */}
+      {isOpportunity && project.status === 'WON' && (
+        <Box sx={{ p: 2, bgcolor: 'success.lighter', borderBottom: 1, borderColor: 'divider' }}>
+          <Alert severity="success" sx={{ mb: 2 }}>
+            <strong>Opportunity WON!</strong> Anda dapat mengkonversi opportunity ini menjadi Sales Order.
+          </Alert>
+          <ConvertToSalesOrderButton
+            opportunityId={project.id}
+            opportunityName={project.project_name}
+            stageName={project.status}
+            onSuccess={() => {
+              // Refresh data after conversion
+              window.location.reload();
+            }}
+          />
+        </Box>
+      )}
+
       {/* Tabs */}
       <Box sx={{ borderBottom: 1, borderColor: "divider" }}>
         <Tabs value={tabValue} onChange={handleTabChange}>
@@ -1016,7 +1052,7 @@ const ProjectDetailModal: React.FC<ProjectDetailModalProps> = ({
                           />
                         ) : (
                           <Typography variant="body2">
-                            <strong>Skor Lead:</strong> {project.lead_score}
+                            <strong>Probabilitas:</strong> {project.probability || project.lead_score || 0}%
                           </Typography>
                         )}
                       </Box>
@@ -1493,7 +1529,18 @@ const ProjectDetailModal: React.FC<ProjectDetailModalProps> = ({
             Estimasi Engineering
           </Typography>
 
-          {estimationsLoading ? (
+          {isOpportunity ? (
+            <Box textAlign="center" py={4}>
+              <EngineeringIcon sx={{ fontSize: 64, color: "text.secondary", mb: 2 }} />
+              <Typography variant="body1" color="text.secondary" gutterBottom>
+                Fitur estimasi tidak tersedia untuk opportunities.
+              </Typography>
+              <Typography variant="caption" color="text.secondary" display="block" mt={2}>
+                Data ini berasal dari opportunities table. Untuk menggunakan fitur estimasi, quotation, dan sales order, 
+                data perlu di-convert ke project terlebih dahulu.
+              </Typography>
+            </Box>
+          ) : estimationsLoading ? (
             <Box display="flex" justifyContent="center" py={4}>
               <CircularProgress />
             </Box>
@@ -1525,6 +1572,20 @@ const ProjectDetailModal: React.FC<ProjectDetailModalProps> = ({
           ) : (
             // State: Ada estimasi
             <Box>
+              {/* Create Sales Order Button - Show if project is WON and not from opportunity */}
+              {!isOpportunity && project.status === 'WON' && (
+                <Box sx={{ mb: 2 }}>
+                  <CreateSalesOrderForProject
+                    projectId={project.id}
+                    projectName={project.project_name}
+                    onSuccess={() => {
+                      // Refresh data after SO creation
+                      window.location.reload();
+                    }}
+                  />
+                </Box>
+              )}
+
               {/* Sales Order Details - Show if project is WON */}
               {project.status === 'WON' && (
                 <Box sx={{ mb: 2 }}>
@@ -1541,7 +1602,7 @@ const ProjectDetailModal: React.FC<ProjectDetailModalProps> = ({
                     projectStatus={project.status}
                     contractValue={computeSalesOrderContractValue()}
                     onSuccess={() => {
-                      onProjectUpdate({ ...project, status: 'WON' });
+                      onProjectUpdate({ ...project, status: ProjectStatus.WON });
                       loadEstimations();
                     }}
                   />
@@ -1736,9 +1797,11 @@ const ProjectDetailModal: React.FC<ProjectDetailModalProps> = ({
         {!editMode ? (
           <>
             <Button onClick={onClose}>Tutup</Button>
-            <Button variant="contained" onClick={() => setEditMode(true)}>
-              Edit Project
-            </Button>
+            {!isOpportunity && (
+              <Button variant="contained" onClick={() => setEditMode(true)}>
+                Edit Project
+              </Button>
+            )}
           </>
         ) : (
           <>

@@ -50,6 +50,10 @@ interface QuotationData {
 }
 
 export const generateQuotationPDF = (data: QuotationData) => {
+  // Debug log to check data
+  console.log('[PDF Generator] Input data:', data);
+  console.log('[PDF Generator] Pricing:', data.pricing);
+  
   const doc = new jsPDF();
 
   // Page setup
@@ -111,7 +115,7 @@ export const generateQuotationPDF = (data: QuotationData) => {
   doc.text("Berlaku Hingga", marginLeft, yPos);
   doc.setFont("helvetica", "normal");
   doc.text(
-    `: ${new Date(data.validUntil).toLocaleDateString("id-ID", {
+    `: ${new Date(data.quotationDate).toLocaleDateString("id-ID", {
       day: "2-digit",
       month: "long",
       year: "numeric",
@@ -127,7 +131,7 @@ export const generateQuotationPDF = (data: QuotationData) => {
   doc.text("KEPADA YTH", marginLeft, yPos);
   doc.setFont("helvetica", "normal");
 
-  yPos += 5;
+  yPos += 6;
   doc.setFont("helvetica", "bold");
   doc.text(data.customer.name, marginLeft, yPos);
   doc.setFont("helvetica", "normal");
@@ -138,11 +142,11 @@ export const generateQuotationPDF = (data: QuotationData) => {
   ]
     .filter(Boolean)
     .join("\n");
-  const custLines = doc.splitTextToSize(customerAddress, pageWidth - marginLeft - 30);
+  const custLines = doc.splitTextToSize(customerAddress, 90);
   doc.text(custLines, marginLeft, yPos + 5);
 
-  let rightY = yPos - 5;
-  const rightX = marginLeft + 110;
+  let rightY = yPos;
+  const rightX = marginLeft + 105;
   doc.setFontSize(10);
   doc.setFont("helvetica", "bold");
   doc.text("PERIHAL", rightX, rightY);

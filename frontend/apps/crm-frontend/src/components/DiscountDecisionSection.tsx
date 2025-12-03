@@ -14,6 +14,7 @@ import {
   DiscountOutlined as DiscountIcon,
 } from '@mui/icons-material';
 import { useAuth } from '../contexts/AuthContext';
+import { config } from '../config';
 
 interface DiscountDecisionSectionProps {
   estimationId: string;
@@ -36,7 +37,9 @@ const DiscountDecisionSection: React.FC<DiscountDecisionSectionProps> = ({
   const [success, setSuccess] = useState<string | null>(null);
 
   const isCEO = user?.roles?.includes('CEO');
-  const isPending = currentStatus === 'PENDING_DISCOUNT_APPROVAL';
+  const isSalesManager = user?.roles?.includes('SALES_MANAGER');
+  const canApprove = isCEO || isSalesManager;
+  const isPending = currentStatus === 'DISCOUNT_REQUESTED';
   const isApproved = currentStatus === 'DISCOUNT_APPROVED';
   const isRejected = currentStatus === 'DISCOUNT_REJECTED';
 
@@ -47,7 +50,7 @@ const DiscountDecisionSection: React.FC<DiscountDecisionSectionProps> = ({
 
     try {
       const response = await fetch(
-        `http://localhost:4001/api/v1/estimations/${estimationId}/decide-discount`,
+        `${config.ENGINEERING_SERVICE_URL}/estimations/${estimationId}/decide-discount`,
         {
           method: 'PUT',
           headers: {
@@ -83,8 +86,8 @@ const DiscountDecisionSection: React.FC<DiscountDecisionSectionProps> = ({
     }
   };
 
-  // Only show to CEO
-  if (!isCEO) {
+  // Only show to CEO or SALES_MANAGER
+  if (!canApprove) {
     return null;
   }
 
@@ -140,7 +143,7 @@ const DiscountDecisionSection: React.FC<DiscountDecisionSectionProps> = ({
       <Box display="flex" alignItems="center" gap={1} mb={1}>
         <DiscountIcon color="warning" />
         <Typography variant="subtitle2" fontWeight="bold">
-          CEO Approval Required
+          Approval Required
         </Typography>
       </Box>
 
@@ -152,7 +155,7 @@ const DiscountDecisionSection: React.FC<DiscountDecisionSectionProps> = ({
       <Divider sx={{ my: 2 }} />
 
       <Typography variant="caption" color="text.secondary" display="block" sx={{ mb: 2 }}>
-        Sebagai CEO, Anda dapat menyetujui atau menolak permintaan diskon ini.
+        Anda dapat menyetujui atau menolak permintaan diskon ini.
       </Typography>
 
       <Box display="flex" gap={2}>

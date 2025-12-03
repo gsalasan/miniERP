@@ -24,6 +24,7 @@ import {
 } from '@mui/icons-material';
 import { useAuth } from '../contexts/AuthContext';
 import { generateQuotationPDF } from '../utils/quotationPdfGenerator';
+import { config } from '../config';
 
 interface GenerateQuotationWithDiscountButtonProps {
   estimationId: string;
@@ -180,6 +181,11 @@ const GenerateQuotationWithDiscountButton: React.FC<
       // Success - Generate and download PDF
       const quotationData = result.data;
 
+      // Debug log
+      console.log('[GenerateQuotation] Quotation data:', quotationData);
+      console.log('[GenerateQuotation] Pricing:', quotationData.pricing);
+      console.log('[GenerateQuotation] Items:', quotationData.items);
+
       // Generate PDF
       try {
         generateQuotationPDF(quotationData);
@@ -226,7 +232,7 @@ const GenerateQuotationWithDiscountButton: React.FC<
       }
 
       const resp = await fetch(
-        `http://localhost:4001/api/v1/estimations/${estimationId}/request-discount-approval`,
+        `${config.ENGINEERING_SERVICE_URL}/estimations/${estimationId}/request-discount-approval`,
         {
           method: 'POST',
           headers: {
