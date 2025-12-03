@@ -1,15 +1,14 @@
-import express from 'express';
+import dotenv from 'dotenv';
+import app from './app';
 
-const app = express();
+// Load environment variables
+dotenv.config();
 
-app.get('/health', (_req: express.Request, res: express.Response) => {
-  res.status(200).json({ success: true, service: 'project-service' });
+const PORT = Number(process.env.PROJECT_SERVICE_PORT) || 4007;
+
+console.log('Starting Project Service on port:', PORT);
+
+app.listen(PORT, () => {
+  console.log(`Project Service running on port ${PORT}`);
 });
-
-const port: number = Number(process.env.PORT) || 8080;
-app.listen(port, () => {
-  // eslint-disable-next-line no-console
-  console.log(`Project service listening on port ${port}`);
-});
-
 

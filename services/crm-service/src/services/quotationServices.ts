@@ -59,7 +59,7 @@ export interface QuotationData {
 
 class QuotationServices {
   /**
-   * Get quotation data for a specific opportunity/project
+   * Get quotation data for a specific opportunity/project (DEPRECATED - use generateQuotationWithDiscount)
    * Combines data from project, customer, estimation, and items
    */
   async getQuotationData(opportunityId: string): Promise<QuotationData> {

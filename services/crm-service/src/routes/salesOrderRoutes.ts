@@ -49,4 +49,18 @@ router.patch('/:id/document', salesOrderController.updateDocument);
  */
 router.delete('/:id', salesOrderController.deleteSalesOrder);
 
+/**
+ * @route POST /api/v1/sales-orders/convert-from-opportunity
+ * @desc Convert WON Opportunity to Sales Order (with Project and Estimation creation)
+ * @access Private (requires authentication)
+ */
+router.post('/convert-from-opportunity', salesOrderController.convertOpportunityToSalesOrder);
+
+/**
+ * @route GET /api/v1/sales-orders/by-opportunity/:opportunityId
+ * @desc Get Sales Order by Opportunity ID
+ * @access Private (requires authentication)
+ */
+router.get('/by-opportunity/:opportunityId', salesOrderController.getSalesOrderByOpportunity);
+
 export default router;
