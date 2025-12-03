@@ -42,6 +42,14 @@ router.post('/checkout', (req, res) => attendanceController.checkOut(req, res));
 router.get('/my', (req, res) => attendanceController.getMyAttendances(req, res));
 
 /**
+ * @route   GET /api/v1/attendances/reverse-geocode
+ * @desc    Reverse geocoding - convert lat/lng to address
+ * @access  Private
+ * @query   lat, lng
+ */
+router.get('/reverse-geocode', (req, res) => attendanceController.reverseGeocode(req, res));
+
+/**
  * @route   GET /api/v1/attendances
  * @desc    Get all employees' attendances (HR admin)
  * @access  Private (HR Admin)
