@@ -25,7 +25,18 @@ const getAllowedOrigins = () => {
 };
 
 app.use(cors({
-  origin: ['http://localhost:3000', 'http://localhost:5174', 'http://localhost:3013'],
+  origin: (origin, callback) => {
+    const allowed = getAllowedOrigins();
+    // Allow requests with no origin (mobile apps, Postman)
+    if (!origin) return callback(null, true);
+    // Allow all localhost origins in development to simplify local integration
+    if (origin.startsWith('http://localhost')) return callback(null, true);
+    if (allowed.includes('*') || allowed.includes(origin)) return callback(null, true);
+    // Support wildcard suffix like http://localhost:30*
+    const matched = allowed.some(a => a.endsWith('*') && origin.startsWith(a.slice(0, -1)));
+    if (matched) return callback(null, true);
+    callback(new Error('Not allowed by CORS'));
+  },
   credentials: true
 }));
 app.use(express.json());

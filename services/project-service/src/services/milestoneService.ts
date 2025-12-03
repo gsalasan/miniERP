@@ -1,5 +1,6 @@
 import prisma from '../utils/prisma';
 import { NotificationService } from '../utils/notifications';
+import { randomUUID } from 'crypto';
 
 interface CreateMilestoneData {
   name: string;
@@ -17,6 +18,74 @@ export class MilestoneService {
     }
     return input;
   }
+
+  /**
+   * Auto-generate 5 default milestones on project creation
+   * TDD-015 Extended Section 5: Milestone Auto-generation
+   * 
+   * Generated milestones:
+   * 1. Project Kickoff (+0 days from project start)
+   * 2. 30% Progress (+60 days)
+   * 3. 70% Progress (+150 days)
+   * 4. Handover (+300 days)
+   * 5. Project Closed (+330 days)
+   * 
+   * @param projectId - Project ID
+   * @param projectStartDate - Project start date
+   * @returns Array of created milestones
+   */
+  async generateDefaultMilestones(
+    projectId: string,
+    projectStartDate: Date
+  ) {
+    const defaultMilestones = [
+      { name: 'Project Kickoff', offsetDays: 0, type: 'milestone' },
+      { name: '30% Progress', offsetDays: 60, type: 'milestone' },
+      { name: '70% Progress', offsetDays: 150, type: 'milestone' },
+      { name: 'Handover', offsetDays: 300, type: 'milestone' },
+      { name: 'Project Closed', offsetDays: 330, type: 'milestone' },
+    ];
+
+    const createdMilestones = [];
+
+    for (const def of defaultMilestones) {
+      const startDate = new Date(projectStartDate);
+      startDate.setDate(startDate.getDate() + def.offsetDays);
+      
+      const endDate = new Date(startDate);
+      endDate.setDate(endDate.getDate() + 1); // Milestone spans 1 day
+
+      const milestone = await prisma.project_milestones.create({
+        data: {
+          id: randomUUID(),
+          project_id: projectId,
+          name: def.name,
+          start_date: startDate.toISOString(),
+          end_date: endDate.toISOString(),
+          status: 'PLANNED',
+        },
+      });
+
+      createdMilestones.push(milestone);
+    }
+
+    // Log activity
+    await prisma.project_activities.create({
+      data: {
+        id: randomUUID(),
+        project_id: projectId,
+        activity_type: 'NOTE_ADDED',
+        description: `Auto-generated 5 default milestones`,
+        performed_by: 'system',
+        metadata: {
+          milestones_count: createdMilestones.length,
+        },
+      },
+    });
+
+    return createdMilestones;
+  }
+
   /**
    * Apply milestone template to project
    */
@@ -26,7 +95,7 @@ export class MilestoneService {
     userId: string
   ) {
     // Check if user is PM of the project
-    const project = await prisma.project.findUnique({
+    const project = await prisma.projects.findUnique({
       where: { id: projectId },
     });
 
@@ -45,7 +114,7 @@ export class MilestoneService {
     }
 
     // Get template
-    const template = await prisma.milestoneTemplate.findUnique({
+    const template = await prisma.milestone_templates.findUnique({
       where: { id: parseInt(templateId) },
     });
 
@@ -68,8 +137,9 @@ export class MilestoneService {
         const endDate = new Date(currentDate);
         endDate.setDate(endDate.getDate() + (def.duration_days || 7));
 
-        const milestone = await tx.projectMilestone.create({
+        const milestone = await tx.project_milestones.create({
           data: {
+            id: randomUUID(),
             project_id: projectId,
             name: def.name,
             start_date: startDate.toISOString(),
@@ -86,8 +156,9 @@ export class MilestoneService {
       }
 
       // Log activity
-      await tx.projectActivity.create({
+      await tx.project_activities.create({
         data: {
+          id: randomUUID(),
           project_id: projectId,
           activity_type: 'NOTE_ADDED',
           description: `Applied milestone template: ${template.template_name}`,
@@ -109,31 +180,53 @@ export class MilestoneService {
    * Get project milestones with tasks
    */
   async getMilestones(projectId: string) {
-    const milestones = await prisma.projectMilestone.findMany({
+    const milestones = await prisma.project_milestones.findMany({
       where: { project_id: projectId },
       include: {
-        tasks: {
-          include: {
-            assignee: {
-              select: {
-                id: true,
-                email: true,
-                employee: {
-                  select: {
-                    full_name: true,
-                    position: true,
-                  },
-                },
-              },
-            },
-          },
+        project_tasks: {
           orderBy: { created_at: 'asc' },
         },
       },
       orderBy: { start_date: 'asc' },
     });
 
-    return milestones;
+    // Get all unique assignee IDs from all tasks
+    const assigneeIds = [...new Set(
+      milestones.flatMap(m => 
+        m.project_tasks
+          .map(t => t.assignee_id)
+          .filter(Boolean)
+      )
+    )] as string[];
+
+    // Fetch all assignees in one query
+    const assignees = assigneeIds.length > 0 ? await prisma.users.findMany({
+      where: { id: { in: assigneeIds } },
+      select: {
+        id: true,
+        email: true,
+        employees: {
+          select: {
+            full_name: true,
+            position: true,
+          },
+        },
+      },
+    }) : [];
+
+    // Create assignee map
+    const assigneeMap = new Map(assignees.map(a => [a.id, a]));
+
+    // Enrich tasks with assignee data
+    const enrichedMilestones = milestones.map(milestone => ({
+      ...milestone,
+      project_tasks: milestone.project_tasks.map(task => ({
+        ...task,
+        assignee: task.assignee_id ? assigneeMap.get(task.assignee_id) || null : null,
+      })),
+    }));
+
+    return enrichedMilestones;
   }
 
   /**
@@ -145,7 +238,7 @@ export class MilestoneService {
     userId: string
   ) {
     // Check if user is PM
-    const project = await prisma.project.findUnique({
+    const project = await prisma.projects.findUnique({
       where: { id: projectId },
     });
 
@@ -163,7 +256,7 @@ export class MilestoneService {
       throw error;
     }
 
-    const milestone = await prisma.projectMilestone.create({
+    const milestone = await prisma.project_milestones.create({
       data: {
         project_id: projectId,
         name: data.name,
@@ -184,9 +277,9 @@ export class MilestoneService {
     data: Partial<CreateMilestoneData>,
     userId: string
   ) {
-    const milestone = await prisma.projectMilestone.findUnique({
+    const milestone = await prisma.project_milestones.findUnique({
       where: { id: milestoneId },
-      include: { project: true },
+      include: { projects: true },
     });
 
     if (!milestone) {
@@ -195,7 +288,7 @@ export class MilestoneService {
       throw error;
     }
 
-    if (milestone.project.pm_user_id !== userId) {
+    if (milestone.projects.pm_user_id !== userId) {
       const error: any = new Error(
         'Forbidden: Only the assigned PM can update milestones'
       );
@@ -203,7 +296,7 @@ export class MilestoneService {
       throw error;
     }
 
-    const updated = await prisma.projectMilestone.update({
+    const updated = await prisma.project_milestones.update({
       where: { id: milestoneId },
       data: {
         name: data.name,
@@ -220,9 +313,9 @@ export class MilestoneService {
    * Delete milestone
    */
   async deleteMilestone(milestoneId: string, userId: string) {
-    const milestone = await prisma.projectMilestone.findUnique({
+    const milestone = await prisma.project_milestones.findUnique({
       where: { id: milestoneId },
-      include: { project: true },
+      include: { projects: true },
     });
 
     if (!milestone) {
@@ -231,7 +324,7 @@ export class MilestoneService {
       throw error;
     }
 
-    if (milestone.project.pm_user_id !== userId) {
+    if (milestone.projects.pm_user_id !== userId) {
       const error: any = new Error(
         'Forbidden: Only the assigned PM can delete milestones'
       );
@@ -240,13 +333,14 @@ export class MilestoneService {
     }
 
     // Delete milestone and cascade delete tasks
-    await prisma.projectMilestone.delete({
+    await prisma.project_milestones.delete({
       where: { id: milestoneId },
     });
 
     // Log activity
-    await prisma.projectActivity.create({
+    await prisma.project_activities.create({
       data: {
+        id: randomUUID(),
         project_id: milestone.project_id,
         activity_type: 'NOTE_ADDED',
         description: `Deleted milestone: ${milestone.name}`,
@@ -267,7 +361,7 @@ export class MilestoneService {
       where.project_type = projectType;
     }
 
-    const templates = await prisma.milestoneTemplate.findMany({
+    const templates = await prisma.milestone_templates.findMany({
       where,
       orderBy: { template_name: 'asc' },
     });
