@@ -50,3 +50,29 @@ export async function fetchModulesByRoles(roles: string[]) {
   }
   return Array.from(map.values());
 }
+
+// Fetch modules allowed for a specific role from HR-service (backend should expose this)
+export async function fetchModulesByRole(role: string) {
+  try {
+    const res = await fetch(`${BASE_URL}/roles/${encodeURIComponent(role)}/modules`);
+    if (!res.ok) return [];
+    const data = await res.json();
+    return data.modules || [];
+  } catch (e) {
+    // swallow and return empty list on error — caller can handle empty as no-access
+    return [];
+  }
+}
+
+// Fetch modules for multiple roles and deduplicate by id
+export async function fetchModulesByRoles(roles: string[]) {
+  if (!roles || roles.length === 0) return [];
+  const results = await Promise.all(roles.map((r) => fetchModulesByRole(r)));
+  const all = results.flat();
+  const map = new Map();
+  for (const m of all) {
+    if (!m || !m.id) continue;
+    if (!map.has(m.id)) map.set(m.id, m);
+  }
+  return Array.from(map.values());
+}

@@ -1,26 +1,52 @@
 /* Frappe Gantt CSS - Custom styles for miniERP */
 /* IMPORTANT: This file must be loaded AFTER frappe-gantt-vendor.css */
 
+/* ============================================
+   GANTT CONTAINER
+   ============================================ */
+
 .gantt-container {
   position: relative;
   overflow-x: auto;
   overflow-y: visible;
   font-size: 12px;
   font-family: 'Roboto', 'Helvetica', 'Arial', sans-serif;
-  padding: 20px 10px;
-  min-height: 500px;
   width: 100%;
   height: auto;
+  min-height: 400px;
+}
+
+/* Custom scrollbar styling */
+.gantt-container::-webkit-scrollbar {
+  height: 12px;
+}
+
+.gantt-container::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 6px;
+}
+
+.gantt-container::-webkit-scrollbar-thumb {
+  background: #888;
+  border-radius: 6px;
+}
+
+.gantt-container::-webkit-scrollbar-thumb:hover {
+  background: #555;
 }
 
 .gantt-container svg {
-  width: 100%;
+  width: auto !important;
+  min-width: 100%;
   height: auto !important;
   overflow: visible;
+  display: block;
 }
 
 .gantt-container .gantt {
   overflow: visible !important;
+  width: auto;
+  min-width: 100%;
 }
 
 /* Override default bar color - Frappe Gantt uses CSS variables */
@@ -29,7 +55,112 @@
   --g-bar-border: #0d47a1;
 }
 
-/* Milestone styles - Target bar-wrapper with custom class */
+/* ============================================
+   TEXT CONTRAST - Dynamic text color support
+   Text color is applied via JavaScript based on background luminance
+   ============================================ */
+
+/* Ensure all text elements inherit the dynamically set color */
+.gantt .bar-wrapper text {
+  pointer-events: none;
+  user-select: none;
+}
+
+/* Bar label text - will be set dynamically */
+.gantt .bar-wrapper .bar-label {
+  font-weight: 500;
+  font-size: 12px;
+}
+
+/* Progress text - will be set dynamically */
+.gantt .bar-wrapper .bar-progress {
+  font-weight: 600;
+  font-size: 11px;
+}
+
+/* Hover state - maintain text contrast */
+.gantt .bar-wrapper:hover text {
+  opacity: 1 !important;
+  font-weight: 600;
+}
+
+/* Active/dragging state - maintain text contrast */
+.gantt .bar-wrapper.active text,
+.gantt .bar-wrapper.dragging text {
+  opacity: 1 !important;
+  font-weight: 600;
+}
+
+/* Selected state - maintain text contrast */
+.gantt .bar-wrapper.selected text {
+  opacity: 1 !important;
+  font-weight: 700;
+}
+
+/* Dependency arrows - keep visible */
+.gantt .arrow {
+  fill: none;
+  stroke: #666;
+  stroke-width: 1.4;
+  opacity: 0.6;
+}
+
+.gantt .arrow:hover {
+  stroke: #333;
+  opacity: 1;
+}
+
+/* ============================================
+   MILESTONE STYLES
+   ============================================ */
+
+/* TDD-015 Extended: Status-based color system */
+/* Milestone - Brown/Maroon */
+.gantt .bar-wrapper.bar-milestone .bar {
+  fill: #6d4c41 !important;
+  stroke: #5d4037 !important;
+}
+
+/* TODO - Blue */
+.gantt .bar-wrapper.bar-todo .bar {
+  fill: #2196f3 !important;
+  stroke: #1976d2 !important;
+}
+
+/* In Progress - Green */
+.gantt .bar-wrapper.bar-in-progress .bar {
+  fill: #4caf50 !important;
+  stroke: #388e3c !important;
+}
+
+/* Done - Gray */
+.gantt .bar-wrapper.bar-done .bar {
+  fill: #9e9e9e !important;
+  stroke: #757575 !important;
+}
+
+/* Backwards compatibility: Red/Orange/Yellow removed, mapping to status */
+.gantt .bar-wrapper.bar-red .bar {
+  fill: #2196f3 !important;
+  stroke: #1976d2 !important;
+}
+
+.gantt .bar-wrapper.bar-orange .bar {
+  fill: #4caf50 !important;
+  stroke: #388e3c !important;
+}
+
+.gantt .bar-wrapper.bar-yellow .bar {
+  fill: #2196f3 !important;
+  stroke: #1976d2 !important;
+}
+
+.gantt .bar-wrapper.bar-green .bar {
+  fill: #9e9e9e !important;
+  stroke: #757575 !important;
+}
+
+/* Backwards compatibility: Old milestone styles */
 .gantt .bar-wrapper.gantt-milestone-planned .bar {
   fill: #5d4037 !important;
   stroke: #3e2723 !important;
@@ -44,6 +175,31 @@
   fill: #8d6e63 !important;
   stroke: #5d4037 !important;
 }
+
+/* Schedule-based milestone colors (from optimization) */
+.gantt .bar-wrapper.gantt-milestone-ahead .bar {
+  fill: #4caf50 !important;
+  stroke: #2e7d32 !important;
+}
+
+.gantt .bar-wrapper.gantt-milestone-on-time .bar {
+  fill: #ffeb3b !important;
+  stroke: #f9a825 !important;
+}
+
+.gantt .bar-wrapper.gantt-milestone-delayed-medium .bar {
+  fill: #ff9800 !important;
+  stroke: #ef6c00 !important;
+}
+
+.gantt .bar-wrapper.gantt-milestone-delayed-severe .bar {
+  fill: #e53935 !important;
+  stroke: #c62828 !important;
+}
+
+/* ============================================
+   TASK STYLES
+   ============================================ */
 
 /* Task status colors - Target bar-wrapper with custom class */
 .gantt .bar-wrapper.gantt-task-todo .bar {
@@ -61,6 +217,23 @@
   stroke: #757575 !important;
 }
 
+/* ============================================
+   PROGRESS BAR SECTION
+   ============================================ */
+
+/* Progress section inside bars - inherit text color */
+.gantt .bar-wrapper .bar-progress-section {
+  opacity: 0.3;
+}
+
+.gantt .bar-wrapper:hover .bar-progress-section {
+  opacity: 0.4;
+}
+
+/* ============================================
+   SPECIAL STATES
+   ============================================ */
+
 /* Placeholder */
 .gantt .bar-wrapper.gantt-placeholder .bar {
   fill: transparent !important;
@@ -68,6 +241,20 @@
   stroke-width: 1;
   stroke-dasharray: 5, 5;
 }
+
+/* Handle elements (for resizing) - always visible */
+.gantt .bar-wrapper .handle {
+  fill: rgba(0, 0, 0, 0.2);
+  cursor: ew-resize;
+}
+
+.gantt .bar-wrapper:hover .handle {
+  fill: rgba(0, 0, 0, 0.4);
+}
+
+/* ============================================
+   POPUP CUSTOMIZATION
+   ============================================ */
 
 /* Popup customization */
 .gantt-container .popup-wrapper {
@@ -84,4 +271,79 @@
 .gantt-container .popup-wrapper .subtitle,
 .gantt-container .popup-wrapper .details {
   color: rgba(255, 255, 255, 0.8) !important;
+}
+
+/* ============================================
+   ZOOM & SCROLL - Maintain text visibility
+   ============================================ */
+
+.gantt-container.zoomed text,
+.gantt-container.scrolling text {
+  transition: none; /* Disable transitions during zoom/scroll for performance */
+}
+
+/* Ensure text stays visible at all zoom levels */
+.gantt .bar-wrapper text {
+  transform-origin: center;
+  will-change: fill, opacity;
+}
+
+/* ============================================
+   ACCESSIBILITY
+   ============================================ */
+
+/* Focus state for keyboard navigation */
+.gantt .bar-wrapper:focus {
+  outline: 2px solid #1976d2;
+  outline-offset: 2px;
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+  .gantt .bar-wrapper text {
+    font-weight: 700 !important;
+    stroke: none !important;
+  }
+}
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+  .gantt .bar-wrapper text {
+    transition: none !important;
+  }
+}
+
+/* ============================================
+   MOBILE RESPONSIVE - TDD-015 Extended
+   Auto-switch to Month view on <768px
+   ============================================ */
+
+@media (max-width: 767px) {
+  .gantt-container {
+    font-size: 11px;
+  }
+
+  .gantt .bar-wrapper .bar-label {
+    font-size: 10px;
+  }
+
+  .gantt .bar-wrapper .bar-progress {
+    font-size: 9px;
+  }
+
+  /* Touch-friendly hit targets */
+  .gantt .bar-wrapper {
+    cursor: pointer;
+    -webkit-tap-highlight-color: rgba(0, 0, 0, 0.1);
+  }
+
+  /* Popup adjustments for mobile */
+  .gantt-container .popup-wrapper {
+    max-width: 90vw !important;
+    font-size: 11px;
+  }
+
+  .gantt-container .popup-wrapper .title {
+    font-size: 12px;
+  }
 }

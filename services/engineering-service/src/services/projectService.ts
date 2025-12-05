@@ -2,9 +2,9 @@ import { Project } from '@prisma/client';
 import prisma from '../prisma/client';
 
 export const getProjects = async () => {
-  return prisma.project.findMany({
+  return prisma.projects.findMany({
     include: {
-      customer: true,
+      customers: true,
       estimations: true,
       project_boms: true,
       milestones: true,
@@ -13,10 +13,10 @@ export const getProjects = async () => {
 };
 
 export const getProjectById = async (id: string) => {
-  return prisma.project.findUnique({
+  return prisma.projects.findUnique({
     where: { id },
     include: {
-      customer: true,
+      customers: true,
       estimations: true,
       project_boms: true,
       milestones: true,
@@ -25,13 +25,13 @@ export const getProjectById = async (id: string) => {
 };
 
 export const createProject = async (data: Project) => {
-  return prisma.project.create({ data });
+  return prisma.projects.create({ data });
 };
 
 export const updateProject = async (id: string, data: Partial<Project>) => {
-  return prisma.project.update({ where: { id }, data });
+  return prisma.projects.update({ where: { id }, data });
 };
 
 export const deleteProject = async (id: string) => {
-  return prisma.project.delete({ where: { id } });
+  return prisma.projects.delete({ where: { id } });
 };

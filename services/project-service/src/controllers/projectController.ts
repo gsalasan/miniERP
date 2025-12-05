@@ -1,6 +1,8 @@
 import { Response } from 'express';
+import prisma from '../utils/prisma';
 import { ProjectService } from '../services/projectService';
 import { AuthRequest } from '../middlewares/authMiddleware';
+import { NotificationService } from '../utils/notifications';
 
 const projectService = new ProjectService();
 
@@ -74,23 +76,24 @@ export class ProjectController {
         });
       }
 
-      if (!pmUserId) {
-        return res.status(400).json({
-          success: false,
-          message: 'pmUserId is required',
-        });
-      }
+      // Allow null/empty for unassigning
+      // if (!pmUserId) {
+      //   return res.status(400).json({
+      //     success: false,
+      //     message: 'pmUserId is required',
+      //   });
+      // }
 
       const updatedProject = await projectService.assignPmToProject(
         projectId,
-        { pmUserId },
+        { pmUserId: pmUserId || null },
         loggedInUserId
       );
 
       return res.status(200).json({
         success: true,
         data: updatedProject,
-        message: 'Project Manager assigned successfully',
+        message: pmUserId ? 'Project Manager assigned successfully' : 'Project Manager unassigned successfully',
       });
     } catch (error: any) {
       console.error('Error assigning PM:', error);
@@ -171,6 +174,38 @@ export class ProjectController {
     }
   }
 
+  async createRfp(req: AuthRequest, res: Response) {
+    try {
+      const { projectId } = req.params;
+      const { items, notes } = req.body;
+      const loggedInUserId = req.user?.id;
+
+      if (!loggedInUserId) {
+        return res.status(401).json({ success: false, message: 'Unauthorized' });
+      }
+
+      if (!items || !Array.isArray(items) || items.length === 0) {
+        return res.status(400).json({ success: false, message: 'items array is required' });
+      }
+
+      const rfp = await projectService.createRfp(projectId, { items, notes }, loggedInUserId);
+
+      return res.status(201).json({ success: true, data: rfp, message: 'RFP created successfully' });
+    } catch (error: any) {
+      console.error('Error creating RFP:', error);
+
+      if (error.message.includes('Forbidden')) {
+        return res.status(403).json({ success: false, message: error.message });
+      }
+
+      if (error.message.includes('not found')) {
+        return res.status(404).json({ success: false, message: error.message });
+      }
+
+      return res.status(500).json({ success: false, message: error.message || 'Internal server error' });
+    }
+  }
+
   async getProjectManagers(req: AuthRequest, res: Response) {
     try {
       const pms = await projectService.getProjectManagers();
@@ -185,6 +220,77 @@ export class ProjectController {
         success: false,
         message: error.message || 'Internal server error',
       });
+    }
+  }
+
+  // GET /api/v1/projects/progress-summary
+  async getProgressSummary(req: AuthRequest, res: Response) {
+    try {
+      const user = req.user;
+      if (!user) return res.status(401).json({ success: false, message: 'Unauthorized' });
+
+      // Fetch projects
+      const projects = await prisma.projects.findMany({
+        select: { id: true, project_code: true, estimated_value: true, actual_cost: true, start_date: true, expected_close_date: true },
+      });
+
+      const results = [] as any[];
+
+      for (const p of projects) {
+        // Physical progress: sum(progress * weight_pct / 100)
+        const tasks = await prisma.project_tasks.findMany({ where: { project_id: p.id } });
+        const physicalSum = tasks.reduce((sum, t) => {
+          const prog = Number(t.progress ?? 0);
+          const weight = (t as any).weight_pct !== null && (t as any).weight_pct !== undefined ? Number((t as any).weight_pct) : 100;
+          return sum + (prog * weight) / 100;
+        }, 0);
+
+        const physical_progress_pct = Math.round(physicalSum || 0);
+
+        // Financial progress: actual_cost / estimated_value * 100
+        const financial_progress_pct = p.estimated_value && Number(p.estimated_value) > 0 ? Math.round((Number(p.actual_cost ?? 0) / Number(p.estimated_value)) * 100) : 0;
+
+        const overall_progress_pct = Math.round((physical_progress_pct * 0.5) + (financial_progress_pct * 0.5));
+
+        // Scheduled percent based on time elapsed between start_date and expected_close_date
+        let scheduled_pct = 0;
+        if (p.start_date && p.expected_close_date) {
+          const now = Date.now();
+          const start = new Date(p.start_date).getTime();
+          const end = new Date(p.expected_close_date).getTime();
+          if (end > start) {
+            scheduled_pct = Math.max(0, Math.min(100, Math.round(((now - start) / (end - start)) * 100)));
+          }
+        }
+
+        const project_delayed_total = overall_progress_pct < (scheduled_pct - 15);
+
+        // Send notification for delayed projects (best-effort)
+        if (project_delayed_total) {
+          try {
+            // Use NotificationService to send to configured webhook (channel configured there)
+            const { NotificationService } = require('../utils/notifications');
+            await NotificationService.send({ userId: 'system', message: `#project-delay Project ${p.project_code || p.id} is delayed: overall ${overall_progress_pct}% vs scheduled ${scheduled_pct}%`, type: 'warning' });
+          } catch (e) {
+            console.warn('Failed to send delay notification', e?.message || e);
+          }
+        }
+
+        results.push({
+          project_id: p.id,
+          project_code: p.project_code,
+          physical_progress_pct,
+          financial_progress_pct,
+          overall_progress_pct,
+          scheduled_pct,
+          project_delayed_total,
+        });
+      }
+
+      return res.status(200).json({ success: true, data: results });
+    } catch (error: any) {
+      console.error('Error in getProgressSummary:', error);
+      return res.status(500).json({ success: false, message: error.message || 'Internal server error' });
     }
   }
 }

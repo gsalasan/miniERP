@@ -1,5 +1,6 @@
 import prisma from '../utils/prisma';
 import { NotificationService } from '../utils/notifications';
+import { randomUUID } from 'crypto';
 
 interface ProjectWonEvent {
   projectId?: string; // Optional - bisa create new atau update existing
@@ -26,11 +27,16 @@ export class ProjectEventListener {
 
       // Check if project already exists (update scenario)
       if (event.projectId) {
-        const existingProject = await prisma.project.findUnique({
+        const existingProject = await prisma.projects.findUnique({
           where: { id: event.projectId },
           include: {
-            customer: true,
-            sales_user: { include: { employee: true } },
+            customers: {
+              select: {
+                id: true,
+                customer_name: true,
+                city: true,
+              },
+            },
           },
         });
 
@@ -43,12 +49,17 @@ export class ProjectEventListener {
           if (event.totalValue && !existingProject.contract_value) {
             updateData.contract_value = event.totalValue;
           }
-          project = await prisma.project.update({
+          project = await prisma.projects.update({
             where: { id: event.projectId },
             data: updateData,
             include: {
-              customer: true,
-              sales_user: { include: { employee: true } },
+              customers: {
+                select: {
+                  id: true,
+                  customer_name: true,
+                  city: true,
+                },
+              },
             },
           });
         }
@@ -61,7 +72,7 @@ export class ProjectEventListener {
         // Generate project number (format: PRJ-YYYYMMDD-XXX)
         const today = new Date();
         const dateStr = today.toISOString().split('T')[0].replace(/-/g, '');
-        const countToday = await prisma.project.count({
+        const countToday = await prisma.projects.count({
           where: {
             created_at: {
               gte: new Date(today.setHours(0, 0, 0, 0)),
@@ -76,21 +87,28 @@ export class ProjectEventListener {
           // Event missing customerId or salesUserId; attempting to derive fallback values
         }
 
-        project = await prisma.project.create({
+        project = await prisma.projects.create({
           data: {
+            id: randomUUID(),
             project_number: projectNumber,
             project_name: event.projectName,
             customer_id: event.customerId || '',
             sales_user_id: event.salesUserId || '',
-            status: 'New',
+            status: 'WON',
             description: event.description || `Project created from Sales Order ${event.soNumber}`,
             contract_value: event.totalValue ?? 0,
+            updated_at: new Date(),
             created_by: event.salesUserId || undefined,
             updated_by: event.salesUserId || undefined,
           },
           include: {
-            customer: true,
-            sales_user: { include: { employee: true } },
+            customers: {
+              select: {
+                id: true,
+                customer_name: true,
+                city: true,
+              },
+            },
           },
         });
 
@@ -98,8 +116,9 @@ export class ProjectEventListener {
       }
 
       // Create activity log
-      await prisma.projectActivity.create({
+      await prisma.project_activities.create({
         data: {
+          id: randomUUID(),
           project_id: project.id,
           activity_type: 'STATUS_CHANGE',
           description: `Project won. Sales Order ${event.soNumber} processed. Initial status '${project.status}'.`,

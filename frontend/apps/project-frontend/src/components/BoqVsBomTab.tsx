@@ -13,7 +13,7 @@ import {
   Grid,
   Chip,
 } from '@mui/material';
-import { DataGrid, GridColDef, GridRowsProp } from '@mui/x-data-grid';
+import { DataGrid, GridColDef, GridRowsProp, GridRenderEditCellParams } from '@mui/x-data-grid';
 import DescriptionOutlinedIcon from '@mui/icons-material/DescriptionOutlined';
 import BuildOutlinedIcon from '@mui/icons-material/BuildOutlined';
 import ContentCopyOutlinedIcon from '@mui/icons-material/ContentCopyOutlined';
@@ -23,10 +23,17 @@ import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
 import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline';
 import WarningAmberOutlinedIcon from '@mui/icons-material/WarningAmberOutlined';
 import { projectApi } from '../api/projectApi';
+import { searchMaterials, searchServices, createMaterial, MaterialOption, ServiceOption } from '../api/engineeringApi';
+import AddBomItemDialog from './AddBomItemDialog';
+import ConfirmDialog from './ConfirmDialog';
+import SimpleBomTable from './SimpleBomTable';
+import Autocomplete from '@mui/material/Autocomplete';
+import TextField from '@mui/material/TextField';
 import type { EstimationItem, ProjectBOM, BomItem } from '../types';
 
 interface BoqVsBomTabProps {
   projectId: string;
+  projectName?: string;
   estimationItems: EstimationItem[];
   existingBomItems: ProjectBOM[];
   onBomSaved: () => void;
@@ -38,37 +45,112 @@ interface BomRow {
   id: string;
   itemId: string;
   itemName: string;
-  itemType: string;
+  itemType: 'MATERIAL' | 'SERVICE';
   quantity: number;
+  procurement_need?: number;
+  procurement_status?: string;
+  available_stock?: number;
   isNew?: boolean;
 }
 
 const BoqVsBomTab: React.FC<BoqVsBomTabProps> = ({
   projectId,
+  projectName,
   estimationItems,
   existingBomItems,
   onBomSaved,
   canEdit,
   projectStatus,
 }) => {
+  // For autocomplete
+  const [materialOptions, setMaterialOptions] = useState<MaterialOption[]>([]);
+  const [serviceOptions, setServiceOptions] = useState<ServiceOption[]>([]);
+  const [autocompleteLoading, setAutocompleteLoading] = useState(false);
+  const searchDebounceRef = React.useRef<number | null>(null);
+  const [inputMap, setInputMap] = useState<Record<string, string>>({});
+
+  // Fetch options for autocomplete
+  const fetchMaterialOptions = async (input: string) => {
+    setAutocompleteLoading(true);
+    try {
+      const results = await searchMaterials(input);
+      setMaterialOptions(results);
+    } finally {
+      setAutocompleteLoading(false);
+    }
+  };
+  const fetchServiceOptions = async (input: string) => {
+    setAutocompleteLoading(true);
+    try {
+      const results = await searchServices(input);
+      setServiceOptions(results);
+    } finally {
+      setAutocompleteLoading(false);
+    }
+  };
+  
+  const debounceSearch = (isMaterial: boolean, input: string) => {
+    if (searchDebounceRef.current) {
+      clearTimeout(searchDebounceRef.current);
+    }
+    searchDebounceRef.current = window.setTimeout(() => {
+      if (input.length >= 2) {
+        if (isMaterial) fetchMaterialOptions(input);
+        else fetchServiceOptions(input);
+      }
+    }, 300);
+  };
+  
   const [bomRows, setBomRows] = useState<BomRow[]>([]);
+  const [openAddItemDialog, setOpenAddItemDialog] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const [hasChanges, setHasChanges] = useState(false);
+  const [bomInitialized, setBomInitialized] = useState(false);
+  const [addConfirmOpen, setAddConfirmOpen] = useState(false);
+  const [addConfirmName, setAddConfirmName] = useState<string | null>(null);
+  const [addConfirmRowId, setAddConfirmRowId] = useState<string | null>(null);
+
+  const handleConfirmAddNew = async () => {
+    if (!addConfirmName || !addConfirmRowId) {
+      setAddConfirmOpen(false);
+      setAddConfirmName(null);
+      setAddConfirmRowId(null);
+      return;
+    }
+    try {
+      const created = await createMaterial({ item_name: addConfirmName });
+      setMaterialOptions((prev) => [created, ...prev]);
+      setBomRows((prev) => prev.map((row) => (row.id === addConfirmRowId ? { ...row, itemId: created.id, itemName: created.item_name } : row)));
+      setHasChanges(true);
+    } catch (err) {
+      console.error('Gagal membuat material:', err);
+      setError('Gagal membuat material baru');
+    } finally {
+      setAddConfirmOpen(false);
+      setAddConfirmName(null);
+      setAddConfirmRowId(null);
+    }
+  };
 
   useEffect(() => {
-    if (existingBomItems.length > 0) {
+    if (Array.isArray(existingBomItems) && existingBomItems.length > 0) {
       setBomRows(
         existingBomItems.map((item) => ({
           id: item.id,
           itemId: item.item_id,
           itemName: item.item_name || item.item_id,
-          itemType: item.item_type,
+          itemType: item.item_type as 'MATERIAL' | 'SERVICE',
           quantity: Number(item.quantity),
+          procurement_need: item.quantity,
+          procurement_status: 'NOT_STARTED',
         }))
       );
+    } else {
+      setBomRows([]);
     }
+    setBomInitialized(true);
   }, [existingBomItems]);
 
   const boqColumns: GridColDef[] = [
@@ -111,13 +193,6 @@ const BoqVsBomTab: React.FC<BoqVsBomTabProps> = ({
 
   const bomColumns: GridColDef[] = [
     {
-      field: 'itemName',
-      headerName: 'Nama Item',
-      flex: 1,
-      minWidth: 300,
-      editable: false,
-    },
-    {
       field: 'itemType',
       headerName: 'Tipe',
       width: 120,
@@ -131,6 +206,79 @@ const BoqVsBomTab: React.FC<BoqVsBomTabProps> = ({
           color={params.value === 'MATERIAL' ? 'primary' : 'secondary'}
         />
       ),
+    },
+    {
+      field: 'itemName',
+      headerName: 'Nama Item',
+      flex: 1,
+      minWidth: 300,
+      editable: canEdit,
+      renderEditCell: (params: GridRenderEditCellParams) => {
+        const isMaterial = params.row.itemType === 'MATERIAL';
+        const options = isMaterial ? materialOptions : serviceOptions;
+        const current = options.find((opt) => opt.id === params.row.itemId) || null;
+        const rowId = params.id.toString();
+        const currentInput = inputMap[rowId] || '';
+
+        const showAddNew = isMaterial && currentInput.length >= 2 && !options.some((o) => {
+          const name = isMaterial ? (o as MaterialOption).item_name : (o as ServiceOption).service_name;
+          return (name || '').toLowerCase().includes(currentInput.toLowerCase());
+        });
+
+        const displayOptions: any[] = showAddNew ? [...options, { id: 'add-new', item_name: currentInput }] : options;
+
+        return (
+          <Autocomplete
+            freeSolo={false}
+            loading={autocompleteLoading}
+            options={displayOptions}
+            getOptionLabel={(option: any) => (isMaterial ? option.item_name : option.service_name)}
+            value={current}
+            onInputChange={(_, input) => {
+              setInputMap((m) => ({ ...m, [rowId]: input }));
+              if (isMaterial) debounceSearch(true, input);
+              else debounceSearch(false, input);
+            }}
+            onChange={(_, newValue) => {
+              if (newValue && (newValue as any).id === 'add-new') {
+                // request confirmation to create new material and update the row after confirmation
+                const name = inputMap[rowId] || '';
+                setAddConfirmName(name);
+                setAddConfirmRowId(String(rowId));
+                setAddConfirmOpen(true);
+              } else {
+                params.api.setEditCellValue({ id: params.id, field: 'itemId', value: newValue?.id || '' });
+                params.api.setEditCellValue({ id: params.id, field: 'itemName', value: newValue ? (isMaterial ? newValue.item_name : newValue.service_name) : '' });
+              }
+            }}
+            renderOption={(props, option: any) => {
+              if (option.id === 'add-new') {
+                return (
+                  <li {...props} key="add-new">
+                    <Box display="flex" alignItems="center" width="100%" py={1}>
+                      <AddCircleOutlineIcon fontSize="small" sx={{ mr: 1, color: 'primary.main' }} />
+                      <Typography variant="body2" color="primary">+ Tambah "{currentInput}" sebagai Item Baru</Typography>
+                    </Box>
+                  </li>
+                );
+              }
+              return (
+                <li {...props} key={option.id}>
+                  <Box>
+                    <Typography variant="body2" fontWeight={600}>{isMaterial ? option.item_name : option.service_name}</Typography>
+                    {isMaterial && (
+                      <Typography variant="caption" color="text.secondary">{option.brand || 'N/A'} | {option.vendor || 'N/A'}</Typography>
+                    )}
+                  </Box>
+                </li>
+              );
+            }}
+            renderInput={(paramsInput) => (
+              <TextField {...paramsInput} label={isMaterial ? 'Cari Material' : 'Cari Service'} variant="standard" />
+            )}
+          />
+        );
+      },
     },
     {
       field: 'quantity',
@@ -166,8 +314,10 @@ const BoqVsBomTab: React.FC<BoqVsBomTabProps> = ({
       id: `temp-${Date.now()}-${index}`,
       itemId: item.item_id,
       itemName: item.item_name || item.item_id,
-      itemType: item.item_type,
+      itemType: item.item_type as 'MATERIAL' | 'SERVICE',
       quantity: Number(item.quantity),
+      procurement_need: Number(item.quantity),
+      procurement_status: 'NOT_STARTED',
       isNew: true,
     }));
     setBomRows(copiedRows);
@@ -177,21 +327,42 @@ const BoqVsBomTab: React.FC<BoqVsBomTabProps> = ({
   };
 
   const handleAddItem = () => {
+    // legacy add fallback: open dialog for manual add
+    setOpenAddItemDialog(true);
+  };
+
+  const handleSelectMaterialFromDialog = (material: any) => {
     const newRow: BomRow = {
       id: `new-${Date.now()}`,
-      itemId: '',
-      itemName: 'Item Baru',
+      itemId: material.id,
+      itemName: material.item_name || material.name || material.itemName,
       itemType: 'MATERIAL',
       quantity: 1,
+      procurement_need: 1,
+      procurement_status: 'NOT_STARTED',
       isNew: true,
     };
-    setBomRows([...bomRows, newRow]);
+    setBomRows((prev) => [...prev, newRow]);
     setHasChanges(true);
+    // optional: focus to quantity column is UI-level; DataGrid focus not implemented here
   };
 
   const handleDeleteRow = (id: string) => {
-    setBomRows(bomRows.filter((row) => row.id !== id));
-    setHasChanges(true);
+    // Open confirm dialog instead of using window.confirm
+    setConfirmTargetId(id);
+    setConfirmOpen(true);
+  };
+
+  const [confirmOpen, setConfirmOpen] = React.useState(false);
+  const [confirmTargetId, setConfirmTargetId] = React.useState<string | null>(null);
+
+  const handleConfirmDelete = () => {
+    if (confirmTargetId) {
+      setBomRows((prev) => prev.filter((row) => row.id !== confirmTargetId));
+      setHasChanges(true);
+    }
+    setConfirmTargetId(null);
+    setConfirmOpen(false);
   };
 
   const handleSaveBom = async () => {
@@ -229,22 +400,35 @@ const BoqVsBomTab: React.FC<BoqVsBomTabProps> = ({
   };
 
   const handleProcessRowUpdate = (newRow: any) => {
+    // Ensure itemName is always synced with the selected itemId
+    let itemName = newRow.itemName;
+    if (newRow.itemId) {
+      if (newRow.itemType === 'MATERIAL') {
+        const found = materialOptions.find((m) => m.id === newRow.itemId);
+        if (found) itemName = found.item_name;
+      } else if (newRow.itemType === 'SERVICE') {
+        const found = serviceOptions.find((s) => s.id === newRow.itemId);
+        if (found) itemName = found.service_name;
+      }
+    }
     const updatedRows = bomRows.map((row) =>
-      row.id === newRow.id ? { ...row, ...newRow } : row
+      row.id === newRow.id ? { ...row, ...newRow, itemName } : row
     );
     setBomRows(updatedRows);
     setHasChanges(true);
-    return newRow;
+    return { ...newRow, itemName };
   };
 
-  const boqRows: GridRowsProp = estimationItems.map((item) => ({
-    id: item.id,
-    itemId: item.item_id,
-    itemName: item.item_name || item.item_id,
-    itemType: item.item_type,
-    quantity: Number(item.quantity),
-    hppAtEstimation: Number(item.hpp_at_estimation),
-  }));
+  const boqRows: GridRowsProp = Array.isArray(estimationItems) 
+    ? estimationItems.map((item) => ({
+        id: item.id,
+        itemId: item.item_id,
+        itemName: item.item_name || item.item_id,
+        itemType: item.item_type,
+        quantity: Number(item.quantity),
+        hppAtEstimation: Number(item.hpp_at_estimation),
+      }))
+    : [];
 
   return (
     <Box>
@@ -313,19 +497,33 @@ const BoqVsBomTab: React.FC<BoqVsBomTabProps> = ({
               </Box>
               <Divider />
               <Box sx={{ height: 500 }}>
-                <DataGrid
-                  rows={boqRows}
-                  columns={boqColumns}
-                  pageSize={10}
-                  rowsPerPageOptions={[10, 25, 50]}
-                  disableSelectionOnClick
-                  density="compact"
-                  sx={{
-                    '& .MuiDataGrid-cell': {
-                      fontSize: '0.875rem',
-                    },
-                  }}
-                />
+                {boqRows.length === 0 ? (
+                  <Box 
+                    display="flex" 
+                    justifyContent="center" 
+                    alignItems="center" 
+                    height="100%"
+                    sx={{ border: '1px dashed', borderColor: 'divider', borderRadius: 1 }}
+                  >
+                    <Typography variant="body2" color="text.secondary">
+                      Belum ada data estimasi
+                    </Typography>
+                  </Box>
+                ) : (
+                  <DataGrid
+                    key={`boq-grid-${boqRows.length}`}
+                    rows={boqRows}
+                    columns={boqColumns}
+                    hideFooter
+                    disableRowSelectionOnClick
+                    density="compact"
+                    sx={{
+                      '& .MuiDataGrid-cell': {
+                        fontSize: '0.875rem',
+                      },
+                    }}
+                  />
+                )}
               </Box>
               <Alert severity="info" sx={{ mt: 2 }}>
                 Total Items: <strong>{boqRows.length}</strong>
@@ -386,11 +584,11 @@ const BoqVsBomTab: React.FC<BoqVsBomTabProps> = ({
                         <Button
                           variant="outlined"
                           startIcon={<AddCircleOutlineIcon />}
-                          onClick={handleAddItem}
+                          onClick={() => setOpenAddItemDialog(true)}
                           size="small"
                           disabled={loading}
                         >
-                          Tambah
+                          Tambah Item Manual
                         </Button>
                       </Tooltip>
                     </Stack>
@@ -398,26 +596,26 @@ const BoqVsBomTab: React.FC<BoqVsBomTabProps> = ({
                 </Stack>
               </Box>
               <Divider />
-              <Box sx={{ height: 500 }}>
-                <DataGrid
-                  rows={bomRows}
-                  columns={bomColumns}
-                  pageSize={10}
-                  rowsPerPageOptions={[10, 25, 50]}
-                  disableSelectionOnClick
-                  processRowUpdate={handleProcessRowUpdate}
-                  experimentalFeatures={{ newEditingApi: true }}
-                  density="compact"
-                  sx={{
-                    '& .MuiDataGrid-cell': {
-                      fontSize: '0.875rem',
-                    },
-                    '& .MuiDataGrid-cell--editable': {
-                      bgcolor: canEdit ? 'action.hover' : 'transparent',
-                    },
+              {!bomInitialized ? (
+                <Box display="flex" justifyContent="center" alignItems="center" height="500px">
+                  <CircularProgress />
+                </Box>
+              ) : (
+                <SimpleBomTable
+                  projectId={projectId}
+                  projectName={projectName}
+                  bomItems={bomRows}
+                  canEdit={canEdit}
+                  onRfpCreated={() => {
+                    setSuccess('RFP berhasil dibuat dan dikirim ke Tim Procurement');
+                    onBomSaved();
+                  }}
+                  onBomChange={(updatedRows) => {
+                    setBomRows(updatedRows);
+                    setHasChanges(true);
                   }}
                 />
-              </Box>
+              )}
               <Stack
                 direction="row"
                 spacing={2}
@@ -460,6 +658,34 @@ const BoqVsBomTab: React.FC<BoqVsBomTabProps> = ({
           </Paper>
         </Grid>
       </Grid>
+      <ConfirmDialog
+        open={addConfirmOpen}
+        title="Tambah material baru"
+        description={`Tidak ditemukan. Tambah "${addConfirmName || ''}" sebagai material baru?`}
+        confirmLabel="Tambah"
+        cancelLabel="Batal"
+        onClose={() => { setAddConfirmOpen(false); setAddConfirmName(null); setAddConfirmRowId(null); }}
+        onConfirm={handleConfirmAddNew}
+      />
+
+      <ConfirmDialog
+        open={confirmOpen}
+        title="Hapus item BoM"
+        description="Yakin ingin menghapus item ini dari BoM? Aksi ini tidak bisa dibatalkan."
+        confirmLabel="Hapus"
+        cancelLabel="Batal"
+        onClose={() => { setConfirmOpen(false); setConfirmTargetId(null); }}
+        onConfirm={handleConfirmDelete}
+      />
+
+      <AddBomItemDialog
+        open={openAddItemDialog}
+        onClose={() => setOpenAddItemDialog(false)}
+        onSelectItem={(m) => {
+          handleSelectMaterialFromDialog(m);
+          setOpenAddItemDialog(false);
+        }}
+      />
     </Box>
   );
 };

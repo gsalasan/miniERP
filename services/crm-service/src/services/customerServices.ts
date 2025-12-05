@@ -1,15 +1,45 @@
 import prisma from '../utils/prisma';
 import { CustomerStatus } from '@prisma/client';
 
+// Generate customer code automatically
+async function generateCustomerCode(): Promise<string> {
+  const today = new Date();
+  const year = today.getFullYear().toString().slice(-2); // Last 2 digits of year
+  const month = (today.getMonth() + 1).toString().padStart(2, '0');
+  
+  // Find the last customer created today to get the sequence
+  const lastCustomer = await prisma.customers.findFirst({
+    where: {
+      code: {
+        startsWith: `CUST${year}${month}`,
+      },
+    },
+    orderBy: {
+      code: 'desc',
+    },
+  });
+
+  let sequence = 1;
+  if (lastCustomer?.code) {
+    const lastSequence = parseInt(lastCustomer.code.slice(-4));
+    sequence = lastSequence + 1;
+  }
+
+  return `CUST${year}${month}${sequence.toString().padStart(4, '0')}`;
+}
+
 export interface CreateCustomerData {
   customer_name: string;
+  code?: string;
+  type?: string;
   channel: string;
   city: string;
+  province?: string;
   district?: string;
   alamat?: string;
   status: CustomerStatus;
   top_days: number;
-  assigned_sales_id?: string;
+  sales_pic?: string;
   credit_limit?: number;
   no_npwp?: string;
   sppkp?: string;
@@ -18,7 +48,8 @@ export interface CreateCustomerData {
     position?: string;
     email?: string;
     phone?: string;
-    contact_person?: string;
+    whatsapp?: string;
+    is_primary?: boolean;
   }[];
   rekenings?: {
     bank_name?: string;
@@ -29,13 +60,16 @@ export interface CreateCustomerData {
 
 export interface UpdateCustomerData {
   customer_name?: string;
+  code?: string;
+  type?: string;
   channel?: string;
   city?: string;
+  province?: string;
   district?: string;
   alamat?: string;
   status?: CustomerStatus;
   top_days?: number;
-  assigned_sales_id?: string;
+  sales_pic?: string;
   credit_limit?: number;
   no_npwp?: string;
   sppkp?: string;
@@ -45,7 +79,8 @@ export interface UpdateCustomerData {
     position?: string;
     email?: string;
     phone?: string;
-    contact_person?: string;
+    whatsapp?: string;
+    is_primary?: boolean;
   }[];
   rekenings?: {
     id?: string;
@@ -60,6 +95,17 @@ export const getAllCustomersService = async () => {
     include: {
       customer_contacts: true,
       customer_rekenings: true,
+      sales_pic_user: {
+        select: {
+          id: true,
+          email: true,
+          employee: {
+            select: {
+              full_name: true,
+            },
+          },
+        },
+      },
     },
     orderBy: {
       createdAt: 'desc',
@@ -73,6 +119,17 @@ export const getCustomerByIdService = async (id: string) => {
     include: {
       customer_contacts: true,
       customer_rekenings: true,
+      sales_pic_user: {
+        select: {
+          id: true,
+          email: true,
+          employee: {
+            select: {
+              full_name: true,
+            },
+          },
+        },
+      },
     },
   });
 };
@@ -80,16 +137,25 @@ export const getCustomerByIdService = async (id: string) => {
 export const createCustomerService = async (data: CreateCustomerData) => {
   const { contacts, rekenings, ...customerData } = data;
 
+  // Auto-generate customer code if not provided
+  const customerCode = data.code || await generateCustomerCode();
+
   return await prisma.customers.create({
     data: {
       id: crypto.randomUUID(),
       ...customerData,
+      code: customerCode,
       updatedAt: new Date(),
       customer_contacts: contacts
         ? {
             create: contacts.map(contact => ({
               id: crypto.randomUUID(),
-              ...contact,
+              name: contact.name,
+              position: contact.position,
+              email: contact.email,
+              phone: contact.phone,
+              whatsapp: contact.whatsapp,
+              is_primary: contact.is_primary || false,
             })),
           }
         : undefined,
@@ -151,7 +217,8 @@ export const updateCustomerService = async (
               position: contact.position,
               email: contact.email,
               phone: contact.phone,
-              contact_person: contact.contact_person,
+              whatsapp: contact.whatsapp,
+              is_primary: contact.is_primary || false,
             })),
           });
         }

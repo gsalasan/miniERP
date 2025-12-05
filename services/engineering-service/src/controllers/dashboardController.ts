@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 import prisma from '../prisma/client';
+import { EstimationStatus } from '@prisma/client';
 
 // Helper function to parse period
 function parsePeriod(period: string): { startDate: Date; endDate: Date } {
@@ -56,7 +57,7 @@ export const getEngineeringDashboard = async (req: Request, res: Response) => {
 
     const completedEstimations = await prisma.estimations.count({
       where: {
-        status: 'APPROVED',
+        status: EstimationStatus.APPROVED,
         updated_at: {
           gte: startDate,
           lte: endDate,
@@ -68,7 +69,7 @@ export const getEngineeringDashboard = async (req: Request, res: Response) => {
     // Calculate average turnaround time (in days)
     const estimationsWithTime = await prisma.estimations.findMany({
       where: {
-        status: 'APPROVED',
+        status: EstimationStatus.APPROVED,
         updated_at: {
           gte: startDate,
           lte: endDate,
@@ -130,7 +131,7 @@ export const getEngineeringDashboard = async (req: Request, res: Response) => {
         const user = await prisma.users.findUnique({
           where: { id: item.assigned_to_user_id },
           include: {
-            employee: {
+            employees: {
               select: {
                 full_name: true,
               },
@@ -140,7 +141,7 @@ export const getEngineeringDashboard = async (req: Request, res: Response) => {
 
         return {
           engineerId: item.assigned_to_user_id,
-          engineerName: user?.employee?.full_name || user?.email || 'Unknown',
+          engineerName: user?.employees?.full_name || user?.email || 'Unknown',
           count: item._count.id,
         };
       })

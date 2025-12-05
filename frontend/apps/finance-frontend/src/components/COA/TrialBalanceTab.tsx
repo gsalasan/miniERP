@@ -54,13 +54,20 @@ const TrialBalanceTab: React.FC = () => {
         url += `?asOfDate=${asOfDate}`;
       }
 
+      console.log('📡 Fetching Trial Balance:', url);
       const response = await fetch(url);
+      
       if (response.ok) {
         const data = await response.json();
+        console.log('✅ Trial Balance data from DB:', data);
+        console.log('📊 Entries count:', data.entries?.length || 0);
+        console.log('⚖️ Is Balanced:', data.is_balanced);
         setTrialBalanceData(data);
+      } else {
+        console.error('❌ Failed to fetch trial balance:', response.status);
       }
     } catch (error) {
-      console.error('Error fetching trial balance:', error);
+      console.error('❌ Error fetching trial balance:', error);
     } finally {
       setLoading(false);
     }
