@@ -1,4 +1,4 @@
-import type { PrismaClient } from '@prisma/client';
+import type { PrismaClient, Prisma } from '@prisma/client';
 
 interface ResolveOptions {
   userId?: string;
@@ -15,12 +15,17 @@ interface HrEmployeeResult {
  * Priority order:
  * 1. Direct employeeId if provided (dev mode)
  * 2. Match by userId -> users table -> employee_id -> employees
+ * 3. Fallback: match by email (company or personal) and auto-link the user
  */
 export async function resolveHrEmployee(
   prisma: PrismaClient,
   { userId, email, employeeId }: ResolveOptions
 ): Promise<HrEmployeeResult> {
   let employeeReference: string | undefined;
+  let candidateEmail = email?.toLowerCase();
+  let userRecord:
+    | { id: string; email: string | null; employee_id: string | null }
+    | null = null;
 
   // Priority 1: Direct employee ID (for development mode)
   if (employeeId) {
@@ -36,16 +41,19 @@ export async function resolveHrEmployee(
 
   // Priority 2: Lookup via userId
   if (userId) {
-    const user = await prisma.users.findUnique({
+    userRecord = await prisma.users.findUnique({
       where: { id: userId },
-      select: { employee_id: true },
+      select: { id: true, email: true, employee_id: true },
     });
 
-    if (!user) {
+    if (!userRecord) {
       throw new Error('User not found');
     }
 
-    employeeReference = user.employee_id || undefined;
+    employeeReference = userRecord.employee_id || undefined;
+    if (!candidateEmail && userRecord.email) {
+      candidateEmail = userRecord.email.toLowerCase();
+    }
   }
 
   // Try matching by the employee reference stored on the user
@@ -57,6 +65,35 @@ export async function resolveHrEmployee(
 
     if (employee) {
       return employee;
+    }
+  }
+
+  // Priority 3: Link by email (either corporate or personal)
+  if (candidateEmail) {
+    const emailFilter = { equals: candidateEmail, mode: 'insensitive' } as const;
+    const emailMatchFilters: Prisma.employeesWhereInput[] = [
+      { email: emailFilter } as Prisma.employeesWhereInput,
+      { personal_email: emailFilter } as Prisma.employeesWhereInput,
+    ];
+    const fallbackEmployee = await prisma.employees.findFirst({
+      where: {
+        OR: emailMatchFilters,
+      },
+      select: { id: true },
+    });
+
+    if (fallbackEmployee) {
+      // Auto-link the user for next requests if possible
+      if (userRecord && !userRecord.employee_id) {
+        await prisma.users.update({
+          where: { id: userRecord.id },
+          data: { employee_id: fallbackEmployee.id },
+        }).catch((err) => {
+          console.warn('[HR] Failed to auto-link user to employee:', err.message);
+        });
+      }
+
+      return fallbackEmployee;
     }
   }
 

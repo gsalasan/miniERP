@@ -6,11 +6,9 @@ export async function getHRStats(req: Request, res: Response) {
     const prisma = getPrisma();
 
     // FIX: Use employees table, not hr_employees
+    // employees table doesn't have status field
     const totalEmployees = await prisma.employees.count();
-
-    const activeEmployees = await prisma.employees.count({
-      where: { status: 'ACTIVE' },
-    });
+    const activeEmployees = totalEmployees; // No status field in employees table
 
     const today = new Date();
     today.setHours(0, 0, 0, 0);
