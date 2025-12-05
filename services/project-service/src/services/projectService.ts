@@ -3,7 +3,7 @@ import { NotificationService } from '../utils/notifications';
 import { randomUUID } from 'crypto';
 
 interface AssignPmData {
-  pmUserId: string;
+  pmUserId: string | null;
 }
 
 interface BomItem {
@@ -291,18 +291,21 @@ export class ProjectService {
       throw new Error('Forbidden: Only Operational Manager or CEO can assign PM');
     }
 
-    // Verify PM user exists and has PM role
-    const pmUser = await prisma.users.findUnique({
-      where: { id: data.pmUserId },
-      include: { employees: true },
-    });
+    let pmUser = null;
+    // Verify PM user exists and has PM role (only if assigning, not unassigning)
+    if (data.pmUserId) {
+      pmUser = await prisma.users.findUnique({
+        where: { id: data.pmUserId },
+        include: { employees: true },
+      });
 
-    if (!pmUser) {
-      throw new Error('PM user not found');
-    }
+      if (!pmUser) {
+        throw new Error('PM user not found');
+      }
 
-    if (!pmUser.roles.includes('PROJECT_MANAGER')) {
-      throw new Error('Selected user is not a Project Manager');
+      if (!pmUser.roles.includes('PROJECT_MANAGER')) {
+        throw new Error('Selected user is not a Project Manager');
+      }
     }
 
     // Fetch current project to capture previous status
@@ -311,12 +314,16 @@ export class ProjectService {
       select: { status: true },
     });
     const previousStatus = existingProjectForStatus?.status || 'New';
+    
+    // Determine new status based on PM assignment
+    const newStatus = data.pmUserId ? 'Planning' : 'WON'; // Revert to WON if unassigning
+    
     // Update project
     const updatedProject = await prisma.projects.update({
       where: { id: projectId },
       data: {
         pm_user_id: data.pmUserId,
-        status: 'Planning', // Transition to Planning only on PM assignment
+        status: newStatus,
         updated_at: new Date(),
         updated_by: loggedInUserId,
       },
@@ -369,11 +376,13 @@ export class ProjectService {
         id: randomUUID(),
         project_id: projectId,
         activity_type: 'STATUS_CHANGE',
-        description: `Project Manager assigned: ${pmUser.employees?.full_name || pmUser.email}`,
+        description: data.pmUserId 
+          ? `Project Manager assigned: ${pmUser?.employees?.full_name || pmUser?.email}`
+          : 'Project Manager unassigned',
         performed_by: loggedInUserId,
         metadata: {
           old_status: previousStatus,
-          new_status: 'Planning',
+          new_status: newStatus,
           pm_user_id: data.pmUserId,
         },
       },

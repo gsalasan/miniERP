@@ -76,23 +76,24 @@ export class ProjectController {
         });
       }
 
-      if (!pmUserId) {
-        return res.status(400).json({
-          success: false,
-          message: 'pmUserId is required',
-        });
-      }
+      // Allow null/empty for unassigning
+      // if (!pmUserId) {
+      //   return res.status(400).json({
+      //     success: false,
+      //     message: 'pmUserId is required',
+      //   });
+      // }
 
       const updatedProject = await projectService.assignPmToProject(
         projectId,
-        { pmUserId },
+        { pmUserId: pmUserId || null },
         loggedInUserId
       );
 
       return res.status(200).json({
         success: true,
         data: updatedProject,
-        message: 'Project Manager assigned successfully',
+        message: pmUserId ? 'Project Manager assigned successfully' : 'Project Manager unassigned successfully',
       });
     } catch (error: any) {
       console.error('Error assigning PM:', error);

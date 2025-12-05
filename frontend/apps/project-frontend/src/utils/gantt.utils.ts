@@ -4,21 +4,20 @@
 import type { GanttTask, DelayStatus } from '../types/gantt.types';
 
 /**
- * Calculate delay status based on task progress vs. scheduled progress
- * TDD-015 Extended Section 4: Delay-based color logic (from PNG)
+ * Calculate status-based color for Gantt chart bars
+ * TDD-015 Extended Section 4: Status-based color logic
  * 
  * Logic:
- * - milestone → bar-milestone (purple)
- * - delay > 15 days → bar-red
- * - delay > 5 days → bar-orange
- * - delay < -5 days (ahead) → bar-green
- * - default → bar-yellow
+ * - milestone → bar-milestone (brown/maroon)
+ * - progress = 0% → bar-todo (blue)
+ * - progress > 0% and < 100% → bar-in-progress (green)
+ * - progress = 100% → bar-done (gray)
  * 
  * @param task - GanttTask with start, end, and progress
  * @returns DelayStatus with color class
  */
 export function calculateDelay(task: GanttTask): DelayStatus {
-  // Milestones always get purple (highest priority)
+  // Milestones always get brown/maroon (highest priority)
   if (task.type === 'milestone') {
     return {
       status: 'on-time',
@@ -27,49 +26,30 @@ export function calculateDelay(task: GanttTask): DelayStatus {
     };
   }
 
-  const now = new Date();
-  const start = new Date(task.start);
-  const end = new Date(task.end);
-
-  // Calculate delay in days: positive = late, negative = ahead
-  // If task is complete (progress >= 100%), consider it on-time
-  let delayDays = 0;
-  
-  if (task.progress >= 100) {
-    // Completed: no delay (can enhance with actual completion date later)
-    delayDays = 0;
-  } else {
-    // Calculate expected progress based on time elapsed
-    const totalDuration = end.getTime() - start.getTime();
-    const elapsed = now.getTime() - start.getTime();
-    const expectedProgress = Math.max(0, Math.min(100, (elapsed / totalDuration) * 100));
-    
-    // Calculate delay in days based on progress delta
-    const progressDelta = task.progress - expectedProgress;
-    delayDays = Math.round((progressDelta / 100) * (totalDuration / (1000 * 60 * 60 * 24)));
-  }
-
-  // Apply color logic from TDD-015 Extended Section 4 PNG
+  // Status-based color logic matching the legend:
+  // - TODO: blue
+  // - In Progress: green  
+  // - Done: gray
   let status: DelayStatus['status'];
   let custom_class: string;
 
-  if (delayDays > 15) {
-    status = 'delayed-severe';
-    custom_class = 'bar-red';
-  } else if (delayDays > 5) {
-    status = 'delayed-medium';
-    custom_class = 'bar-orange';
-  } else if (delayDays < -5) {
-    status = 'ahead';
-    custom_class = 'bar-green';
-  } else {
+  if (task.progress >= 100) {
+    // Done - Gray
     status = 'on-time';
-    custom_class = 'bar-yellow';
+    custom_class = 'bar-done';
+  } else if (task.progress > 0) {
+    // In Progress - Green
+    status = 'on-time';
+    custom_class = 'bar-in-progress';
+  } else {
+    // TODO - Blue
+    status = 'on-time';
+    custom_class = 'bar-todo';
   }
 
   return {
     status,
-    delay_days: delayDays,
+    delay_days: 0,
     custom_class,
   };
 }

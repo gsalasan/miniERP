@@ -45,7 +45,7 @@ export class DashboardController {
       // Urgent tasks (not DONE), ordered by due_date
       const urgentTasks = await prisma.project_tasks.findMany({
         where: { project_milestones: { project_id: projectId }, NOT: { status: 'DONE' } },
-        include: { assignee: { include: { employees: true } } },
+        include: { project_milestones: true },
         orderBy: { due_date: 'asc' },
         take: 5,
       });
@@ -117,11 +117,33 @@ export class DashboardController {
         },
       });
 
+      // Fetch PM users separately since there's no direct relation
+      const pmUserIds = [...new Set(activeProjects.map(p => p.pm_user_id).filter(Boolean))] as string[];
+      const pmUsers = pmUserIds.length > 0 ? await prisma.users.findMany({
+        where: { id: { in: pmUserIds } },
+        include: { employees: true },
+      }) : [];
+      const pmUsersMap = new Map(pmUsers.map(u => [u.id, u]));
+
       const totalActiveProjects = activeProjects.length;
       const totalContractValue = activeProjects.reduce((sum, p) => {
         const contract = (p.contract_value ?? (p.sales_orders && p.sales_orders[0]?.contract_value) ?? 0) as any;
         return Number(sum) + Number(contract || 0);
       }, 0);
+
+      // Calculate average margin: (contract_value - actual_cost) / contract_value * 100
+      let totalMargin = 0;
+      let projectsWithMargin = 0;
+      for (const p of activeProjects) {
+        const contract = Number(p.contract_value ?? (p.sales_orders && p.sales_orders[0]?.contract_value) ?? 0);
+        const cost = Number(p.actual_cost ?? 0);
+        if (contract > 0) {
+          const margin = ((contract - cost) / contract) * 100;
+          totalMargin += margin;
+          projectsWithMargin += 1;
+        }
+      }
+      const averageMargin = projectsWithMargin > 0 ? totalMargin / projectsWithMargin : 0;
 
       // Portfolio health
       let onTrack = 0, atRisk = 0, overdue = 0;
@@ -156,11 +178,12 @@ export class DashboardController {
         // ignore logging errors
       }
 
-      // Normalize response: customers -> customer (singular) for each project
+      // Normalize response: customers -> customer (singular) for each project, attach pm_user
       const normalizedProjects = activeProjects.map(project => ({
         ...project,
         customer: project.customers,
         customers: undefined,
+        pm_user: project.pm_user_id ? pmUsersMap.get(project.pm_user_id) : null,
       }));
 
       return res.status(200).json({
@@ -168,7 +191,7 @@ export class DashboardController {
         data: {
           totalActiveProjects,
           totalContractValue,
-          averageMargin: 0,
+          averageMargin: Number(averageMargin.toFixed(2)),
           portfolioHealth: { onTrack, atRisk, overdue },
           vendorPerformance,
           projectList: normalizedProjects,

@@ -22,7 +22,7 @@ import { exportGanttToPDF } from '../utils/ganttExport';
  * 
  * TDD-015 Extended Features:
  * ✅ Gantt config: header_height: 50, column_width: 30, step: 24, bar_height: 20
- * ✅ Delay-based color system (bar-red, bar-orange, bar-yellow, bar-green, bar-milestone)
+ * ✅ Status-based color system (bar-milestone, bar-todo, bar-in-progress, bar-done)
  * ✅ Dynamic text contrast (WCAG 2.0 compliant)
  * ✅ Custom popup HTML with Name, Progress, Start, End, Weight, Delay, Dependencies
  * ✅ Mobile responsive: <768px auto-switch to "Month" mode
@@ -92,7 +92,7 @@ const buildGanttTasks = (
     const progress = calculateProgress(milestone.id);
 
     // TDD-015 Extended: Apply delay-based color class
-    const { colorClass } = calculateDelay({
+    const { custom_class } = calculateDelay({
       start,
       end,
       progress,
@@ -105,7 +105,7 @@ const buildGanttTasks = (
       start,
       end,
       progress,
-      custom_class: colorClass, // bar-milestone
+      custom_class, // bar-milestone
     });
   });
 
@@ -116,8 +116,8 @@ const buildGanttTasks = (
       task.due_date || new Date(new Date(start).getTime() + 3 * 24 * 60 * 60 * 1000)
     );
 
-    // TDD-015 Extended: Apply delay-based color class
-    const { colorClass } = calculateDelay({
+    // TDD-015 Extended: Apply status-based color class
+    const { custom_class } = calculateDelay({
       start,
       end,
       progress: task.progress || 0,
@@ -142,7 +142,7 @@ const buildGanttTasks = (
       end,
       progress: task.progress || 0,
       dependencies: dependencies.length > 0 ? dependencies.join(',') : undefined,
-      custom_class: colorClass, // bar-red, bar-orange, bar-yellow, bar-green
+      custom_class, // bar-milestone, bar-todo, bar-in-progress, bar-done
     });
   });
 
@@ -323,28 +323,40 @@ const GanttChartComponent = ({
       let fillColor = '';
       let strokeColor = '';
 
-      // TDD-015 Extended: Delay-based color system
-      // Priority: bar-milestone > bar-red > bar-orange > bar-yellow > bar-green
+      // TDD-015 Extended: Status-based color system
+      // Priority: bar-milestone > bar-done > bar-in-progress > bar-todo
       if (classList.some((c) => c.includes('bar-milestone'))) {
-        // Milestone - PURPLE
-        fillColor = '#9c27b0';
-        strokeColor = '#7b1fa2';
-      } else if (classList.some((c) => c.includes('bar-red'))) {
-        // Delayed >7 days - RED
-        fillColor = '#e53935';
-        strokeColor = '#c62828';
-      } else if (classList.some((c) => c.includes('bar-orange'))) {
-        // Delayed 1-7 days - ORANGE
-        fillColor = '#ff9800';
-        strokeColor = '#ef6c00';
-      } else if (classList.some((c) => c.includes('bar-yellow'))) {
-        // In progress / on track - YELLOW
-        fillColor = '#ffeb3b';
-        strokeColor = '#f9a825';
-      } else if (classList.some((c) => c.includes('bar-green'))) {
-        // Completed - GREEN
+        // Milestone - BROWN/MAROON
+        fillColor = '#6d4c41';
+        strokeColor = '#5d4037';
+      } else if (classList.some((c) => c.includes('bar-done'))) {
+        // Done - GRAY
+        fillColor = '#9e9e9e';
+        strokeColor = '#757575';
+      } else if (classList.some((c) => c.includes('bar-in-progress'))) {
+        // In Progress - GREEN
         fillColor = '#4caf50';
-        strokeColor = '#2e7d32';
+        strokeColor = '#388e3c';
+      } else if (classList.some((c) => c.includes('bar-todo'))) {
+        // TODO - BLUE
+        fillColor = '#2196f3';
+        strokeColor = '#1976d2';
+      } else if (classList.some((c) => c.includes('bar-red'))) {
+        // Backwards compatibility - map to TODO
+        fillColor = '#2196f3';
+        strokeColor = '#1976d2';
+      } else if (classList.some((c) => c.includes('bar-orange'))) {
+        // Backwards compatibility - map to In Progress
+        fillColor = '#4caf50';
+        strokeColor = '#388e3c';
+      } else if (classList.some((c) => c.includes('bar-yellow'))) {
+        // Backwards compatibility - map to TODO
+        fillColor = '#2196f3';
+        strokeColor = '#1976d2';
+      } else if (classList.some((c) => c.includes('bar-green'))) {
+        // Backwards compatibility - map to Done
+        fillColor = '#9e9e9e';
+        strokeColor = '#757575';
       }
       
       // Fallback to old class names (backwards compatibility)

@@ -119,7 +119,7 @@ const MilestoneDetailPanel = ({
         milestone_id: milestone.id,
         name: taskName.trim(),
         description: taskDescription.trim() || undefined,
-        assignee_id: assigneeId || undefined,
+        assignee_id: assigneeId || null, // Allow creating unassigned task
         status: taskStatus,
         progress:
           taskStatus === 'DONE' ? 100 : taskStatus === 'IN_PROGRESS' ? 50 : 0,

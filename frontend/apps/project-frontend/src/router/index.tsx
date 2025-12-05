@@ -10,6 +10,7 @@ import ProjectsListPage from '../pages/ProjectsListPage';
 import ProjectDetailPage from '../pages/ProjectDetailPage';
 import ProjectDashboardPage from '../pages/ProjectDashboardPage';
 import OperationsDashboardPage from '../pages/OperationsDashboardPage';
+import TemplateManagementPage from '../pages/TemplateManagementPage';
 import { useAuth } from '../contexts/AuthContext';
 
 // Protected Route Component
@@ -134,6 +135,12 @@ const AppRouter: React.FC = () => {
         <Route
           path="/dashboard/operations"
           element={<ProtectedRoute element={<OperationsDashboardPage />} />}
+        />
+
+        {/* Template Management */}
+        <Route
+          path="/templates"
+          element={<ProtectedRoute element={<TemplateManagementPage />} />}
         />
 
         {/* Root redirects to /project so the list page is served at /project

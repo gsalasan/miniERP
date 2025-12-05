@@ -299,17 +299,28 @@ const ProjectDetailPage: React.FC = () => {
               </Box>
             </Box>
 
-            {!project.pm_user && canAssignPm() && (
+            <Box sx={{ display: 'flex', gap: 2 }}>
               <Button
-                variant="contained"
-                startIcon={<PersonAddIcon />}
-                onClick={() => setAssignPmModalOpen(true)}
+                variant="outlined"
+                startIcon={<DashboardIcon />}
+                onClick={() => navigate(`/projects/${projectId}/dashboard`)}
                 size="large"
                 sx={{ flexShrink: 0 }}
               >
-                Tugaskan PM
+                Dashboard
               </Button>
-            )}
+              {canAssignPm() && (
+                <Button
+                  variant="contained"
+                  startIcon={<PersonAddIcon />}
+                  onClick={() => setAssignPmModalOpen(true)}
+                  size="large"
+                  sx={{ flexShrink: 0 }}
+                >
+                  {project.pm_user ? 'Ubah PM' : 'Tugaskan PM'}
+                </Button>
+              )}
+            </Box>
           </Box>
         </Paper>
 
@@ -385,14 +396,21 @@ const ProjectDetailPage: React.FC = () => {
             </TabPanel>
 
             <TabPanel value={currentTab} index={1}>
-              <TimelineTab projectId={project.id} isPM={isPM} />
+              <TimelineTab 
+                projectId={project.id} 
+                isPM={isPM}
+                projectName={project.project_name}
+                projectNumber={project.project_number}
+                customerName={project.customer?.customer_name}
+              />
             </TabPanel>
 
             <TabPanel value={currentTab} index={2}>
               <BoqVsBomTab
                 projectId={project.id}
-                estimationItems={estimationItems}
-                existingBomItems={bomItems}
+                projectName={project.project_name}
+                estimationItems={Array.isArray(estimationItems) ? estimationItems : []}
+                existingBomItems={Array.isArray(bomItems) ? bomItems : []}
                 onBomSaved={handleBomSaved}
                 canEdit={canEditBom}
                 projectStatus={project.status}
@@ -423,8 +441,9 @@ const ProjectDetailPage: React.FC = () => {
         <AssignPmModal
           open={assignPmModalOpen}
           onClose={() => setAssignPmModalOpen(false)}
-          projectId={project.id}
+          projectId={projectId!}
           projectName={project.project_name}
+          currentPmId={project.pm_user_id || undefined}
           onSuccess={handleAssignPmSuccess}
         />
       </Box>
