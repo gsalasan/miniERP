@@ -11,6 +11,7 @@ import {
 } from '@mui/material';
 import { DiscountOutlined as DiscountIcon } from '@mui/icons-material';
 import { useAuth } from '../contexts/AuthContext';
+import { config } from '../config';
 
 interface DiscountRequestSectionProps {
   estimationId: string;
@@ -57,7 +58,7 @@ const DiscountRequestSection: React.FC<DiscountRequestSectionProps> = ({
       // ensure discount policy loaded
       if (!discountPolicy) {
         try {
-          const resp = await fetch('http://localhost:4001/api/v1/discount-policies/SALES', {
+          const resp = await fetch(`${config.ENGINEERING_SERVICE_URL}/discount-policies/SALES`, {
             headers: { Authorization: `Bearer ${token}` },
           });
           if (resp.ok) {
@@ -76,7 +77,7 @@ const DiscountRequestSection: React.FC<DiscountRequestSectionProps> = ({
       }
 
       const response = await fetch(
-        `http://localhost:4001/api/v1/estimations/${estimationId}/request-discount-approval`,
+        `${config.ENGINEERING_SERVICE_URL}/estimations/${estimationId}/request-discount-approval`,
         {
           method: 'POST',
           headers: {

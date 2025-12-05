@@ -1,47 +1,37 @@
 import React, { useState, useCallback } from "react";
 import { Box, Alert, Snackbar, CircularProgress, Typography } from "@mui/material";
 import { DragDropContext, Droppable, Draggable, DropResult } from "@hello-pangea/dnd";
-import { Pipeline, Project, ProjectStatus, MovePipelineRequest } from "../../types/pipeline";
-import { pipelineApi } from "../../api/pipeline";
+import { 
+  Opportunity, 
+  PipelineStage, 
+  moveOpportunityStage 
+} from "../../api/opportunity";
 import KanbanColumn from "./KanbanColumn";
 
 interface KanbanBoardProps {
-  pipeline: Pipeline;
-  onPipelineUpdate: (newPipeline: Pipeline) => void;
-  onCardClick: (project: Project) => void;
+  stages: PipelineStage[];
+  opportunities: Opportunity[];
+  onOpportunitiesUpdate: (newOpportunities: Opportunity[]) => void;
+  onCardClick: (opportunity: Opportunity) => void;
   loading?: boolean;
-  boards: {
-    status: string;
-    title?: string;
-    description?: string;
-    color?: string;
-  }[]; // dynamic ordered boards
-  onAddList?: () => void;
-  onEditBoard?: (status: string) => void;
-  onDeleteBoard?: (status: string) => void;
-  canDelete?: (status: string) => boolean;
-  onBoardsReorder?: (
-    newBoards: {
-      status: string;
-      title?: string;
-      description?: string;
-      color?: string;
-    }[],
-  ) => void;
-  // Number of pixels to subtract from 100vh when computing Kanban height
+  onAddStage?: () => void;
+  onEditStage?: (stageId: string) => void;
+  onDeleteStage?: (stageId: string) => void;
+  canDeleteStage?: (stageId: string) => boolean;
+  onStagesReorder?: (newStages: PipelineStage[]) => void;
   viewportOffset?: number;
 }
 
 const KanbanBoard: React.FC<KanbanBoardProps> = ({
-  pipeline,
-  onPipelineUpdate,
+  stages,
+  opportunities,
+  onOpportunitiesUpdate,
   onCardClick,
-  boards,
-  onAddList,
-  onEditBoard,
-  onDeleteBoard,
-  canDelete,
-  onBoardsReorder,
+  onAddStage,
+  onEditStage,
+  onDeleteStage,
+  canDeleteStage,
+  onStagesReorder,
   loading = false,
   viewportOffset = 200,
 }) => {
@@ -50,23 +40,11 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({
   const [snackbarMessage, setSnackbarMessage] = useState("");
   const [snackbarSeverity, setSnackbarSeverity] = useState<"success" | "error">("success");
 
-  // Delete a project card from the pipeline state (called after backend deletion)
-  const handleDeleteCard = (projectId: string, status: string) => {
+  // Delete an opportunity card
+  const handleDeleteCard = (opportunityId: string) => {
     try {
-      const col = pipeline[status];
-      if (!col) return;
-      const nextItems = col.items.filter((p) => p.id !== projectId);
-      const nextCol = {
-        ...col,
-        items: nextItems,
-        count: nextItems.length,
-        totalValue: nextItems.reduce(
-          (sum, p) => sum + (p.contract_value ?? p.estimated_value ?? 0),
-          0,
-        ),
-      };
-      const nextPipeline = { ...pipeline, [status]: nextCol };
-      onPipelineUpdate(nextPipeline);
+      const newOpportunities = opportunities.filter((o) => o.id !== opportunityId);
+      onOpportunitiesUpdate(newOpportunities);
       setSnackbarMessage("Opportunity berhasil dihapus");
       setSnackbarSeverity("success");
       setSnackbarOpen(true);
@@ -82,113 +60,55 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({
     async (result: DropResult) => {
       const { destination, source, draggableId, type } = result;
 
-      // If dropped outside droppable area
       if (!destination) return;
-
-      // If dropped in same position
       if (destination.droppableId === source.droppableId && destination.index === source.index) {
         return;
       }
 
-      // Handle board reordering (column reordering)
-      if (type === "BOARD") {
-        const newBoards = Array.from(boards);
-        const [reorderedBoard] = newBoards.splice(source.index, 1);
-        newBoards.splice(destination.index, 0, reorderedBoard);
+      // Handle stage reordering
+      if (type === "STAGE") {
+        const newStages = Array.from(stages);
+        const [reorderedStage] = newStages.splice(source.index, 1);
+        newStages.splice(destination.index, 0, reorderedStage);
 
-        if (onBoardsReorder) {
-          onBoardsReorder(newBoards);
+        if (onStagesReorder) {
+          onStagesReorder(newStages);
         }
 
-        setSnackbarMessage("Urutan board berhasil diubah");
+        setSnackbarMessage("Urutan stage berhasil diubah");
         setSnackbarSeverity("success");
         setSnackbarOpen(true);
         return;
       }
 
-      // Handle card dragging (project status change)
-      const sourceStatus = source.droppableId;
-      const destinationStatus = destination.droppableId;
-      const projectId = draggableId;
+      // Handle card dragging (opportunity stage change)
+      const newStageId = destination.droppableId;
+      const opportunityId = draggableId;
 
-      // Find the project being moved
-      const sourceColumn = pipeline[sourceStatus];
-      const project = sourceColumn.items[source.index];
-
-      if (!project) return;
-
-      // Helper: coerce contract/estimated values to numbers (strip formatting)
-      const toNumber = (v: any) => {
-        if (typeof v === "number") return v;
-        if (v === null || v === undefined) return 0;
-        try {
-          // strip non-numeric (e.g., formatting like 'Rp', dots, commas)
-          const cleaned = String(v).replace(/[^0-9.-]+/g, "");
-          const n = Number(cleaned);
-          return Number.isFinite(n) ? n : 0;
-        } catch {
-          return 0;
-        }
-      };
+      // Find the opportunity being moved
+      const opportunity = opportunities.find((o) => o.id === opportunityId);
+      if (!opportunity) return;
 
       // Create optimistic update
-      const newPipeline = { ...pipeline };
-
-      // Remove from source column
-      const sourceItems = [...sourceColumn.items];
-      const [movedProject] = sourceItems.splice(source.index, 1);
-      newPipeline[sourceStatus] = {
-        ...sourceColumn,
-        items: sourceItems,
-        count: sourceItems.length,
-        totalValue: sourceItems.reduce(
-          (sum, p) => sum + toNumber(p.contract_value ?? p.estimated_value ?? 0),
-          0,
-        ),
-      };
-
-      // Add to destination column (with updated status)
-      const destinationColumn = newPipeline[destinationStatus];
-      const destinationItems = [...destinationColumn.items];
-      const updatedProject = {
-        ...movedProject,
-        status: destinationStatus as ProjectStatus,
-      };
-      destinationItems.splice(destination.index, 0, updatedProject);
-      newPipeline[destinationStatus] = {
-        ...destinationColumn,
-        items: destinationItems,
-        count: destinationItems.length,
-        totalValue: destinationItems.reduce(
-          (sum, p) => sum + toNumber(p.contract_value ?? p.estimated_value ?? 0),
-          0,
-        ),
-      };
-
-      // Apply optimistic update
-      onPipelineUpdate(newPipeline);
+      const updatedOpportunities = opportunities.map((o) =>
+        o.id === opportunityId ? { ...o, stage: newStageId } : o
+      );
+      onOpportunitiesUpdate(updatedOpportunities);
       setDragLoading(true);
 
       try {
         // Call API to update backend
-        const moveRequest: MovePipelineRequest = {
-          projectId,
-          newStatus: destinationStatus as ProjectStatus,
-        };
+        await moveOpportunityStage(opportunityId, { stage: newStageId });
 
-        await pipelineApi.movePipelineCard(moveRequest);
-
-        // Show success message
+        const newStage = stages.find((s) => s.id === newStageId);
         setSnackbarMessage(
-          `Berhasil memindahkan "${project.project_name}" ke ${destinationStatus}`,
+          `Berhasil memindahkan "${opportunity.title}" ke ${newStage?.stage_name || newStageId}`,
         );
         setSnackbarSeverity("success");
         setSnackbarOpen(true);
       } catch (error: any) {
         // Revert optimistic update on error
-        onPipelineUpdate(pipeline);
-
-        // Show error message
+        onOpportunitiesUpdate(opportunities);
         setSnackbarMessage(error.message || "Gagal memindahkan kartu");
         setSnackbarSeverity("error");
         setSnackbarOpen(true);
@@ -196,7 +116,7 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({
         setDragLoading(false);
       }
     },
-    [pipeline, onPipelineUpdate],
+    [stages, opportunities, onOpportunitiesUpdate, onStagesReorder],
   );
 
   // Close snackbar
@@ -218,7 +138,7 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({
   return (
     <>
       <DragDropContext onDragEnd={handleDragEnd}>
-        <Droppable droppableId="all-boards" direction="horizontal" type="BOARD">
+        <Droppable droppableId="all-stages" direction="horizontal" type="STAGE">
           {(provided) => (
             <Box
               ref={provided.innerRef}
@@ -245,14 +165,15 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({
                 },
               }}
             >
-              {boards.map(({ status, title, description, color }, index) => {
-                const column = pipeline[status] || {
-                  items: [],
-                  totalValue: 0,
-                  count: 0,
-                };
+              {stages.map((stage, index) => {
+                const stageOpportunities = opportunities.filter((o) => o.stage === stage.id);
+                const totalValue = stageOpportunities.reduce(
+                  (sum, o) => sum + (Number(o.estimated_value) || 0),
+                  0
+                );
+                
                 return (
-                  <Draggable key={status} draggableId={`board-${status}`} index={index}>
+                  <Draggable key={stage.id} draggableId={`stage-${stage.id}`} index={index}>
                     {(provided, snapshot) => (
                       <Box
                         ref={provided.innerRef}
@@ -262,16 +183,14 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({
                         }}
                       >
                         <KanbanColumn
-                          status={status}
-                          column={column}
+                          stage={stage}
+                          opportunities={stageOpportunities}
+                          totalValue={totalValue}
                           onCardClick={onCardClick}
-                          title={title}
-                          description={description}
-                          color={color}
-                          onEdit={() => onEditBoard?.(status)}
-                          onDelete={() => onDeleteBoard?.(status)}
-                          deletable={canDelete ? canDelete(status) : true}
-                          onDeleteCard={(projectId: string) => handleDeleteCard(projectId, status)}
+                          onEdit={() => onEditStage?.(stage.id)}
+                          onDelete={() => onDeleteStage?.(stage.id)}
+                          deletable={canDeleteStage ? canDeleteStage(stage.id) : true}
+                          onDeleteCard={handleDeleteCard}
                           dragHandleProps={provided.dragHandleProps}
                         />
                       </Box>
@@ -280,9 +199,9 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({
                 );
               })}
               {provided.placeholder}
-              {/* Add another list placeholder */}
+              {/* Add another stage placeholder */}
               <Box
-                onClick={onAddList}
+                onClick={onAddStage}
                 sx={{
                   width: 320,
                   minWidth: 320,
@@ -299,7 +218,7 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({
                 }}
               >
                 <Typography variant="body2" fontWeight={600}>
-                  + Add another list
+                  + Tambah Stage Baru
                 </Typography>
               </Box>
             </Box>

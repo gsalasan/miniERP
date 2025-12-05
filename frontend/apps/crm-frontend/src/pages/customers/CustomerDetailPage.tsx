@@ -21,11 +21,16 @@ import {
   Email as EmailIcon,
   Phone as PhoneIcon,
   Person as PersonIcon,
+  History as HistoryIcon,
 } from "@mui/icons-material";
 import { customersApi } from "../../api/customers";
 import { Customer, CustomerStatus } from "../../types/customer";
 import { LoadingSpinner, StatusBadge } from "../../components";
 import { useAuth } from "../../contexts/AuthContext";
+import EditTOPModal from "../../components/EditTOPModal";
+import TOPHistoryDialog from "../../components/TOPHistoryDialog";
+import TOPApprovalCard from "../../components/TOPApprovalCard";
+import { topApi, TOPHistoryItem } from "../../api/top";
 
 const CustomerDetailPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -34,9 +39,17 @@ const CustomerDetailPage: React.FC = () => {
   const [customer, setCustomer] = useState<Customer | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [openEditTOPModal, setOpenEditTOPModal] = useState(false);
+  const [openTOPHistoryDialog, setOpenTOPHistoryDialog] = useState(false);
+  const [pendingTOPRequests, setPendingTOPRequests] = useState<TOPHistoryItem[]>([]);
 
   // Check if user is CEO - CEO cannot edit/delete customers
   const isCEO = user?.roles?.includes("CEO") || false;
+
+  // Check if user can approve TOP changes (Sales Manager or CEO)
+  const canApproveTOP = user?.roles?.some((role: string) =>
+    ["SALES_MANAGER", "CEO"].includes(role)
+  ) || false;
 
   // Load customer data
   const loadCustomer = async () => {
@@ -54,8 +67,22 @@ const CustomerDetailPage: React.FC = () => {
     }
   };
 
+  // Load pending TOP requests if user can approve
+  const loadPendingTOPRequests = async () => {
+    if (!id || !canApproveTOP) return;
+
+    try {
+      const response = await topApi.getTOPHistory(id, 1, 100);
+      const pending = response.data.filter((item: TOPHistoryItem) => item.status === "PENDING");
+      setPendingTOPRequests(pending);
+    } catch (err) {
+      console.error("Failed to load pending TOP requests:", err);
+    }
+  };
+
   useEffect(() => {
     loadCustomer();
+    loadPendingTOPRequests();
   }, [id]);
 
   const handleEdit = () => {
@@ -171,6 +198,25 @@ const CustomerDetailPage: React.FC = () => {
         </Alert>
       )}
 
+      {/* Pending TOP Approval Section (Sales Manager & CEO Only) */}
+      {canApproveTOP && pendingTOPRequests.length > 0 && (
+        <Box sx={{ mb: 3 }}>
+          <Typography variant="h6" fontWeight={600} mb={2}>
+            Permintaan Perubahan TOP Menunggu Persetujuan
+          </Typography>
+          {pendingTOPRequests.map((request) => (
+            <TOPApprovalCard
+              key={request.id}
+              historyItem={request}
+              onApprovalComplete={() => {
+                loadCustomer();
+                loadPendingTOPRequests();
+              }}
+            />
+          ))}
+        </Box>
+      )}
+
       {/* Customer Information */}
       <Paper
         elevation={2}
@@ -197,6 +243,24 @@ const CustomerDetailPage: React.FC = () => {
 
           <Grid item xs={12} sm={6}>
             <Typography variant="body2" color="text.secondary" mb={0.5}>
+              Kode Customer
+            </Typography>
+            <Typography variant="body1" fontWeight={500}>
+              {customer.code || "-"}
+            </Typography>
+          </Grid>
+
+          <Grid item xs={12} sm={6}>
+            <Typography variant="body2" color="text.secondary" mb={0.5}>
+              Tipe Customer
+            </Typography>
+            <Typography variant="body1" fontWeight={500}>
+              {customer.type || "-"}
+            </Typography>
+          </Grid>
+
+          <Grid item xs={12} sm={6}>
+            <Typography variant="body2" color="text.secondary" mb={0.5}>
               Channel
             </Typography>
             <Typography variant="body1" fontWeight={500}>
@@ -212,6 +276,16 @@ const CustomerDetailPage: React.FC = () => {
               {customer.city}
             </Typography>
           </Grid>
+
+          <Grid item xs={12} sm={6}>
+            <Typography variant="body2" color="text.secondary" mb={0.5}>
+              Provinsi
+            </Typography>
+            <Typography variant="body1" fontWeight={500}>
+              {customer.province || "-"}
+            </Typography>
+          </Grid>
+
           <Grid item xs={12} sm={6}>
             <Typography variant="body2" color="text.secondary" mb={0.5}>
               District
@@ -240,8 +314,30 @@ const CustomerDetailPage: React.FC = () => {
             <Typography variant="body2" color="text.secondary" mb={0.5}>
               TOP (Terms of Payment)
             </Typography>
-            <Typography variant="body1" fontWeight={500}>
-              {customer.top_days} hari
+            <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
+              <Typography variant="body1" fontWeight={500}>
+                {customer.top_days} hari
+              </Typography>
+              <Box sx={{ display: "flex", gap: 1 }}>
+                <Button
+                  size="small"
+                  variant="outlined"
+                  onClick={() => setOpenEditTOPModal(true)}
+                >
+                  Ubah TOP
+                </Button>
+                <Button
+                  size="small"
+                  variant="text"
+                  startIcon={<HistoryIcon />}
+                  onClick={() => setOpenTOPHistoryDialog(true)}
+                >
+                  Riwayat
+                </Button>
+              </Box>
+            </Box>
+            <Typography variant="caption" color="text.secondary" sx={{ mt: 0.5, display: "block" }}>
+              Perubahan TOP hanya berlaku untuk faktur yang dibuat setelah tanggal berlaku
             </Typography>
           </Grid>
 
@@ -264,7 +360,7 @@ const CustomerDetailPage: React.FC = () => {
               Sales Assigned
             </Typography>
             <Typography variant="body1" fontWeight={500}>
-              {customer.assigned_sales_id || "-"}
+              {customer.sales_pic_user?.employee?.full_name || customer.sales_pic || "-"}
             </Typography>
           </Grid>
 
@@ -322,14 +418,19 @@ const CustomerDetailPage: React.FC = () => {
                       sx={{
                         display: "flex",
                         alignItems: "center",
-                        gap: 1,
+                        justifyContent: "space-between",
                         mb: 2,
                       }}
                     >
-                      <PersonIcon color="primary" />
-                      <Typography variant="subtitle1" fontWeight={600}>
-                        {contact.name}
-                      </Typography>
+                      <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                        <PersonIcon color="primary" />
+                        <Typography variant="subtitle1" fontWeight={600}>
+                          {contact.name}
+                        </Typography>
+                        {contact.is_primary && (
+                          <Chip label="Utama" size="small" color="primary" />
+                        )}
+                      </Box>
                     </Box>
 
                     {contact.position && (
@@ -355,10 +456,19 @@ const CustomerDetailPage: React.FC = () => {
                     )}
 
                     {contact.phone && (
-                      <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                      <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 0.5 }}>
                         <PhoneIcon fontSize="small" color="action" />
                         <Typography variant="body2" color="text.secondary">
                           {contact.phone}
+                        </Typography>
+                      </Box>
+                    )}
+
+                    {(contact as any).whatsapp && (
+                      <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                        <PhoneIcon fontSize="small" color="success.main" />
+                        <Typography variant="body2" color="text.secondary">
+                          WA: {(contact as any).whatsapp}
                         </Typography>
                       </Box>
                     )}
@@ -413,6 +523,27 @@ const CustomerDetailPage: React.FC = () => {
           </Alert>
         )}
       </Paper>
+
+      {/* Edit TOP Modal */}
+      <EditTOPModal
+        open={openEditTOPModal}
+        onClose={() => setOpenEditTOPModal(false)}
+        customerId={customer.id}
+        customerName={customer.customer_name}
+        currentTOP={customer.top_days}
+        onSuccess={() => {
+          loadCustomer(); // Reload customer data after TOP change
+          loadPendingTOPRequests(); // Reload pending requests
+        }}
+      />
+
+      {/* TOP History Dialog */}
+      <TOPHistoryDialog
+        open={openTOPHistoryDialog}
+        onClose={() => setOpenTOPHistoryDialog(false)}
+        customerId={customer.id}
+        customerName={customer.customer_name}
+      />
     </Box>
   );
 };

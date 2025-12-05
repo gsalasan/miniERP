@@ -7,10 +7,6 @@ import {
   TextField,
   Button,
   Grid,
-  FormControl,
-  InputLabel,
-  Select,
-  MenuItem,
   InputAdornment,
   Autocomplete,
   Typography,
@@ -19,14 +15,14 @@ import {
   Box,
 } from "@mui/material";
 import { Star as StarIcon } from "@mui/icons-material";
-import { CreateProjectRequest } from "../../types/pipeline";
+import { CreateOpportunityData } from "../../api/opportunity";
 import { Customer } from "../../types/customer";
 import { customersApi } from "../../api/customers";
 
 interface AddOpportunityModalProps {
   open: boolean;
   onClose: () => void;
-  onSubmit: (data: CreateProjectRequest) => Promise<void>;
+  onSubmit: (data: CreateOpportunityData) => Promise<void>;
   loading?: boolean;
 }
 
@@ -36,15 +32,14 @@ const AddOpportunityModal: React.FC<AddOpportunityModalProps> = ({
   onSubmit,
   loading = false,
 }) => {
-  const [formData, setFormData] = useState<CreateProjectRequest>({
-    project_name: "",
-    description: "",
+  const [formData, setFormData] = useState<CreateOpportunityData>({
+    title: "",
     customer_id: "",
+    description: "",
     estimated_value: 0,
+    probability: 0,
     lead_score: 0,
-    priority: "MEDIUM",
-    expected_close_date: null,
-    notes: "",
+    expected_close_date: "",
   });
 
   const [customers, setCustomers] = useState<Customer[]>([]);
@@ -72,13 +67,10 @@ const AddOpportunityModal: React.FC<AddOpportunityModalProps> = ({
     }
   };
 
-  type FieldValue = string | number | null | undefined | Date;
-
-  const handleInputChange = (field: keyof CreateProjectRequest, value: FieldValue) => {
+  const handleInputChange = (field: keyof CreateOpportunityData, value: string | number) => {
     setFormData((prev) => ({
       ...prev,
-      // Cast via unknown to avoid using `any` while keeping flexibility for different field types
-      [field]: value as unknown as CreateProjectRequest[typeof field],
+      [field]: value,
     }));
   };
 
@@ -92,8 +84,8 @@ const AddOpportunityModal: React.FC<AddOpportunityModalProps> = ({
       setError("");
 
       // Validation
-      if (!formData.project_name.trim()) {
-        setError("Nama project harus diisi");
+      if (!formData.title.trim()) {
+        setError("Judul opportunity harus diisi");
         return;
       }
       if (!formData.customer_id) {
@@ -101,7 +93,13 @@ const AddOpportunityModal: React.FC<AddOpportunityModalProps> = ({
         return;
       }
 
-      await onSubmit(formData);
+      // Set default lead_score to 0 if not provided
+      const submitData = {
+        ...formData,
+        lead_score: formData.lead_score || 0,
+      };
+
+      await onSubmit(submitData);
       handleClose();
     } catch (error: unknown) {
       setError(error instanceof Error ? error.message : "Gagal membuat opportunity");
@@ -111,14 +109,13 @@ const AddOpportunityModal: React.FC<AddOpportunityModalProps> = ({
   const handleClose = () => {
     // Reset form
     setFormData({
-      project_name: "",
-      description: "",
+      title: "",
       customer_id: "",
+      description: "",
       estimated_value: 0,
+      probability: 0,
       lead_score: 0,
-      priority: "MEDIUM",
-      expected_close_date: null,
-      notes: "",
+      expected_close_date: "",
     });
     setSelectedCustomer(null);
     setError("");
@@ -156,13 +153,13 @@ const AddOpportunityModal: React.FC<AddOpportunityModalProps> = ({
         )}
 
         <Grid container spacing={3} sx={{ mt: 1 }}>
-          {/* Project Name */}
+          {/* Opportunity Title */}
           <Grid item xs={12}>
             <TextField
-              label="Nama Project / Opportunity *"
+              label="Judul Opportunity *"
               fullWidth
-              value={formData.project_name}
-              onChange={(e) => handleInputChange("project_name", e.target.value)}
+              value={formData.title}
+              onChange={(e) => handleInputChange("title", e.target.value)}
               disabled={loading}
               placeholder="Contoh: Pemasangan CCTV di PT. Maju Jaya"
             />
@@ -244,43 +241,19 @@ const AddOpportunityModal: React.FC<AddOpportunityModalProps> = ({
             />
           </Grid>
 
-          {/* Skor Lead */}
+          {/* Probability */}
           <Grid item xs={12} sm={6}>
             <TextField
-              label="Skor Lead"
+              label="Probabilitas (%)"
               fullWidth
               type="number"
-              value={formData.lead_score}
-              onChange={(e) => handleInputChange("lead_score", Number(e.target.value))}
+              value={formData.probability}
+              onChange={(e) => handleInputChange("probability", Number(e.target.value))}
               disabled={loading}
               inputProps={{ min: 0, max: 100 }}
               placeholder="0-100"
-              helperText="Skala 0-100, tingkat kemungkinan closing"
-              InputProps={{
-                startAdornment: (
-                  <InputAdornment position="start">
-                    <StarIcon sx={{ color: "gold" }} />
-                  </InputAdornment>
-                ),
-              }}
+              helperText="Persentase kemungkinan closing (0-100%)"
             />
-          </Grid>
-
-          {/* Priority */}
-          <Grid item xs={12} sm={6}>
-            <FormControl fullWidth disabled={loading}>
-              <InputLabel>Prioritas</InputLabel>
-              <Select
-                value={formData.priority}
-                label="Prioritas"
-                onChange={(e) => handleInputChange("priority", e.target.value)}
-              >
-                <MenuItem value="LOW">Low</MenuItem>
-                <MenuItem value="MEDIUM">Medium</MenuItem>
-                <MenuItem value="HIGH">High</MenuItem>
-                <MenuItem value="URGENT">Urgent</MenuItem>
-              </Select>
-            </FormControl>
           </Grid>
 
           {/* Expected Close Date */}
@@ -289,34 +262,13 @@ const AddOpportunityModal: React.FC<AddOpportunityModalProps> = ({
               label="Target Closing"
               fullWidth
               type="date"
-              value={
-                formData.expected_close_date
-                  ? new Date(formData.expected_close_date).toISOString().split("T")[0]
-                  : ""
-              }
-              onChange={(e) => {
-                const dateValue = e.target.value ? new Date(e.target.value) : null;
-                handleInputChange("expected_close_date", dateValue);
-              }}
+              value={formData.expected_close_date || ""}
+              onChange={(e) => handleInputChange("expected_close_date", e.target.value)}
               disabled={loading}
               InputLabelProps={{
                 shrink: true,
               }}
               helperText="Perkiraan tanggal closing deal"
-            />
-          </Grid>
-
-          {/* Notes */}
-          <Grid item xs={12}>
-            <TextField
-              label="Catatan Tambahan"
-              fullWidth
-              multiline
-              rows={2}
-              value={formData.notes}
-              onChange={(e) => handleInputChange("notes", e.target.value)}
-              disabled={loading}
-              placeholder="Catatan internal, kontak person, dll"
             />
           </Grid>
         </Grid>

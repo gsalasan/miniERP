@@ -37,11 +37,11 @@ import SalesOrderDetailModal from '../components/SalesOrderDetailModal';
 interface SalesOrder {
   id: string;
   so_number: string;
-  customer_po_number: string;
-  order_date: string;
-  top_days_agreed: number | null;
-  contract_value: number;
-  po_document_url: string | null;
+  project_name: string;
+  signed_date: string | null;
+  top_days: number | null;
+  total_value: number | null;
+  pdf_url: string | null;
   created_at: string;
   project: {
     id: string;
@@ -132,7 +132,7 @@ const SalesOrdersPage: React.FC = () => {
     const query = searchQuery.toLowerCase();
     return (
       so.so_number.toLowerCase().includes(query) ||
-      so.customer_po_number.toLowerCase().includes(query) ||
+      so.project_name?.toLowerCase().includes(query) ||
       so.project.project_name.toLowerCase().includes(query) ||
       (so.project.customer?.name || '').toLowerCase().includes(query)
     );
@@ -227,18 +227,18 @@ const SalesOrdersPage: React.FC = () => {
                           sx={{ fontWeight: 600 }}
                         />
                       </TableCell>
-                      <TableCell>{so.customer_po_number}</TableCell>
+                      <TableCell>{so.project_name}</TableCell>
                       <TableCell>{so.project.project_name}</TableCell>
                                     <TableCell>{so.project?.customer?.customer_name || so.project?.customer?.name || '-'}</TableCell>
                       <TableCell align="right">
                         <Typography variant="body2" sx={{ fontWeight: 600 }}>
-                          {formatCurrency(so.contract_value)}
+                          {formatCurrency(so.total_value || 0)}
                         </Typography>
                       </TableCell>
                       <TableCell>
-                        {so.top_days_agreed ? `${so.top_days_agreed} Hari` : 'Custom'}
+                        {so.top_days ? `${so.top_days} Hari` : 'Custom'}
                       </TableCell>
-                      <TableCell>{formatDate(so.order_date)}</TableCell>
+                      <TableCell>{so.signed_date ? formatDate(so.signed_date) : '-'}</TableCell>
                       <TableCell align="center">
                         <Box display="flex" gap={1} justifyContent="center">
                           <Tooltip title="Lihat Detail">
@@ -250,12 +250,12 @@ const SalesOrdersPage: React.FC = () => {
                               <ViewIcon />
                             </IconButton>
                           </Tooltip>
-                          {so.po_document_url && (
+                          {so.pdf_url && (
                             <Tooltip title="Lihat Dokumen PO">
                               <IconButton
                                 size="small"
                                 color="secondary"
-                                href={so.po_document_url}
+                                href={so.pdf_url}
                                 target="_blank"
                               >
                                 <DocIcon />
