@@ -1,9 +1,18 @@
 import { Router } from 'express';
 import { ProjectController } from '../controllers/projectController';
+import { RfpController } from '../controllers/rfpController';
 import { verifyToken, requireRoles } from '../middlewares/authMiddleware';
 
 const router = Router();
 const projectController = new ProjectController();
+const rfpController = new RfpController();
+
+// Progress summary across projects
+router.get(
+  '/progress-summary',
+  verifyToken,
+  projectController.getProgressSummary.bind(projectController)
+);
 
 // Get all projects (with optional filters)
 router.get(
@@ -40,6 +49,32 @@ router.post(
   '/:projectId/bom',
   verifyToken,
   projectController.createOrUpdateBom.bind(projectController)
+);
+
+// RFP routes - Project Manager can create, all authenticated users can view
+router.post(
+  '/:projectId/rfp',
+  verifyToken,
+  rfpController.createRfp.bind(rfpController)
+);
+
+router.get(
+  '/:projectId/rfp',
+  verifyToken,
+  rfpController.getRfpsByProject.bind(rfpController)
+);
+
+router.get(
+  '/rfp/:rfpId',
+  verifyToken,
+  rfpController.getRfpById.bind(rfpController)
+);
+
+router.put(
+  '/rfp/:rfpId/status',
+  verifyToken,
+  requireRoles(['ADMIN_PROJECT']),
+  rfpController.updateRfpStatus.bind(rfpController)
 );
 
 export default router;

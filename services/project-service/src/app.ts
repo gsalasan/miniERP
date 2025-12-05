@@ -4,6 +4,7 @@ import dotenv from 'dotenv';
 import projectRoutes from './routes/projectRoutes';
 import milestoneRoutes from './routes/milestoneRoutes';
 import taskRoutes from './routes/taskRoutes';
+import dashboardRoutes from './routes/dashboardRoutes';
 import { projectEventListener } from './events/projectEventListener';
 import templateRoutes from './routes/templateRoutes';
 
@@ -71,6 +72,7 @@ app.get('/health', (_, res) => res.json({ ok: true, service: 'project-service' }
 app.use('/api/v1/projects', projectRoutes);
 app.use('/api/v1/projects', milestoneRoutes);
 app.use('/api/v1/projects', taskRoutes);
+app.use('/', dashboardRoutes);
 app.use('/api/v1/templates', templateRoutes);
 
 // Event listener route (for receiving events from other services)

@@ -39,17 +39,15 @@ const ProjectsListPage: React.FC = () => {
     setError(null);
 
     try {
-      // Fetch projects (will show all including those with PM assigned)
+      // Fetch projects from backend and display only those with status WON
       const data = await projectApi.getProjects();
-      // Client-side filter for WON or projects with sales_orders (indicates they won)
-      const wonProjects = data.filter(
-        (p: Project) =>
-          p.status === 'WON' ||
-          p.status === 'Planning' ||
-          p.status === 'New' ||
-          (p.sales_orders && p.sales_orders.length > 0)
-      );
-      setProjects(wonProjects);
+      // Show projects that are WON OR already assigned to a Project Manager
+      const filtered = (data || []).filter((p) => {
+        const statusIsWon = String(p.status || '').toLowerCase() === 'won';
+        const assigned = !!p.pm_user;
+        return statusIsWon || assigned;
+      });
+      setProjects(filtered);
     } catch (err: any) {
       setError(err.response?.data?.message || 'Failed to load projects');
     } finally {
@@ -120,7 +118,7 @@ const ProjectsListPage: React.FC = () => {
 
         {projects.length === 0 ? (
           <Alert severity="info" sx={{ borderRadius: 2 }}>
-            Belum ada proyek dengan status WON
+            Belum ada proyek
           </Alert>
         ) : (
           <TableContainer
@@ -157,10 +155,10 @@ const ProjectsListPage: React.FC = () => {
               </TableHead>
               <TableBody>
                 {projects.map((project) => {
+                  // Match ProjectDetailPage: prefer sales_orders[0].contract_value,
+                  // then fallback to project.contract_value.
                   const contractValue =
-                    project.sales_orders?.[0]?.contract_value ||
-                    project.contract_value ||
-                    0;
+                    project.sales_orders?.[0]?.contract_value ?? project.contract_value ?? 0;
 
                   return (
                     <TableRow

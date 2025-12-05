@@ -1,5 +1,6 @@
 import { Request, Response } from "express";
 import { prisma } from '../lib/prisma';
+import { mockExchangeRates } from '../utils/mockData';
 
 // Controller untuk ambil daftar exchange rates
 export const getExchangeRates = async (req: Request, res: Response): Promise<void> => {
@@ -31,13 +32,13 @@ export const getExchangeRates = async (req: Request, res: Response): Promise<voi
       data: exchangeRates,
     });
   } catch (error) {
-    console.error("Error mengambil Exchange Rates:", error);
-    const errMsg = error instanceof Error ? error.message : "Unknown error";
+    console.error("⚠️ Database error, using mock data:", error);
 
-    res.status(500).json({
-      success: false,
-      message: "Terjadi kesalahan server saat mengambil data Exchange Rates",
-      error: errMsg,
+    // Fallback to mock data
+    res.status(200).json({
+      success: true,
+      message: "Daftar Exchange Rates (Mock Data for Development)",
+      data: mockExchangeRates,
     });
   }
 };

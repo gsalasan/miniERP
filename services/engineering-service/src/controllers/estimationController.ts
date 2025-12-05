@@ -1,11 +1,10 @@
 import { Request, Response } from 'express';
 import * as estimationService from '../services/estimationService';
 import prisma from '../prisma/client';
-import { ItemType, SourceType } from '@prisma/client';
-import { eventBus } from '../utils/eventBus';
-import { EventNames, EstimationApprovedPayload, ProjectStatusChangedPayload } from '../../../shared-event-bus/src/events';
+import { ItemType, SourceType, EstimationStatus } from '@prisma/client';
 import { PricingEngine } from '../services/PricingEngine.service';
 import { OverheadEngine } from '../services/OverheadEngine.service';
+import { randomUUID } from 'crypto';
 
 // Get engineers/PE (users with PROJECT_ENGINEER role)
 export const getEngineers = async (req: Request, res: Response) => {
@@ -20,7 +19,7 @@ export const getEngineers = async (req: Request, res: Response) => {
       select: {
         id: true,
         email: true,
-        employee: {
+        employees: {
           select: {
             id: true,
             full_name: true,
@@ -29,7 +28,7 @@ export const getEngineers = async (req: Request, res: Response) => {
         },
       },
       orderBy: {
-        employee: {
+        employees: {
           full_name: 'asc',
         },
       },
@@ -51,8 +50,26 @@ export const getEstimationQueue = async (req: Request, res: Response) => {
     const canSeeAllRoles = ['OPERATIONAL_MANAGER', 'CEO', 'PROJECT_MANAGER'];
     const canSeeAll = user.roles.some((role: string) => canSeeAllRoles.includes(role));
     
-    // Build where clause based on user role (no status filter - show all)
-    const whereClause: any = {};
+    // Build where clause: only show estimations that have been requested by Sales/CRM
+    const whereClause: any = {
+      status: {
+        in: [
+          EstimationStatus.PENDING,
+          EstimationStatus.REQUESTED,
+          EstimationStatus.IN_PROGRESS,
+          EstimationStatus.SUBMITTED,
+          EstimationStatus.APPROVED,
+          EstimationStatus.REJECTED,
+          EstimationStatus.DRAFT,
+          EstimationStatus.ARCHIVED,
+          EstimationStatus.DISCOUNT_REQUESTED,
+          EstimationStatus.DISCOUNT_APPROVED,
+          EstimationStatus.DISCOUNT_REJECTED,
+        ],
+      },
+      // Only those requested by Sales/CRM trigger
+      requested_by_user_id: { not: null },
+    };
     
     // If user is PROJECT_ENGINEER, only show their assigned estimations
     if (!canSeeAll) {
@@ -62,12 +79,12 @@ export const getEstimationQueue = async (req: Request, res: Response) => {
     const estimations = await prisma.estimations.findMany({
       where: whereClause,
       include: {
-        project: {
+        projects: {
           select: {
             id: true,
             project_name: true,
             project_number: true,
-            customer: {
+            customers: {
               select: {
                 id: true,
                 customer_name: true,
@@ -76,11 +93,11 @@ export const getEstimationQueue = async (req: Request, res: Response) => {
             },
           },
         },
-        assigned_to: {
+        users_estimations_assigned_to_user_idTousers: {
           select: {
             id: true,
             email: true,
-            employee: {
+            employees: {
               select: {
                 id: true,
                 full_name: true,
@@ -88,11 +105,11 @@ export const getEstimationQueue = async (req: Request, res: Response) => {
             },
           },
         },
-        requested_by: {
+        users_estimations_requested_by_user_idTousers: {
           select: {
             id: true,
             email: true,
-            employee: {
+            employees: {
               select: {
                 id: true,
                 full_name: true,
@@ -100,19 +117,12 @@ export const getEstimationQueue = async (req: Request, res: Response) => {
             },
           },
         },
-        items: true,
-        client: {
+        estimation_items: true,
+        customers: {
           select: {
             id: true,
             customer_name: true,
             city: true,
-          },
-        },
-        sales_order: {
-          select: {
-            id: true,
-            so_number: true,
-            order_date: true,
           },
         },
       },
@@ -120,7 +130,37 @@ export const getEstimationQueue = async (req: Request, res: Response) => {
         date_requested: 'desc',
       },
     });
-    res.json(estimations);
+      // Normalize relation keys to maintain legacy API shape
+      const normalized = estimations.map((e: any) => {
+        const requested_by = e.users_estimations_requested_by_user_idTousers
+          ? {
+              ...e.users_estimations_requested_by_user_idTousers,
+              employee: e.users_estimations_requested_by_user_idTousers.employees,
+            }
+          : null;
+        const assigned_to = e.users_estimations_assigned_to_user_idTousers
+          ? {
+              ...e.users_estimations_assigned_to_user_idTousers,
+              employee: e.users_estimations_assigned_to_user_idTousers.employees,
+            }
+          : null;
+        const project = e.projects
+          ? {
+              ...e.projects,
+              customer: e.projects.customers,
+            }
+          : null;
+        return {
+          ...e,
+          project,
+          client: e.customers,
+          requested_by,
+          assigned_to,
+          items: e.estimation_items,
+          sales_order: e.sales_orders,
+        };
+      });
+      res.json(normalized);
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
     console.error('Error fetching estimation queue:', msg);
@@ -143,56 +183,108 @@ export const getApprovalQueue = async (req: Request, res: Response) => {
       });
     }
     
-    // Get all estimations that have been submitted (including approved/rejected)
+    // Get all estimations that are ready for approval or have been reviewed
     const estimations = await prisma.estimations.findMany({
       where: {
         status: {
           in: [
-            'PENDING_APPROVAL',
-            'APPROVED',
-            'REJECTED',
-            'REVISION_REQUIRED',
-            'PENDING_DISCOUNT_APPROVAL',
-            'DISCOUNT_APPROVED',
+            EstimationStatus.SUBMITTED,
+            EstimationStatus.APPROVED,
+            EstimationStatus.REJECTED,
+            EstimationStatus.ARCHIVED,
+            EstimationStatus.DISCOUNT_REQUESTED,
+            EstimationStatus.DISCOUNT_APPROVED,
+            EstimationStatus.DISCOUNT_REJECTED,
+            EstimationStatus.WON,
           ],
         },
       },
       include: {
-        project: {
-          include: {
-            customer: true,
-          },
-        },
-        assigned_to: {
-          include: {
-            employee: true,
-          },
-        },
-        requested_by: {
-          include: {
-            employee: true,
-          },
-        },
-        items: true,
-        client: true,
-        sales_order: {
+        projects: {
           select: {
             id: true,
-            so_number: true,
-            order_date: true,
+            project_name: true,
+            project_number: true,
+            customers: {
+              select: {
+                id: true,
+                customer_name: true,
+                city: true,
+              },
+            },
+          },
+        },
+        users_estimations_assigned_to_user_idTousers: {
+          select: {
+            id: true,
+            email: true,
+            employees: {
+              select: {
+                id: true,
+                full_name: true,
+              },
+            },
+          },
+        },
+        users_estimations_requested_by_user_idTousers: {
+          select: {
+            id: true,
+            email: true,
+            employees: {
+              select: {
+                id: true,
+                full_name: true,
+              },
+            },
+          },
+        },
+        estimation_items: true,
+        customers: {
+          select: {
+            id: true,
+            customer_name: true,
+            city: true,
           },
         },
       },
       orderBy: {
-        submitted_at: 'desc',
+        updated_at: 'desc',
       },
     });
     
     // Serialize + fully enhance each estimation with fresh engine calculations
     const serializedEstimations = await Promise.all(
-      estimations.map(async (est) => {
+      estimations.map(async (est: any) => {
+        // map new relation fields to legacy keys first
+        const requested_by = est.users_estimations_requested_by_user_idTousers
+          ? {
+              ...est.users_estimations_requested_by_user_idTousers,
+              employee: est.users_estimations_requested_by_user_idTousers.employees,
+            }
+          : null;
+        const assigned_to = est.users_estimations_assigned_to_user_idTousers
+          ? {
+              ...est.users_estimations_assigned_to_user_idTousers,
+              employee: est.users_estimations_assigned_to_user_idTousers.employees,
+            }
+          : null;
+        const project = est.projects
+          ? {
+              ...est.projects,
+              customer: est.projects.customers,
+            }
+          : null;
+        const mappedEst = {
+          ...est,
+          project,
+          client: est.customers,
+          requested_by,
+          assigned_to,
+          items: est.estimation_items,
+          sales_order: est.sales_orders,
+        };
         // Normalize items
-        const normalizedItems = (est.items || []).map((it: any) => ({
+        const normalizedItems = (mappedEst.items || []).map((it: any) => ({
           ...it,
           quantity: it.quantity ? Number(it.quantity) : 0,
           hpp_at_estimation: it.hpp_at_estimation ? Number(it.hpp_at_estimation) : 0,
@@ -219,7 +311,8 @@ export const getApprovalQueue = async (req: Request, res: Response) => {
             pricingSummary = pricingResult.summary;
           }
         } catch (pricingErr) {
-          console.warn(`⚠️ PricingEngine failed for estimation ${est.id}:`, pricingErr);
+          // do not fail the entire response if pricing fails
+          pricingSummary = null;
         }
 
         // Overhead calculation using recomputed direct HPP
@@ -232,7 +325,7 @@ export const getApprovalQueue = async (req: Request, res: Response) => {
             });
           }
         } catch (overheadErr) {
-          console.warn(`⚠️ OverheadEngine failed for estimation ${est.id}:`, overheadErr);
+          overheadResult = null;
         }
 
         // Derive totals
@@ -245,7 +338,7 @@ export const getApprovalQueue = async (req: Request, res: Response) => {
         const average_markup_percentage = pricingSummary ? pricingSummary.average_markup_percentage : 0;
 
         return {
-          ...est,
+          ...mappedEst,
           items: normalizedItems,
           total_direct_hpp,
           total_overhead_allocation,
@@ -315,15 +408,15 @@ export const assignEstimation = async (req: Request, res: Response) => {
       where: { id },
       data: {
         assigned_to_user_id: assigneeUserId,
-        status: 'IN_PROGRESS',
+        status: EstimationStatus.IN_PROGRESS,
         date_assigned: new Date(),
       },
       include: {
-        assigned_to: {
+        users_estimations_assigned_to_user_idTousers: {
           select: {
             id: true,
             email: true,
-            employee: {
+            employees: {
               select: {
                 id: true,
                 full_name: true,
@@ -331,7 +424,7 @@ export const assignEstimation = async (req: Request, res: Response) => {
             },
           },
         },
-        items: true,
+        estimation_items: true,
       },
     });
 
@@ -382,15 +475,15 @@ export const startEstimationWork = async (req: Request, res: Response) => {
     const updatedEstimation = await prisma.estimations.update({
       where: { id },
       data: {
-        status: 'IN_PROGRESS',
+        status: EstimationStatus.IN_PROGRESS,
         date_started: new Date(),
       },
       include: {
-        assigned_to: {
+        users_estimations_assigned_to_user_idTousers: {
           select: {
             id: true,
             email: true,
-            employee: {
+            employees: {
               select: {
                 id: true,
                 full_name: true,
@@ -398,7 +491,7 @@ export const startEstimationWork = async (req: Request, res: Response) => {
             },
           },
         },
-        items: true,
+        estimation_items: true,
       },
     });
 
@@ -414,8 +507,8 @@ export const getEstimations = async (req: Request, res: Response) => {
   try {
     const estimations = await prisma.estimations.findMany({
       include: {
-        items: true,
-        sales_order: {
+        estimation_items: true,
+        sales_orders: {
           select: {
             id: true,
             so_number: true,
@@ -438,24 +531,41 @@ export const getEstimationById = async (req: Request, res: Response) => {
     const estimation = await prisma.estimations.findUnique({
       where: { id },
       include: {
-        items: true,
-        project: {
+        estimation_items: true,
+        projects: {
           include: {
-            customer: true,
+            customers: {
+              select: {
+                id: true,
+                customer_name: true,
+                city: true,
+                status: true,
+                channel: true,
+                top_days: true,
+              },
+            },
           },
         },
-        requested_by: {
+        users_estimations_requested_by_user_idTousers: {
           include: {
-            employee: true,
+            employees: true,
           },
         },
-        assigned_to: {
+        users_estimations_assigned_to_user_idTousers: {
           include: {
-            employee: true,
+            employees: true,
           },
         },
-        client: true,
-        sales_order: {
+        customers: {
+          select: {
+            id: true,
+            customer_name: true,
+            city: true,
+            status: true,
+            channel: true,
+          },
+        },
+        sales_orders: {
           select: {
             id: true,
             so_number: true,
@@ -466,29 +576,38 @@ export const getEstimationById = async (req: Request, res: Response) => {
     });
     if (!estimation)
       return res.status(404).json({ error: 'Estimation not found' });
+    
     // Enrich items with readable names from Material/Service tables
-    const items = estimation.items || [];
-    const materialIds = items
-      .filter((it: any) => it.item_type === 'MATERIAL')
-      .map((it: any) => it.item_id);
-    const serviceIds = items
-      .filter((it: any) => it.item_type === 'SERVICE')
-      .map((it: any) => it.item_id);
+    const items = estimation.estimation_items || [];
+    let materials: any[] = [];
+    let services: any[] = [];
+    
+    try {
+      const materialIds = items
+        .filter((it: any) => it.item_type === 'MATERIAL')
+        .map((it: any) => it.item_id);
+      const serviceIds = items
+        .filter((it: any) => it.item_type === 'SERVICE')
+        .map((it: any) => it.item_id);
 
-    const [materials, services] = await Promise.all([
-      materialIds.length
-        ? prisma.material.findMany({
-            where: { id: { in: materialIds } },
-            select: { id: true, item_name: true },
-          })
-        : Promise.resolve([]),
-      serviceIds.length
-        ? prisma.service.findMany({
-            where: { id: { in: serviceIds } },
-            select: { id: true, service_name: true },
-          })
-        : Promise.resolve([]),
-    ]);
+      [materials, services] = await Promise.all([
+        materialIds.length
+          ? prisma.Material.findMany({
+              where: { id: { in: materialIds } },
+              select: { id: true, item_name: true },
+            })
+          : Promise.resolve([]),
+        serviceIds.length
+          ? prisma.Service.findMany({
+              where: { id: { in: serviceIds } },
+              select: { id: true, service_name: true },
+            })
+          : Promise.resolve([]),
+      ]);
+    } catch (fetchErr) {
+      console.warn('⚠️ Failed to fetch material/service names:', fetchErr);
+      // Continue with empty arrays - will use item_id as fallback
+    }
 
     const materialNameMap = Object.fromEntries(
       (materials as any[]).map((m) => [m.id, m.item_name])
@@ -513,6 +632,24 @@ export const getEstimationById = async (req: Request, res: Response) => {
     const serializedEstimation = {
       ...estimation,
       items: enrichedItems,
+      estimation_items: enrichedItems, // Keep both for compatibility
+      // Normalize project relation for frontend
+      project: estimation.projects ? {
+        ...estimation.projects,
+        customer: estimation.projects.customers,
+      } : null,
+      // Normalize customer relation
+      customer: estimation.customers || estimation.projects?.customers || null,
+      // Normalize assigned_to relation
+      assigned_to: estimation.users_estimations_assigned_to_user_idTousers ? {
+        ...estimation.users_estimations_assigned_to_user_idTousers,
+        employee: estimation.users_estimations_assigned_to_user_idTousers.employees,
+      } : null,
+      // Normalize requested_by relation  
+      requested_by: estimation.users_estimations_requested_by_user_idTousers ? {
+        ...estimation.users_estimations_requested_by_user_idTousers,
+        employee: estimation.users_estimations_requested_by_user_idTousers.employees,
+      } : null,
       total_direct_hpp: estimation.total_direct_hpp ? Number(estimation.total_direct_hpp) : 0,
       total_overhead_allocation: estimation.total_overhead_allocation ? Number(estimation.total_overhead_allocation) : 0,
       total_hpp: estimation.total_hpp ? Number(estimation.total_hpp) : 0,
@@ -623,10 +760,10 @@ export const createEstimation = async (req: Request, res: Response) => {
     // }
 
     // Fetch project data untuk ambil customer info
-    const project = await prisma.project.findUnique({
+    const project = await prisma.projects.findUnique({
       where: { id: finalProjectId },
       include: {
-        customer: {
+        customers: {
           select: {
             id: true,
             customer_name: true,
@@ -671,7 +808,7 @@ export const createEstimation = async (req: Request, res: Response) => {
         // Legacy fields untuk backward compatibility (dari project data)
         sales_pic: sales_pic || 'N/A', // Dari request atau default
         customer_name:
-          customer_name || project.customer?.customer_name || 'N/A',
+          customer_name || project.customers?.customer_name || 'N/A',
         // Default values untuk financial data (akan diisi saat kalkulasi)
         total_direct_hpp: 0,
         total_overhead_allocation: 0,
@@ -680,12 +817,12 @@ export const createEstimation = async (req: Request, res: Response) => {
         ...restData,
       },
       include: {
-        project: true,
-        assigned_to: {
+        projects: true,
+        users_estimations_assigned_to_user_idTousers: {
           select: {
             id: true,
             email: true,
-            employee: {
+            employees: {
               select: {
                 id: true,
                 full_name: true,
@@ -693,11 +830,11 @@ export const createEstimation = async (req: Request, res: Response) => {
             },
           },
         },
-        requested_by: {
+        users_estimations_requested_by_user_idTousers: {
           select: {
             id: true,
             email: true,
-            employee: {
+            employees: {
               select: {
                 id: true,
                 full_name: true,
@@ -709,7 +846,7 @@ export const createEstimation = async (req: Request, res: Response) => {
     });
 
     // UPDATE PROJECT STATUS: Set to 'PRE_SALES' ketika estimasi dibuat (FITUR 3.1.D requirement)
-    await prisma.project.update({
+    await prisma.projects.update({
       where: { id: finalProjectId },
       data: { status: 'PRE_SALES' },
     });
@@ -971,6 +1108,7 @@ export const saveDraft = async (req: Request, res: Response) => {
           const actualId = item.material_id || item.id;
 
           itemsToCreate.push({
+            id: randomUUID(),
             estimation_id: id,
             item_id: actualId,
             item_type: 'MATERIAL' as ItemType,
@@ -994,6 +1132,7 @@ export const saveDraft = async (req: Request, res: Response) => {
               const actualId = item.service_id || item.id;
 
               itemsToCreate.push({
+                id: randomUUID(),
                 estimation_id: id,
                 item_id: actualId,
                 item_type: 'SERVICE' as ItemType,
@@ -1032,19 +1171,33 @@ export const saveDraft = async (req: Request, res: Response) => {
         updated_at: new Date(),
       },
       include: {
-        project: {
+        projects: {
           include: {
-            customer: true,
+            customers: {
+              select: {
+                id: true,
+                customer_name: true,
+                city: true,
+                status: true,
+              },
+            },
           },
         },
-        items: true,
-        client: true, // Make sure client relation is included
+        estimation_items: true,
+        customers: {
+          select: {
+            id: true,
+            customer_name: true,
+            city: true,
+            status: true,
+          },
+        },
       },
     });
 
     console.log(
       '📦 Response will include',
-      updatedEstimation.items?.length || 0,
+      updatedEstimation.estimation_items?.length || 0,
       'items'
     );
 
@@ -1099,6 +1252,7 @@ export const submitEstimation = async (req: Request, res: Response) => {
           const actualId = item.material_id || item.id;
 
           itemsToCreate.push({
+            id: randomUUID(),
             estimation_id: id,
             item_id: actualId,
             item_type: 'MATERIAL' as ItemType,
@@ -1118,6 +1272,7 @@ export const submitEstimation = async (req: Request, res: Response) => {
               const actualId = item.service_id || item.id;
 
               itemsToCreate.push({
+                id: randomUUID(),
                 estimation_id: id,
                 item_id: actualId,
                 item_type: 'SERVICE' as ItemType,
@@ -1138,6 +1293,9 @@ export const submitEstimation = async (req: Request, res: Response) => {
       await prisma.estimation_items.createMany({
         data: itemsToCreate,
       });
+      console.log(`✅ Created ${itemsToCreate.length} estimation items`);
+    } else {
+      console.log('⚠️ No items to create');
     }
 
     // Generate CE Number only if not already assigned (for first submit)
@@ -1176,31 +1334,57 @@ export const submitEstimation = async (req: Request, res: Response) => {
       ceDate = new Date();
     }
 
-    // Update estimation timestamp, CE Number (if new), CE Date, and mark as PENDING_APPROVAL (menunggu approval)
+    // Update estimation timestamp, CE Number (if new), CE Date, and mark as SUBMITTED (menunggu approval)
     const updatedEstimation = await prisma.estimations.update({
       where: { id },
       data: {
         updated_at: new Date(),
         ...(existingEstimation.ce_number ? {} : { ce_number: ceNumber }), // Only update if not exists
         ...(existingEstimation.ce_date ? {} : { ce_date: ceDate }), // Only update if not exists
-        status: 'PENDING_APPROVAL',
+        status: EstimationStatus.SUBMITTED,
         submitted_by_user_id: (req as any).user?.userId || (req as any).user?.id || null,
         submitted_at: new Date(),
       },
       include: {
-        project: {
+        projects: {
           include: {
-            customer: true,
+            customers: {
+              select: {
+                id: true,
+                customer_name: true,
+                city: true,
+                status: true,
+              },
+            },
           },
         },
-        items: true,
       },
     });
 
+    // Explicitly fetch items to ensure they're included (createMany doesn't return created records)
+    const estimationItems = await prisma.estimation_items.findMany({
+      where: { estimation_id: id },
+      orderBy: { created_at: 'asc' },
+    });
+
+    console.log(`📦 Estimation ${id} submitted with status SUBMITTED`);
+    console.log(`📦 Fetched ${estimationItems.length} items from database`);
+
+    // Normalize response to include legacy field names
+    const normalizedResponse = {
+      ...updatedEstimation,
+      estimation_items: estimationItems, // Use explicitly fetched items
+      items: estimationItems, // For backward compatibility
+      project: updatedEstimation.projects ? {
+        ...updatedEstimation.projects,
+        customer: updatedEstimation.projects.customers,
+      } : null,
+    };
+
     res.status(200).json({
       success: true,
-      message: `Estimation submitted with ${itemsToCreate.length} items`,
-      data: updatedEstimation,
+      message: `Estimation submitted with ${estimationItems.length} items`,
+      data: normalizedResponse,
     });
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
@@ -1236,24 +1420,24 @@ export const decideOnEstimation = async (req: Request, res: Response) => {
     const estimation = await prisma.estimations.findUnique({
       where: { id },
       include: {
-        project: true,
+        projects: true,
       },
     });
     if (!estimation) {
       return res.status(404).json({ success: false, error: 'Estimation not found' });
     }
 
-    // Only allow decision when waiting approval; we map this to PENDING in current enum
-    if (estimation.status !== 'PENDING_APPROVAL') {
+    // Only allow decision when waiting approval
+    if (estimation.status !== EstimationStatus.SUBMITTED) {
       return res.status(409).json({ success: false, error: 'Estimasi ini tidak sedang dalam status menunggu approval.' });
     }
 
     // Map decision to proper enum statuses
     const newStatus = finalDecision === 'APPROVED'
-      ? 'APPROVED'
+      ? EstimationStatus.APPROVED
       : finalDecision === 'REJECTED'
-        ? 'REJECTED'
-        : 'REVISION_REQUIRED';
+        ? EstimationStatus.REJECTED
+        : EstimationStatus.PENDING; // Use PENDING for revision required
 
     const approverId = (req as any).user?.userId || (req as any).user?.id || null;
 
@@ -1266,15 +1450,15 @@ export const decideOnEstimation = async (req: Request, res: Response) => {
         updated_at: new Date(),
       },
       include: {
-        project: true,
-        requested_by: true,
-        assigned_to: true,
+        projects: true,
+        users_estimations_requested_by_user_idTousers: true,
+        users_estimations_assigned_to_user_idTousers: true,
       },
     });
 
     // Audit trail via ProjectActivity
     try {
-      await prisma.projectActivity.create({
+      await prisma.project_activities.create({
         data: {
           project_id: updated.project_id,
           activity_type: 'STATUS_CHANGE' as any,
@@ -1343,20 +1527,20 @@ export const sendEstimationToCRM = async (req: Request, res: Response) => {
     const estimation = await prisma.estimations.findUnique({
       where: { id },
       include: {
-        items: true,
-        project: {
+        estimation_items: true,
+        projects: {
           include: {
-            customer: true,
+            customers: true,
           },
         },
-        requested_by: {
+        users_estimations_requested_by_user_idTousers: {
           include: {
-            employee: true,
+            employees: true,
           },
         },
-        assigned_to: {
+        users_estimations_assigned_to_user_idTousers: {
           include: {
-            employee: true,
+            employees: true,
           },
         },
       },
@@ -1383,7 +1567,7 @@ export const sendEstimationToCRM = async (req: Request, res: Response) => {
       customer_name: estimation.project?.customer?.customer_name,
       sales_pic: estimation.project?.sales_pic || estimation.requested_by?.employee?.full_name,
       technical_brief: estimation.technical_brief,
-      items: estimation.items.map((item: any) => ({
+      items: estimation.estimation_items.map((item: any) => ({
         item_id: item.item_id,
         item_type: item.item_type,
         quantity: Number(item.quantity),

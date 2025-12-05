@@ -68,13 +68,54 @@ class ProjectApi {
     pmUserId?: string;
     salesUserId?: string;
   }): Promise<Project[]> {
-    const response = await this.api.get<ApiResponse<Project[]>>('/projects', {
-      params: filters,
-    });
-    if (!response.data.success || !response.data.data) {
-      throw new Error(response.data.message || 'Failed to fetch projects');
+    const response = await this.api.get('/projects', { params: filters });
+    const respData: any = response.data;
+    if (import.meta.env.DEV) {
+      try {
+        // eslint-disable-next-line no-console
+        console.debug('[projectApi] getProjects response shape:', { filters, respData });
+      } catch (e) {
+        // ignore
+      }
     }
-    return response.data.data;
+
+    // If API returned array directly
+    if (Array.isArray(respData)) return respData as Project[];
+
+    // Helper to find first array in known candidate keys
+    const findArray = (obj: any) => {
+      if (!obj || typeof obj !== 'object') return null;
+      const candidates = ['data', 'projects', 'rows', 'items', 'results'];
+      for (const k of candidates) {
+        if (Array.isArray(obj[k])) return obj[k];
+      }
+      // nested: data.data
+      if (obj.data && typeof obj.data === 'object') {
+        for (const k of candidates) {
+          if (Array.isArray(obj.data[k])) return obj.data[k];
+        }
+      }
+      return null;
+    };
+
+    // If response has success:false, raise
+    if (respData && typeof respData === 'object' && typeof respData.success === 'boolean' && respData.success === false) {
+      throw new Error(respData.message || 'Failed to fetch projects');
+    }
+
+    // Try common shapes
+    const arr1 = findArray(respData);
+    if (Array.isArray(arr1)) return arr1 as Project[];
+
+    // Try respData.data being an array
+    if (Array.isArray(respData?.data)) return respData.data as Project[];
+
+    // Try nested shapes like respData.data.data
+    if (Array.isArray(respData?.data?.data)) return respData.data.data as Project[];
+
+    // As a last effort, if respData is object and contains many numeric keys, map its values
+    // But safer to return empty array to avoid UI crashes
+    return [];
   }
 
   /**
@@ -238,6 +279,51 @@ class ProjectApi {
   }
 
   /**
+   * Create a new milestone template
+   */
+  async createMilestoneTemplate(
+    data: Omit<MilestoneTemplate, 'id'>
+  ): Promise<MilestoneTemplate> {
+    const response = await this.api.post<ApiResponse<MilestoneTemplate>>(
+      '/templates/milestones',
+      data
+    );
+    if (!response.data.success || !response.data.data) {
+      throw new Error(response.data.message || 'Failed to create template');
+    }
+    return response.data.data;
+  }
+
+  /**
+   * Update an existing milestone template
+   */
+  async updateMilestoneTemplate(
+    templateId: number,
+    data: Partial<Omit<MilestoneTemplate, 'id'>>
+  ): Promise<MilestoneTemplate> {
+    const response = await this.api.put<ApiResponse<MilestoneTemplate>>(
+      `/templates/milestones/${templateId}`,
+      data
+    );
+    if (!response.data.success || !response.data.data) {
+      throw new Error(response.data.message || 'Failed to update template');
+    }
+    return response.data.data;
+  }
+
+  /**
+   * Delete a milestone template
+   */
+  async deleteMilestoneTemplate(templateId: number): Promise<void> {
+    const response = await this.api.delete<ApiResponse<void>>(
+      `/templates/milestones/${templateId}`
+    );
+    if (!response.data.success) {
+      throw new Error(response.data.message || 'Failed to delete template');
+    }
+  }
+
+  /**
    * Get team members for a project (for assignment)
    * Fallback: returns project managers list mapped to TeamMember if endpoint missing
    */
@@ -271,6 +357,9 @@ class ProjectApi {
   ): Promise<Task> {
     const payload: any = {
       milestoneId: data.milestone_id,
+      parentTaskId: (data as any).parent_task_id,
+      taskType: (data as any).task_type,
+      weightPct: (data as any).weight_pct,
       taskName: data.name,
       description: data.description,
       assigneeId: data.assignee_id,
@@ -305,6 +394,108 @@ class ProjectApi {
     );
     if (!response.data.success || !response.data.data) {
       throw new Error(response.data.message || 'Failed to fetch tasks');
+    }
+    return response.data.data;
+  }
+
+  /**
+   * Get Gantt tree data for a project (TDD-015 Extended)
+   */
+  async getGantt(projectId: string): Promise<any> {
+    const response = await this.api.get(`/projects/${projectId}/gantt`);
+    const respData: any = response.data;
+    if (!respData || respData.success === false) {
+      throw new Error(respData.message || 'Failed to fetch gantt data');
+    }
+    // normalize to data object
+    return respData.data || respData;
+  }
+
+  /**
+   * Get Gantt data with full GanttTask structure (TDD-015 Extended)
+   */
+  async getGanttData(projectId: string): Promise<any[]> {
+    const response = await this.api.get(`/projects/${projectId}/gantt`);
+    if (!response.data.success || !response.data.data) {
+      throw new Error(response.data.message || 'Failed to fetch gantt data');
+    }
+    return response.data.data;
+  }
+
+  /**
+   * Update task for Gantt (optimized PATCH endpoint)
+   */
+  async updateTaskGantt(
+    projectId: string,
+    taskId: string,
+    data: {
+      start?: string; // YYYY-MM-DD
+      end?: string; // YYYY-MM-DD
+      progress?: number;
+      dependencies?: string[];
+      weight?: number;
+      parent?: string;
+    }
+  ): Promise<any> {
+    const response = await this.api.patch(
+      `/tasks/${taskId}`,
+      data
+    );
+    if (!response.data.success) {
+      throw new Error(response.data.message || 'Failed to update task');
+    }
+    return response.data.data;
+  }
+
+  /**
+   * Update task progress only (fast endpoint)
+   */
+  async updateTaskProgress(
+    projectId: string,
+    taskId: string,
+    progress: number
+  ): Promise<any> {
+    const response = await this.api.patch(
+      `/tasks/${taskId}/progress`,
+      { progress }
+    );
+    if (!response.data.success) {
+      throw new Error(response.data.message || 'Failed to update progress');
+    }
+    return response.data.data;
+  }
+
+  /**
+   * Create task for Gantt (with full GanttTask fields)
+   */
+  async createTaskGantt(
+    projectId: string,
+    data: {
+      name: string;
+      start: string;
+      end: string;
+      type: 'phase' | 'activity' | 'milestone';
+      milestone_id?: string;
+      dependencies?: string[];
+      weight?: number;
+      parent?: string;
+    }
+  ): Promise<any> {
+    const response = await this.api.post(
+      `/projects/${projectId}/tasks`,
+      {
+        taskName: data.name,
+        startDate: data.start,
+        endDate: data.end,
+        taskType: data.type,
+        milestoneId: data.milestone_id,
+        dependencies: data.dependencies,
+        weightPct: data.weight,
+        parentTaskId: data.parent,
+      }
+    );
+    if (!response.data.success) {
+      throw new Error(response.data.message || 'Failed to create task');
     }
     return response.data.data;
   }

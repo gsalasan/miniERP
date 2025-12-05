@@ -26,8 +26,10 @@ import {
   AccountCircle as AccountCircleIcon,
   Work as WorkIcon,
 } from '@mui/icons-material';
+import DashboardIcon from '@mui/icons-material/Dashboard';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
+import NotificationCenter from '../components/NotificationCenter';
 
 const drawerWidth = 280;
 
@@ -93,9 +95,14 @@ interface MenuItem {
 
 const menuItems: MenuItem[] = [
   {
+    text: 'Operations',
+    icon: <DashboardIcon />,
+    path: '/dashboard/operations',
+  },
+  {
     text: 'Project Workspace',
     icon: <ProjectIcon />,
-    path: '/',
+    path: '/project',
   },
 ];
 
@@ -133,11 +140,15 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
   };
 
   const handleBackToDashboard = () => {
-    window.location.href = 'http://localhost:3000/dashboard';
+    // Use router navigation to respect current host and base path
+    navigate('/dashboard');
   };
 
   const isItemSelected = (item: MenuItem): boolean => {
-    return location.pathname === item.path;
+    // Root path should only be selected for exact '/'. For other items,
+    // consider selected when current path equals or startsWith item.path.
+    if (item.path === '/') return location.pathname === '/';
+    return location.pathname === item.path || location.pathname.startsWith(item.path);
   };
 
   const drawer = (
@@ -368,6 +379,9 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
         <Toolbar />
         {children}
       </Box>
+      
+      {/* Global Notification Center */}
+      <NotificationCenter />
     </Box>
   );
 };
