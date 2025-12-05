@@ -1,4 +1,10 @@
 ﻿import React, { useEffect } from "react";
+import dayjs from 'dayjs';
+import utc from 'dayjs/plugin/utc';
+import timezone from 'dayjs/plugin/timezone';
+
+dayjs.extend(utc);
+dayjs.extend(timezone);
 
 export interface AttendanceHistoryItem {
   date: string;
@@ -67,9 +73,11 @@ export function AttendanceHistory({ records = [] }: { records: AttendanceHistory
       </h3>
       <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
         {recentRecords.map((rec, idx) => {
-          const dateObj = new Date(rec.date);
-          const dayName = dateObj.toLocaleDateString("en-US", { weekday: "short" });
-          const dateFormat = dateObj.toLocaleDateString("en-US", { day: "2-digit", month: "short" });
+          // Parse date string directly - backend sends YYYY-MM-DD format in Jakarta timezone
+          // Don't use timezone conversion here to avoid shifting the date
+          const dateObj = dayjs(rec.date);
+          const dayName = dateObj.format('ddd');
+          const dateFormat = dateObj.format('DD MMM');
           const hasCheckOut = !!rec.checkOut;
           return (
             <div key={rec.date + idx} style={{ borderRadius: 10, border: "1px solid #E5E7EB", background: "#FFFFFF", padding: "12px 14px", boxShadow: "0 1px 2px rgba(0, 0, 0, 0.06)" }}>

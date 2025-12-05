@@ -1,4 +1,4 @@
-const HR_API = 'http://localhost:4004/api/v1';
+import apiClient from './client';
 
 export interface ApprovalResponse {
   leave_requests: any[];
@@ -18,11 +18,13 @@ export interface SubordinateCheckResponse {
  */
 export const checkSubordinates = async (employeeId: string): Promise<SubordinateCheckResponse> => {
   try {
-    const response = await fetch(`${HR_API}/approvals/check-subordinates/${employeeId}`);
-    if (!response.ok) {
-      throw new Error('Failed to check subordinates');
-    }
-    return await response.json();
+    const response = await apiClient.get<
+      { success?: boolean; data?: SubordinateCheckResponse } & SubordinateCheckResponse
+    >(`/approvals/check-subordinates/${employeeId}`);
+    return response.data.data || {
+      has_subordinates: response.data.has_subordinates ?? false,
+      count: response.data.count ?? 0,
+    };
   } catch (error) {
     console.error('Error checking subordinates:', error);
     return { has_subordinates: false, count: 0 };
@@ -35,11 +37,10 @@ export const checkSubordinates = async (employeeId: string): Promise<Subordinate
  */
 export const getTeamRequests = async (managerId: string): Promise<ApprovalResponse> => {
   try {
-    const response = await fetch(`${HR_API}/approvals/team/${managerId}`);
-    if (!response.ok) {
-      throw new Error('Failed to fetch team requests');
-    }
-    return await response.json();
+    const response = await apiClient.get<{ success?: boolean; data?: ApprovalResponse } & ApprovalResponse>(
+      `/approvals/team/${managerId}`
+    );
+    return response.data.data || response.data;
   } catch (error) {
     console.error('Error fetching team requests:', error);
     throw error;
@@ -52,11 +53,10 @@ export const getTeamRequests = async (managerId: string): Promise<ApprovalRespon
  */
 export const getAllApprovalRequests = async (): Promise<ApprovalResponse> => {
   try {
-    const response = await fetch(`${HR_API}/approvals/all`);
-    if (!response.ok) {
-      throw new Error('Failed to fetch all requests');
-    }
-    return await response.json();
+    const response = await apiClient.get<{ success?: boolean; data?: ApprovalResponse } & ApprovalResponse>(
+      '/approvals/all'
+    );
+    return response.data.data || response.data;
   } catch (error) {
     console.error('Error fetching all requests:', error);
     throw error;
@@ -73,19 +73,11 @@ export const approveRequest = async (
   approvedBy: string
 ) => {
   try {
-    const response = await fetch(`${HR_API}/approvals/${type}/approve/${requestId}`, {
-      method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ approved_by: approvedBy }),
+    const response = await apiClient.put(`/approvals/${type}/approve/${requestId}`, {
+      approved_by: approvedBy,
     });
 
-    if (!response.ok) {
-      throw new Error('Failed to approve request');
-    }
-
-    return await response.json();
+    return response.data;
   } catch (error) {
     console.error('Error approving request:', error);
     throw error;
@@ -103,22 +95,12 @@ export const rejectRequest = async (
   rejectionReason: string
 ) => {
   try {
-    const response = await fetch(`${HR_API}/approvals/${type}/reject/${requestId}`, {
-      method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        rejected_by: rejectedBy,
-        rejection_reason: rejectionReason,
-      }),
+    const response = await apiClient.put(`/approvals/${type}/reject/${requestId}`, {
+      rejected_by: rejectedBy,
+      rejection_reason: rejectionReason,
     });
 
-    if (!response.ok) {
-      throw new Error('Failed to reject request');
-    }
-
-    return await response.json();
+    return response.data;
   } catch (error) {
     console.error('Error rejecting request:', error);
     throw error;

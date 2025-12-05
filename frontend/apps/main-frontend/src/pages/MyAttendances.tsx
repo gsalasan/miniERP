@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { getMyAttendances } from '../api/attendance';
+import { getMyAttendances, reverseGeocodeLocation } from '../api/attendance';
 import { getMyPermissions, getMyLeaves } from '../api/requests';
 
 interface AttendanceHistoryItem {
@@ -31,43 +31,23 @@ const AddressName: React.FC<{ note?: string }> = ({ note }) => {
       return;
     }
 
-    const lat = m[1];
-    const lng = m[2];
-    let cancelled = false;
-
-    const url = `http://localhost:4004/api/v1/attendances/reverse-geocode?lat=${encodeURIComponent(lat)}&lng=${encodeURIComponent(lng)}`;
-    // If no auth token, don't bother calling the protected endpoint (avoid 401)
-    const token = localStorage.getItem('token');
-    if (!token) {
-      console.debug('[AddressName] No token in localStorage, falling back to coords');
-      setAddr(`${lat}, ${lng}`);
+    const lat = Number(m[1]);
+    const lng = Number(m[2]);
+    if (Number.isNaN(lat) || Number.isNaN(lng)) {
+      setAddr(note);
       return;
     }
+    let cancelled = false;
+    const fallback = `${lat.toFixed(6)}, ${lng.toFixed(6)}`;
 
-    // Add some debugging to help diagnose 401s in the browser
-    console.debug('[AddressName] Fetching reverse-geocode', { url, token: token ? 'present' : 'missing' });
-
-    fetch(url, { headers: { Authorization: `Bearer ${token}`, Accept: 'application/json' } })
-      .then(res => {
-        console.debug('[AddressName] reverse-geocode status', res.status);
-        if (res.status === 401) {
-          // Token rejected — fall back to coords
-          console.warn('[AddressName] reverse-geocode returned 401 Unauthorized');
-          if (!cancelled) setAddr(`${lat}, ${lng}`);
-          // still return a resolved Promise so chain doesn't try to parse JSON
-          return Promise.resolve(null as any);
-        }
-        return res.json();
-      })
-      .then((json) => {
-        if (cancelled || !json) return;
-        // backend returns { data: { address: '...' } } per controller
-        const address = json.data?.address || json.address || json.display_name || json.result || `${lat}, ${lng}`;
-        setAddr(address);
+    reverseGeocodeLocation(lat, lng)
+      .then((address) => {
+        if (cancelled) return;
+        setAddr(address || fallback);
       })
       .catch((err) => {
         console.error('[AddressName] reverse-geocode error', err);
-        if (!cancelled) setAddr(`${lat}, ${lng}`);
+        if (!cancelled) setAddr(fallback);
       });
 
     return () => { cancelled = true; };
@@ -117,6 +97,8 @@ export default function MyAttendancesPage() {
             checkIn: formatTime(a.check_in_time),
             checkOut: formatTime(a.check_out_time),
             note: a.check_in_location,
+            latitude: a.check_in_latitude,
+            longitude: a.check_in_longitude,
           };
         });
         
@@ -663,10 +645,9 @@ export default function MyAttendancesPage() {
                             
                             {/* Map Preview Card */}
                             {(() => {
-                              // Extract coordinates from rec.note
-                              const match = (rec.note || '').trim().match(/(-?\d+(?:\.\d+)?),\s*(-?\d+(?:\.\d+)?)/);
-                              const lat = match ? match[1] : null;
-                              const lng = match ? match[2] : null;
+                              // Get coordinates from attendance data
+                              const lat = rec.latitude;
+                              const lng = rec.longitude;
                               
                               return (
                                 <div style={{

@@ -85,11 +85,18 @@ const AttendanceWidget: React.FC = () => {
     try {
       setLoading(true);
       const data = await getTodayAttendance();
+      console.log('[AttendanceWidget] Today attendance:', data);
       setAttendance(data);
       setError(null);
     } catch (err: any) {
       console.error('Error fetching attendance:', err);
-      setError(err?.message || 'Error fetching attendance');
+      // Don't treat "no attendance today" as an error
+      if (err?.response?.status === 404 || err?.message?.includes('not found')) {
+        setAttendance(null);
+        setError(null);
+      } else {
+        setError(err?.message || 'Error fetching attendance');
+      }
     } finally {
       setLoading(false);
     }
@@ -129,11 +136,13 @@ const AttendanceWidget: React.FC = () => {
   const isAttendanceToday = attendanceDate === todayJakarta;
   const checkInDate = attendance?.check_in_time ? dayjs(attendance.check_in_time).tz('Asia/Jakarta').format('YYYY-MM-DD') : null;
   const checkOutDate = attendance?.check_out_time ? dayjs(attendance.check_out_time).tz('Asia/Jakarta').format('YYYY-MM-DD') : null;
-  const isCheckInToday = isAttendanceToday && checkInDate === todayJakarta;
-  const isCheckOutToday = isAttendanceToday && checkOutDate === todayJakarta;
+  const isCheckInToday = attendance?.check_in_time && checkInDate === todayJakarta;
+  const isCheckOutToday = attendance?.check_out_time && checkOutDate === todayJakarta;
 
-  const checkInDisabled = processing || (attendance && isAttendanceToday && isCheckInToday);
-  const checkOutDisabled = processing || !attendance || !isAttendanceToday || !isCheckInToday || isCheckOutToday;
+  console.log('[AttendanceWidget] State:', { todayJakarta, attendanceDate, isAttendanceToday, isCheckInToday, isCheckOutToday, attendance });
+
+  const checkInDisabled = processing || Boolean(isCheckInToday);
+  const checkOutDisabled = processing || !isCheckInToday || Boolean(isCheckOutToday);
 
   const handleCheckOut = async () => {
     if (!permissionGranted) {
@@ -146,18 +155,20 @@ const AttendanceWidget: React.FC = () => {
       setProcessing(true);
       setError(null);
       const position = await getCurrentPosition();
-      await checkOut(position);
+      const result = await checkOut(position);
+      console.log('[AttendanceWidget] Check-out result:', result);
       await fetchTodayAttendance();
       const currentTime = dayjs().tz('Asia/Jakarta').format('HH:mm');
       setToastType('checkOut');
       setToastTime(currentTime);
       setShowToast(true);
     } catch (err: any) {
-      if (err.code === 1 || err.message?.includes('User denied')) {
+      console.error('[AttendanceWidget] Check-out error:', err);
+      if (err.code === 1 || err?.message?.includes('User denied')) {
         setError('Akses lokasi ditolak. Silakan izinkan akses lokasi di browser.');
         setPermissionGranted(false);
       } else {
-        setError(err?.message || 'Gagal melakukan check-out');
+        setError(err?.response?.data?.message || err?.message || 'Gagal melakukan check-out');
       }
     } finally {
       setProcessing(false);

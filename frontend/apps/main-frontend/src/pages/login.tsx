@@ -29,6 +29,9 @@ const Login: React.FC = () => {
     setSuccess(false);
 
     try {
+      // Clear any previous user's data before login
+      localStorage.clear();
+      
       const result = await loginApi(email, password);
 
       // Debug response

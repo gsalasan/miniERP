@@ -1,9 +1,10 @@
+import API_CONFIG from '../config';
+
 export async function login(email: string, password: string) {
   try {
-    const API_BASE_URL = "http://localhost:3001";
-    const res = await fetch(`${API_BASE_URL}/api/v1/auth/login`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
+    const res = await fetch(`${API_CONFIG.IDENTITY_SERVICE_URL}/api/v1/auth/login`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ email, password }),
     });
 
@@ -12,30 +13,28 @@ export async function login(email: string, password: string) {
     try {
       data = JSON.parse(text);
     } catch {
-      return { 
+      return {
         success: false,
-        message: `Server error: ${text.substring(0, 100)}`, 
-        token: null 
+        message: `Server error: ${text.substring(0, 100)}`,
+        token: null,
       };
     }
 
-    // Check HTTP status
     if (!res.ok) {
       return {
         success: false,
         message: data.message || `HTTP Error ${res.status}: ${res.statusText}`,
-        token: null
+        token: null,
       };
     }
 
-    // Return the response data
     return data;
   } catch (err: any) {
-    console.error("Login error:", err);
-    return { 
+    console.error('Login error:', err);
+    return {
       success: false,
-      message: err?.message || "Tidak bisa terhubung ke server. Pastikan backend berjalan.", 
-      token: null 
+      message: err?.message || API_CONFIG.OFFLINE_FALLBACK_MESSAGE,
+      token: null,
     };
   }
 }

@@ -7,6 +7,13 @@ import { getMyAttendances } from '../api/attendance';
 import { checkSubordinates, getTeamRequests, getAllApprovalRequests } from '../api/approvals';
 import Sidebar from "../components/Sidebar";
 import MobileHamburger from "../components/Header";
+import API_CONFIG from '../config';
+import dayjs from 'dayjs';
+import utc from 'dayjs/plugin/utc';
+import timezone from 'dayjs/plugin/timezone';
+
+dayjs.extend(utc);
+dayjs.extend(timezone);
 
 interface User {
   id: number;
@@ -52,34 +59,19 @@ const Dashboard: React.FC = () => {
   useEffect(() => {
     if (!user) return;
     setLoadingHistory(true);
-    getMyAttendances(undefined, 1, 10)  // Ambil 10 record untuk filter yang sudah complete
+    getMyAttendances(undefined, 1, 10)
       .then((res) => {
         console.log('Raw attendance data:', res.data); // Debug log
         
-        // Filter: hanya tampilkan yang sudah checkout (complete)
-        // ATAU yang belum checkout tapi bukan hari ini (hari sebelumnya)
-        const today = new Date().toDateString();
-        const filteredData = (res.data || []).filter((a) => {
-          // Jika sudah checkout, tampilkan
-          if (a.check_out_time) return true;
-          // Jika belum checkout, cek apakah bukan hari ini
-          if (!a.check_in_time) return false;
-          const checkInDate = new Date(a.check_in_time).toDateString();
-          return checkInDate !== today; // Tampilkan hanya jika bukan hari ini
-        });
-        
+        // Ambil 2 record terbaru, tampilkan semua termasuk hari ini
         setAttendanceHistory(
-          filteredData.slice(0, 2).map((a) => {  // Ambil 2 teratas setelah filter
-            // Parse datetime to HH:MM in local time
+          (res.data || []).slice(0, 2).map((a) => {
+            // Parse datetime to HH:MM in Jakarta timezone
             const formatTime = (dateTime: any) => {
               if (!dateTime) return undefined;
-              const date = new Date(dateTime);
-              if (isNaN(date.getTime())) return undefined;
-              return date.toLocaleTimeString('en-US', { 
-                hour: '2-digit', 
-                minute: '2-digit',
-                hour12: false 
-              });
+              const parsed = dayjs(dateTime).tz('Asia/Jakarta');
+              if (!parsed.isValid()) return undefined;
+              return parsed.format('HH:mm');
             };
             
             return {
@@ -265,7 +257,7 @@ const Dashboard: React.FC = () => {
 
     // Decode token (jika JWT, bisa pakai jwt-decode)
     // Atau fetch profile dari backend
-    fetch("http://localhost:3001/api/v1/auth/me", {
+    fetch(`${API_CONFIG.IDENTITY_SERVICE_URL}/api/v1/auth/me`, {
   headers: { Authorization: `Bearer ${token}` },
     })
       .then((res) => res.json())
@@ -300,7 +292,8 @@ const Dashboard: React.FC = () => {
   };
 
   const logout = () => {
-    localStorage.removeItem("token");
+    // Clear all user data from localStorage
+    localStorage.clear();
     navigate("/");
   };
 

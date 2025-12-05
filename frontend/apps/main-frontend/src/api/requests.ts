@@ -1,28 +1,4 @@
-import axios from 'axios';
-
-const HR_SERVICE_URL = 'http://localhost:4004/api/v1';
-
-// Get token from localStorage
-const getAuthToken = () => {
-  return localStorage.getItem('token');
-};
-
-// Create axios instance with auth header
-const hrApi = axios.create({
-  baseURL: HR_SERVICE_URL,
-  headers: {
-    'Content-Type': 'application/json',
-  },
-});
-
-// Add token to requests
-hrApi.interceptors.request.use((config) => {
-  const token = getAuthToken();
-  if (token) {
-    config.headers.Authorization = `Bearer ${token}`;
-  }
-  return config;
-});
+import apiClient from './client';
 
 // ==================== Permission Requests ====================
 export interface PermissionRequest {
@@ -54,19 +30,19 @@ export const createPermissionRequest = async (data: {
   duration_hours: number;
   reason: string;
 }) => {
-  const response = await hrApi.post<{ success: boolean; data: PermissionRequest }>('/permissions', data);
+  const response = await apiClient.post<{ success: boolean; data: PermissionRequest }>('/permissions', data);
   return response.data.data;
 };
 
 export const getMyPermissions = async (status?: string) => {
-  const response = await hrApi.get<{ success: boolean; data: PermissionRequest[] }>('/permissions/my', {
+  const response = await apiClient.get<{ success: boolean; data: PermissionRequest[] }>('/permissions/my', {
     params: status ? { status } : {},
   });
   return response.data.data;
 };
 
 export const getAllPermissions = async (filters?: { status?: string; page?: number; limit?: number }) => {
-  const response = await hrApi.get<{
+  const response = await apiClient.get<{
     success: boolean;
     data: PermissionRequest[];
     pagination: { page: number; limit: number; total: number; totalPages: number };
@@ -75,7 +51,7 @@ export const getAllPermissions = async (filters?: { status?: string; page?: numb
 };
 
 export const updatePermissionStatus = async (id: string, status: 'APPROVED' | 'REJECTED', rejection_reason?: string) => {
-  const response = await hrApi.put<{ success: boolean; data: PermissionRequest }>(`/permissions/${id}/status`, {
+  const response = await apiClient.put<{ success: boolean; data: PermissionRequest }>(`/permissions/${id}/status`, {
     status,
     rejection_reason,
   });
@@ -83,7 +59,7 @@ export const updatePermissionStatus = async (id: string, status: 'APPROVED' | 'R
 };
 
 export const cancelPermission = async (id: string) => {
-  const response = await hrApi.post<{ success: boolean; data: PermissionRequest }>(`/permissions/${id}/cancel`);
+  const response = await apiClient.post<{ success: boolean; data: PermissionRequest }>(`/permissions/${id}/cancel`);
   return response.data.data;
 };
 
@@ -119,19 +95,19 @@ export const createOvertimeRequest = async (data: {
   duration_hours: number;
   description: string;
 }) => {
-  const response = await hrApi.post<{ success: boolean; data: OvertimeRequest }>('/overtimes', data);
+  const response = await apiClient.post<{ success: boolean; data: OvertimeRequest }>('/overtimes', data);
   return response.data.data;
 };
 
 export const getMyOvertimes = async (status?: string) => {
-  const response = await hrApi.get<{ success: boolean; data: OvertimeRequest[] }>('/overtimes/my', {
+  const response = await apiClient.get<{ success: boolean; data: OvertimeRequest[] }>('/overtimes/my', {
     params: status ? { status } : {},
   });
   return response.data.data;
 };
 
 export const getAllOvertimes = async (filters?: { status?: string; page?: number; limit?: number }) => {
-  const response = await hrApi.get<{
+  const response = await apiClient.get<{
     success: boolean;
     data: OvertimeRequest[];
     pagination: { page: number; limit: number; total: number; totalPages: number };
@@ -140,7 +116,7 @@ export const getAllOvertimes = async (filters?: { status?: string; page?: number
 };
 
 export const updateOvertimeStatus = async (id: string, status: 'APPROVED' | 'REJECTED', rejection_reason?: string) => {
-  const response = await hrApi.put<{ success: boolean; data: OvertimeRequest }>(`/overtimes/${id}/status`, {
+  const response = await apiClient.put<{ success: boolean; data: OvertimeRequest }>(`/overtimes/${id}/status`, {
     status,
     rejection_reason,
   });
@@ -148,7 +124,7 @@ export const updateOvertimeStatus = async (id: string, status: 'APPROVED' | 'REJ
 };
 
 export const cancelOvertime = async (id: string) => {
-  const response = await hrApi.post<{ success: boolean; data: OvertimeRequest }>(`/overtimes/${id}/cancel`);
+  const response = await apiClient.post<{ success: boolean; data: OvertimeRequest }>(`/overtimes/${id}/cancel`);
   return response.data.data;
 };
 
@@ -186,19 +162,19 @@ export const createReimbursementRequest = async (data: {
   description: string;
   receipt_file?: string;
 }) => {
-  const response = await hrApi.post<{ success: boolean; data: ReimbursementRequest }>('/reimbursements', data);
+  const response = await apiClient.post<{ success: boolean; data: ReimbursementRequest }>('/reimbursements', data);
   return response.data.data;
 };
 
 export const getMyReimbursements = async (status?: string) => {
-  const response = await hrApi.get<{ success: boolean; data: ReimbursementRequest[] }>('/reimbursements/my', {
+  const response = await apiClient.get<{ success: boolean; data: ReimbursementRequest[] }>('/reimbursements/my', {
     params: status ? { status } : {},
   });
   return response.data.data;
 };
 
 export const getAllReimbursements = async (filters?: { status?: string; page?: number; limit?: number }) => {
-  const response = await hrApi.get<{
+  const response = await apiClient.get<{
     success: boolean;
     data: ReimbursementRequest[];
     pagination: { page: number; limit: number; total: number; totalPages: number };
@@ -207,7 +183,7 @@ export const getAllReimbursements = async (filters?: { status?: string; page?: n
 };
 
 export const updateReimbursementStatus = async (id: string, status: 'APPROVED' | 'REJECTED', rejection_reason?: string) => {
-  const response = await hrApi.put<{ success: boolean; data: ReimbursementRequest }>(`/reimbursements/${id}/status`, {
+  const response = await apiClient.put<{ success: boolean; data: ReimbursementRequest }>(`/reimbursements/${id}/status`, {
     status,
     rejection_reason,
   });
@@ -215,12 +191,12 @@ export const updateReimbursementStatus = async (id: string, status: 'APPROVED' |
 };
 
 export const markReimbursementPaid = async (id: string) => {
-  const response = await hrApi.post<{ success: boolean; data: ReimbursementRequest }>(`/reimbursements/${id}/paid`);
+  const response = await apiClient.post<{ success: boolean; data: ReimbursementRequest }>(`/reimbursements/${id}/paid`);
   return response.data.data;
 };
 
 export const cancelReimbursement = async (id: string) => {
-  const response = await hrApi.post<{ success: boolean; data: ReimbursementRequest }>(`/reimbursements/${id}/cancel`);
+  const response = await apiClient.post<{ success: boolean; data: ReimbursementRequest }>(`/reimbursements/${id}/cancel`);
   return response.data.data;
 };
 
@@ -254,19 +230,19 @@ export const createLeaveRequest = async (data: {
   duration_days: number;
   reason: string;
 }) => {
-  const response = await hrApi.post<{ success: boolean; data: LeaveRequest }>('/leaves', data);
+  const response = await apiClient.post<{ success: boolean; data: LeaveRequest }>('/leaves', data);
   return response.data.data;
 };
 
 export const getMyLeaves = async (status?: string) => {
-  const response = await hrApi.get<{ success: boolean; data: LeaveRequest[] }>('/leaves/my', {
+  const response = await apiClient.get<{ success: boolean; data: LeaveRequest[] }>('/leaves/my', {
     params: status ? { status } : {},
   });
   return response.data.data;
 };
 
 export const getAllLeaves = async (filters?: { status?: string; page?: number; limit?: number }) => {
-  const response = await hrApi.get<{
+  const response = await apiClient.get<{
     success: boolean;
     data: LeaveRequest[];
     pagination: { page: number; limit: number; total: number; totalPages: number };
@@ -275,7 +251,7 @@ export const getAllLeaves = async (filters?: { status?: string; page?: number; l
 };
 
 export const updateLeaveStatus = async (id: string, status: 'APPROVED' | 'REJECTED', rejection_reason?: string) => {
-  const response = await hrApi.put<{ success: boolean; data: LeaveRequest }>(`/leaves/${id}/status`, {
+  const response = await apiClient.put<{ success: boolean; data: LeaveRequest }>(`/leaves/${id}/status`, {
     status,
     rejection_reason,
   });
@@ -283,6 +259,6 @@ export const updateLeaveStatus = async (id: string, status: 'APPROVED' | 'REJECT
 };
 
 export const cancelLeave = async (id: string) => {
-  const response = await hrApi.post<{ success: boolean; data: LeaveRequest }>(`/leaves/${id}/cancel`);
+  const response = await apiClient.post<{ success: boolean; data: LeaveRequest }>(`/leaves/${id}/cancel`);
   return response.data.data;
 };

@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { CircularProgress, Typography } from '@mui/material';
+import { reverseGeocodeLocation } from '../api/attendance';
 
 interface LocationDisplayProps {
   lat: number | string;
@@ -11,11 +12,20 @@ const LocationDisplay: React.FC<LocationDisplayProps> = ({ lat, lng }) => {
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    if (!lat || !lng) return;
+    if (lat === null || lat === undefined || lng === null || lng === undefined) {
+      setAddress(null);
+      return;
+    }
+
+    const numericLat = typeof lat === 'string' ? Number(lat) : lat;
+    const numericLng = typeof lng === 'string' ? Number(lng) : lng;
+
+    if (Number.isNaN(numericLat) || Number.isNaN(numericLng)) {
+      setAddress(null);
+      return;
+    }
     
-    console.log('[LocationDisplay] Fetching address for:', { lat, lng });
-    
-    // Set timeout untuk loading - jika lebih dari 3 detik, langsung tampilkan koordinat
+    console.log('[LocationDisplay] Fetching address for:', { lat: numericLat, lng: numericLng });
     const timeoutId = setTimeout(() => {
       if (loading) {
         console.log('[LocationDisplay] Timeout - showing coordinates');
@@ -24,38 +34,20 @@ const LocationDisplay: React.FC<LocationDisplayProps> = ({ lat, lng }) => {
     }, 3000);
 
     setLoading(true);
-    
-    // Use backend endpoint to bypass CORS
-    const token = localStorage.getItem('token');
-    const url = `http://localhost:4004/api/v1/attendances/reverse-geocode?lat=${lat}&lng=${lng}`;
-    console.log('[LocationDisplay] Calling:', url);
-    
-    fetch(url, {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        }
-      })
-      .then((res) => {
-        console.log('[LocationDisplay] Response status:', res.status);
-        if (!res.ok) throw new Error(`API error: ${res.status}`);
-        return res.json();
-      })
+    reverseGeocodeLocation(numericLat, numericLng)
       .then((result) => {
         clearTimeout(timeoutId);
-        console.log('[LocationDisplay] Result:', result);
-        if (result.success && result.data?.address) {
-          console.log('[LocationDisplay] Setting address:', result.data.address);
-          setAddress(result.data.address);
+        if (result) {
+          console.log('[LocationDisplay] Setting address:', result);
+          setAddress(result);
         } else {
-          console.log('[LocationDisplay] No address in result');
+          setAddress(null);
         }
         setLoading(false);
       })
       .catch((err) => {
         clearTimeout(timeoutId);
         console.error('[LocationDisplay] Error:', err);
-        // Jangan set error, biarkan fallback ke koordinat
         setAddress(null);
         setLoading(false);
       });

@@ -1,28 +1,4 @@
-import axios from 'axios';
-
-const HR_SERVICE_URL = 'http://localhost:4004/api/v1';
-
-// Get token from localStorage
-const getAuthToken = () => {
-  return localStorage.getItem('token');
-};
-
-// Create axios instance with auth header
-const hrApi = axios.create({
-  baseURL: HR_SERVICE_URL,
-  headers: {
-    'Content-Type': 'application/json',
-  },
-});
-
-// Add token to requests
-hrApi.interceptors.request.use((config) => {
-  const token = getAuthToken();
-  if (token) {
-    config.headers.Authorization = `Bearer ${token}`;
-  }
-  return config;
-});
+import apiClient from './client';
 
 export interface GeoLocation {
   latitude: number;
@@ -83,39 +59,39 @@ export interface AttendanceStats {
 // Get today's attendance
 export const getTodayAttendance = async (): Promise<Attendance | null> => {
   try {
-    const response = await hrApi.get<AttendanceResponse>('/attendances/today');
+    const response = await apiClient.get<AttendanceResponse>('/attendances/today');
     return response.data.data;
   } catch (error: any) {
     console.error('Error getting today attendance:', error);
-    throw new Error(error.response?.data?.error || 'Failed to get today attendance');
+    throw error;
   }
 };
 
 // Check-in
 export const checkIn = async (geoLocation: GeoLocation): Promise<Attendance> => {
   try {
-    const response = await hrApi.post<AttendanceResponse>('/attendances/checkin', geoLocation);
+    const response = await apiClient.post<AttendanceResponse>('/attendances/checkin', geoLocation);
     if (!response.data.data) {
       throw new Error('No data returned from check-in');
     }
     return response.data.data;
   } catch (error: any) {
     console.error('Error checking in:', error);
-    throw new Error(error.response?.data?.error || 'Failed to check in');
+    throw error;
   }
 };
 
 // Check-out
 export const checkOut = async (geoLocation: GeoLocation): Promise<Attendance> => {
   try {
-    const response = await hrApi.post<AttendanceResponse>('/attendances/checkout', geoLocation);
+    const response = await apiClient.post<AttendanceResponse>('/attendances/checkout', geoLocation);
     if (!response.data.data) {
       throw new Error('No data returned from check-out');
     }
     return response.data.data;
   } catch (error: any) {
     console.error('Error checking out:', error);
-    throw new Error(error.response?.data?.error || 'Failed to check out');
+    throw error;
   }
 };
 
@@ -126,25 +102,33 @@ export const getMyAttendances = async (month?: string, page = 1, limit = 20): Pr
     if (month) {
       params.month = month;
     }
-    const response = await hrApi.get<AttendanceListResponse>('/attendances/my', { params });
+    const response = await apiClient.get<AttendanceListResponse>('/attendances/my', { params });
     return response.data;
   } catch (error: any) {
     console.error('Error getting my attendances:', error);
-    throw new Error(error.response?.data?.error || 'Failed to get attendance history');
+    throw error;
   }
 };
 
 // Get attendance stats
 export const getAttendanceStats = async (month: string): Promise<AttendanceStats> => {
   try {
-    const response = await hrApi.get<{ success: boolean; data: AttendanceStats }>('/attendances/stats', {
+    const response = await apiClient.get<{ success: boolean; data: AttendanceStats }>('/attendances/stats', {
       params: { month },
     });
     return response.data.data;
   } catch (error: any) {
     console.error('Error getting attendance stats:', error);
-    throw new Error(error.response?.data?.error || 'Failed to get attendance statistics');
+    throw error;
   }
+};
+
+export const reverseGeocodeLocation = async (lat: number | string, lng: number | string) => {
+  const response = await apiClient.get<{ success: boolean; data?: { address?: string } }>(
+    '/attendances/reverse-geocode',
+    { params: { lat, lng } }
+  );
+  return response.data?.data?.address ?? null;
 };
 
 // Get current position using browser geolocation API with reverse geocoding
@@ -161,31 +145,14 @@ export const getCurrentPosition = async (): Promise<GeoLocation> => {
         const longitude = position.coords.longitude;
         
         try {
-          // Lakukan reverse geocoding untuk mendapatkan alamat lengkap
-          const token = getAuthToken();
-          const response = await axios.get(
-            `${HR_SERVICE_URL}/attendances/reverse-geocode?lat=${latitude}&lng=${longitude}`,
-            {
-              headers: {
-                Authorization: `Bearer ${token}`,
-              },
-            }
-          );
-          
-          // Ambil alamat dari response backend
-          const addressData = response.data?.data;
-          const locationName = addressData?.address || `${latitude.toFixed(6)}, ${longitude.toFixed(6)}`;
-          
-          console.log('✅ Reverse geocoding success:', locationName);
-          
+          const address = await reverseGeocodeLocation(latitude, longitude);
           resolve({
             latitude,
             longitude,
-            location: locationName, // Alamat lengkap hasil reverse geocoding
+            location: address || `${latitude.toFixed(6)}, ${longitude.toFixed(6)}`,
           });
         } catch (error) {
           console.warn('⚠️ Reverse geocoding failed, using coordinates:', error);
-          // Fallback ke koordinat jika reverse geocoding gagal
           resolve({
             latitude,
             longitude,
