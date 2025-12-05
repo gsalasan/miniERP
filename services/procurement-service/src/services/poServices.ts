@@ -81,6 +81,56 @@ export async function createPOService(data: CreatePORequest) {
  * Create PO from RFP
  */
 export async function createPOFromRFPService(data: CreatePOFromRFPRequest) {
+  let createdBy = data.created_by;
+
+  // Validate and get real user
+  if (!createdBy || createdBy === '00000000-0000-0000-0000-000000000001') {
+    // Try to find a user with PROCUREMENT_ADMIN role
+    const procurementAdmin = await prisma.users.findFirst({
+      where: {
+        roles: {
+          has: 'PROCUREMENT_ADMIN',
+        },
+        is_active: true,
+      },
+      select: { id: true, email: true },
+    });
+
+    if (procurementAdmin) {
+      console.log(`Using PROCUREMENT_ADMIN user: ${procurementAdmin.email}`);
+      createdBy = procurementAdmin.id;
+    } else {
+      // If no procurement admin found, use any active user
+      const anyUser = await prisma.users.findFirst({
+        where: { is_active: true },
+        select: { id: true, email: true },
+      });
+      
+      if (anyUser) {
+        console.log(`Using first active user: ${anyUser.email}`);
+        createdBy = anyUser.id;
+      } else {
+        throw new Error('No active users found in the system');
+      }
+    }
+  } else {
+    // Validate UUID format
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    if (!uuidRegex.test(createdBy)) {
+      throw new Error('created_by must be a valid UUID');
+    }
+
+    // Validate user exists in database
+    const userExists = await prisma.users.findUnique({
+      where: { id: createdBy },
+      select: { id: true },
+    });
+    
+    if (!userExists) {
+      throw new Error('User not found. Please ensure you are logged in.');
+    }
+  }
+
   // Get RFP data with items
   const rfp = await prisma.requestForPurchase.findUnique({
     where: { id: data.rfp_id },
@@ -138,14 +188,16 @@ export async function createPOFromRFPService(data: CreatePOFromRFPRequest) {
       data: {
         po_number,
         rfp_id: data.rfp_id,
-        vendor_id: data.vendor_id,
+        vendor_id: data.vendor_id || null,
         vendor_name: data.vendor_name,
         order_date: new Date(data.order_date),
         expected_delivery: data.expected_delivery ? new Date(data.expected_delivery) : null,
+        payment_terms: data.payment_terms || null,
         total_amount: totalAmount,
         status: POStatus.DRAFT,
-        notes: data.notes,
-        created_by: data.created_by,
+        approval_status: 'DRAFT',
+        notes: data.notes || null,
+        created_by: createdBy,
         items: {
           create: poItems,
         },
@@ -165,7 +217,7 @@ export async function createPOFromRFPService(data: CreatePOFromRFPRequest) {
       where: { id: data.rfp_id },
       data: {
         status: RFPStatus.PO_CREATED,
-        processed_by: data.created_by,
+        processed_by: createdBy,
         processed_at: new Date(),
       },
     });

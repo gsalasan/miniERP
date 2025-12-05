@@ -82,11 +82,12 @@ const RFPDetailPage: React.FC = () => {
   }, [id]);
 
   const handleBack = () => {
-    navigate('/procurement/rfp-queue');
+    navigate('/rfp-queue');
   };
 
   const handleCreatePO = () => {
-    setShowCreatePOModal(true);
+    // Navigate to Convert RFP to PO page
+    navigate(`/rfp/${id}/convert-to-po`);
   };
 
   const handlePOCreated = () => {
@@ -135,7 +136,7 @@ const RFPDetailPage: React.FC = () => {
           component="button"
           variant="body2"
           onClick={handleBack}
-          sx={{ cursor: 'pointer' }}
+          sx={{ cursor: 'pointer', textDecoration: 'none', '&:hover': { textDecoration: 'underline' } }}
         >
           Antrian RFP
         </Link>

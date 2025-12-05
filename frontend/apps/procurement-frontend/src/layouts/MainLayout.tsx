@@ -23,9 +23,11 @@ import {
   Home as HomeIcon,
   Logout as LogoutIcon,
   Assignment as RFPIcon,
+  CheckCircle as ApprovalIcon,
   } from "@mui/icons-material";
 import { useNavigate, useLocation } from "react-router-dom";
 import { NAVIGATION } from "../config/environments";
+import { useAuth } from "../contexts/AuthContext";
 
 const drawerWidth = 280;interface MainLayoutProps {
   children: React.ReactNode;
@@ -53,12 +55,25 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
     window.location.href = NAVIGATION.LOGIN;
   };
 
-  const menuItems = [
+  // Base menu items for all users
+  const baseMenuItems = [
     { text: "Dashboard", icon: <DashboardIcon />, path: "/" },
     { text: "Vendors", icon: <VendorsIcon />, path: "/vendors" },
     { text: "Antrian RFP", icon: <RFPIcon />, path: "/rfp-queue" },
     { text: "Purchases", icon: <PurchasesIcon />, path: "/purchases" },
   ];
+
+  // Add Approval PO menu only for CEO or PROCUREMENT_MANAGER
+  const { user } = useAuth();
+  
+  // Check if user can approve PO (CEO or PROCUREMENT_MANAGER)
+  const canApprovePO = user?.roles?.some((role: string) =>
+    ['CEO', 'PROCUREMENT_MANAGER'].includes(role)
+  );
+
+  const menuItems = canApprovePO
+    ? [...baseMenuItems, { text: "Approval PO", icon: <ApprovalIcon />, path: "/approvals" }]
+    : baseMenuItems;
 
   const drawer = (
     <Box sx={{ overflow: "auto", height: "100%", bgcolor: "#F4F4F4" }}>

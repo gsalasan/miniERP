@@ -90,11 +90,11 @@ const RFPQueuePage: React.FC = () => {
   }, [page, pageSize, search, statusFilter]);
 
   const handleViewDetail = (id: string) => {
-    navigate(`/procurement/rfp/${id}`);
+    navigate(`/rfp/${id}`);
   };
 
   const handleConvertRFP = (id: string) => {
-    navigate(`/rfp/${id}/convert`);
+    navigate(`/rfp/${id}/convert-to-po`);
   };
 
   const columns: GridColDef[] = [
@@ -152,9 +152,9 @@ const RFPQueuePage: React.FC = () => {
       field: 'actions',
       type: 'actions',
       headerName: 'Aksi',
-      width: 100,
+      width: 140,
       getActions: (params) => {
-        const actions = [
+        return [
           <GridActionsCellItem
             icon={
               <Tooltip title="Lihat Detail">
@@ -163,29 +163,9 @@ const RFPQueuePage: React.FC = () => {
             }
             label="Detail"
             onClick={() => handleViewDetail(params.row.id)}
+            showInMenu={false}
           />,
         ];
-
-        // Add Convert to PO/WO button if status is PENDING or IN_PROCESS
-        if (
-          params.row.status === RFPStatus.PENDING ||
-          params.row.status === RFPStatus.IN_PROCESS
-        ) {
-          actions.push(
-            <GridActionsCellItem
-              icon={
-                <Tooltip title="Konversi ke PO/WO">
-                  <AddShoppingCartIcon />
-                </Tooltip>
-              }
-              label="Konversi ke PO/WO"
-              onClick={() => handleConvertRFP(params.row.id)}
-              showInMenu
-            />
-          );
-        }
-
-        return actions;
       },
     },
   ];

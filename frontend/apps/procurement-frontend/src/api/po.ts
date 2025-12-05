@@ -46,6 +46,52 @@ export const poApi = {
 
   async getPOById(id: string) {
     const response = await procurementApi.get(`/po/${id}`);
+    return response.data.data || response.data;
+  },
+
+  async updatePOStatus(id: string, status: string) {
+    const response = await procurementApi.patch(`/po/${id}/status`, { status });
     return response.data;
+  },
+
+  async submitForApproval(poId: string, userId: string) {
+    const response = await procurementApi.post(`/po/${poId}/submit-for-approval`, {
+      user_id: userId,
+    });
+    return response.data;
+  },
+
+  async approvePO(poId: string, approverId: string, comments?: string) {
+    const response = await procurementApi.post(`/po/${poId}/approve`, {
+      approver_id: approverId,
+      comments,
+    });
+    return response.data;
+  },
+
+  async rejectPO(poId: string, rejecterId: string, comments: string) {
+    const response = await procurementApi.post(`/po/${poId}/reject`, {
+      rejecter_id: rejecterId,
+      comments,
+    });
+    return response.data;
+  },
+
+  // Download PO PDF
+  async downloadPOPDF(poId: string): Promise<Blob> {
+    const response = await procurementApi.get(`/po/${poId}/generate-pdf`, {
+      responseType: 'blob',
+    });
+    return response.data;
+  },
+
+  async getPendingApprovals(userId: string) {
+    const response = await procurementApi.get(`/po/pending-approvals?user_id=${userId}`);
+    return response.data.data || response.data;
+  },
+
+  async getApprovalThresholds() {
+    const response = await procurementApi.get(`/po/approval-thresholds`);
+    return response.data.data || response.data;
   },
 };

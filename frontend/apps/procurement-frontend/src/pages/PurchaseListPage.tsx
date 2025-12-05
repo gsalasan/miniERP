@@ -52,31 +52,85 @@ const PurchaseListPage: React.FC = () => {
   }, []);
 
   const columns: GridColDef[] = [
-    { field: 'po_number', headerName: 'No. PO', width: 180 },
-    { field: 'vendor_name', headerName: 'Vendor', width: 200 },
-    { field: 'order_date', headerName: 'Tanggal Order', width: 150 },
+    { 
+      field: 'po_number', 
+      headerName: 'No. PO', 
+      width: 180,
+      renderCell: (params: GridRenderCellParams) => (
+        <Typography variant="body2" fontWeight="bold" color="primary">
+          {params.value}
+        </Typography>
+      ),
+    },
+    { field: 'vendor_name', headerName: 'Vendor', width: 200, flex: 1 },
+    { 
+      field: 'order_date', 
+      headerName: 'Tanggal Order', 
+      width: 150,
+      renderCell: (params: GridRenderCellParams) => {
+        if (!params.value) return '-';
+        try {
+          const date = new Date(params.value);
+          return date.toLocaleDateString('id-ID', { 
+            year: 'numeric', 
+            month: 'short', 
+            day: 'numeric' 
+          });
+        } catch {
+          return params.value;
+        }
+      },
+    },
     {
       field: 'status',
       headerName: 'Status',
       width: 140,
       renderCell: (params: GridRenderCellParams) => (
-        <Chip label={statusLabels[params.value] || params.value} color={statusColors[params.value] || 'default'} size="small" />
+        <Chip 
+          label={statusLabels[params.value] || params.value} 
+          color={statusColors[params.value] || 'default'} 
+          size="small" 
+        />
       ),
     },
     {
       field: 'total_amount',
       headerName: 'Total',
-      width: 150,
-      valueFormatter: (params) =>
-        params.value ? new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR' }).format(params.value) : '-',
+      width: 180,
+      align: 'right',
+      headerAlign: 'right',
+      renderCell: (params: GridRenderCellParams) => {
+        const value = params.value;
+        if (!value || value === 0) return <Typography variant="body2">-</Typography>;
+        
+        return (
+          <Typography variant="body2" fontWeight="bold">
+            {new Intl.NumberFormat('id-ID', { 
+              style: 'currency', 
+              currency: 'IDR',
+              minimumFractionDigits: 0,
+              maximumFractionDigits: 0,
+            }).format(Number(value))}
+          </Typography>
+        );
+      },
     },
     {
       field: 'actions',
       headerName: 'Aksi',
       width: 120,
+      sortable: false,
+      filterable: false,
       renderCell: (params: GridRenderCellParams) => (
-        <Button size="small" onClick={() => navigate(`/po/${params.row.id}`)}>
-          Detail
+        <Button 
+          size="small" 
+          variant="outlined"
+          onClick={(e) => {
+            e.stopPropagation();
+            navigate(`/purchases/${params.row.id}`);
+          }}
+        >
+          DETAIL
         </Button>
       ),
     },

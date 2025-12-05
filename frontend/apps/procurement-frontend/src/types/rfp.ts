@@ -21,6 +21,7 @@ export interface RFPItem {
   service_id?: string | null;
   quantity: number;
   unit: string;
+  estimated_price?: number;
   notes?: string | null;
   created_at: string;
   material?: {
@@ -171,6 +172,7 @@ export interface CreatePOFromRFPRequest {
   vendor_name: string;
   order_date: string;
   expected_delivery?: string | null;
+  payment_terms?: string | null;
   notes?: string | null;
   created_by: string;
   items: Array<{

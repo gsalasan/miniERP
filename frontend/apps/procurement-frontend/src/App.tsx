@@ -2,6 +2,7 @@ import React from "react";
 import { CssBaseline } from "@mui/material";
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import { SnackbarProvider } from "notistack";
+import { AuthProvider } from "./contexts/AuthContext";
 import DashboardPage from "./pages/DashboardPage";
 import VendorsPage from "./pages/vendors";
 import NewVendorPage from "./pages/vendors/NewVendorPage";
@@ -12,39 +13,45 @@ import RFPQueuePage from "./pages/rfp/RFPQueuePage";
 import RFPDetailPage from "./pages/rfp/RFPDetailPage";
 import ConvertRFPPage from "./pages/rfp/ConvertRFPPage";
 import PurchaseListPage from "./pages/PurchaseListPage";
+import PurchaseOrderDetailPage from "./pages/PurchaseOrderDetailPage";
+import ApprovalPOPage from "./pages/approval/ApprovalPOPage";
 import MainLayout from "./layouts/MainLayout";
 
 function App() {
   return (
-    <SnackbarProvider
-      maxSnack={3}
-      anchorOrigin={{
-        vertical: "top",
-        horizontal: "right",
-      }}
-      autoHideDuration={3000}
-      style={{
-        marginTop: "64px",
-      }}
-    >
-      <Router>
-        <CssBaseline />
-        <MainLayout>
-          <Routes>
-            <Route path="/" element={<DashboardPage />} />
-            <Route path="/vendors" element={<VendorsPage />} />
-            <Route path="/vendors/new" element={<NewVendorPage />} />
-            <Route path="/vendors/:id" element={<VendorDetailPage />} />
-            <Route path="/vendors/:id/edit" element={<EditVendorPage />} />
-            <Route path="/vendor-pricelist/new" element={<NewVendorPricePage />} />
-            <Route path="/rfp-queue" element={<RFPQueuePage />} />
-            <Route path="/rfp/:id" element={<RFPDetailPage />} />
-            <Route path="/rfp/:id/convert" element={<ConvertRFPPage />} />
-            <Route path="/purchases" element={<PurchaseListPage />} />
-          </Routes>
-        </MainLayout>
-      </Router>
-    </SnackbarProvider>
+    <AuthProvider>
+      <SnackbarProvider
+        maxSnack={3}
+        anchorOrigin={{
+          vertical: "top",
+          horizontal: "right",
+        }}
+        autoHideDuration={3000}
+        style={{
+          marginTop: "64px",
+        }}
+      >
+        <Router>
+          <CssBaseline />
+          <MainLayout>
+            <Routes>
+              <Route path="/" element={<DashboardPage />} />
+              <Route path="/vendors" element={<VendorsPage />} />
+              <Route path="/vendors/new" element={<NewVendorPage />} />
+              <Route path="/vendors/:id" element={<VendorDetailPage />} />
+              <Route path="/vendors/:id/edit" element={<EditVendorPage />} />
+              <Route path="/vendor-pricelist/new" element={<NewVendorPricePage />} />
+              <Route path="/rfp-queue" element={<RFPQueuePage />} />
+              <Route path="/rfp/:id" element={<RFPDetailPage />} />
+              <Route path="/rfp/:id/convert-to-po" element={<ConvertRFPPage />} />
+              <Route path="/purchases" element={<PurchaseListPage />} />
+              <Route path="/purchases/:id" element={<PurchaseOrderDetailPage />} />
+              <Route path="/approvals" element={<ApprovalPOPage />} />
+            </Routes>
+          </MainLayout>
+        </Router>
+      </SnackbarProvider>
+    </AuthProvider>
   );
 }
 

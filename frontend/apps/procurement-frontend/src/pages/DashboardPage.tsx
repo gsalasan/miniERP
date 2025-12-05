@@ -11,7 +11,6 @@ import {
   ListItem,
   ListItemAvatar,
   ListItemText,
-  LinearProgress,
   Paper,
 } from "@mui/material";
 import {
@@ -181,13 +180,6 @@ const DashboardPage: React.FC = () => {
       color: "#4E88BE",
       subtitle: "bulan ini",
     },
-    {
-      title: "Total Spend",
-      value: "Rp 0",
-      icon: <MoneyIcon fontSize="large" />,
-      color: "#F0AD4E",
-      subtitle: "bulan ini",
-    },
   ];
 
   const recentActivities = recentVendors.map((vendor, index) => ({
@@ -202,30 +194,6 @@ const DashboardPage: React.FC = () => {
     avatar: vendor.vendor_name.charAt(0).toUpperCase(),
     color: index === 0 ? "#06103A" : index === 1 ? "#4E88BE" : "#C8A870",
   }));
-
-  const vendorDistribution = [
-    {
-      name: "Small Vendors",
-      current: totalVendors > 0 ? Math.round((smallVendors / totalVendors) * 100) : 0,
-      target: 100,
-      color: "#06103A",
-    },
-    {
-      name: "Medium Vendors",
-      current: totalVendors > 0 ? Math.round((mediumVendors / totalVendors) * 100) : 0,
-      target: 100,
-      color: "#4E88BE",
-    },
-    {
-      name: "Large & Enterprise",
-      current:
-        totalVendors > 0
-          ? Math.round(((largeVendors + enterpriseVendors) / totalVendors) * 100)
-          : 0,
-      target: 100,
-      color: "#C8A870",
-    },
-  ];
 
   return (
     <Box>
@@ -301,7 +269,7 @@ const DashboardPage: React.FC = () => {
           {/* Main Content */}
           <Grid container spacing={3}>
             {/* Recent Activities */}
-            <Grid item xs={12} md={8}>
+            <Grid item xs={12} md={12}>
               <Card
                 sx={{
                   height: "100%",
@@ -372,49 +340,6 @@ const DashboardPage: React.FC = () => {
                       Belum ada aktivitas
                     </Typography>
                   )}
-                </CardContent>
-              </Card>
-            </Grid>
-
-            {/* Sidebar */}
-            <Grid item xs={12} md={4}>
-              <Card
-                sx={{
-                  backgroundColor: "#FFFFFF",
-                  boxShadow: "0 2px 8px rgba(6, 16, 58, 0.08)",
-                }}
-              >
-                <CardContent sx={{ p: 3 }}>
-                  <Typography variant="h6" sx={{ mb: 3, fontWeight: 600 }}>
-                    Vendor Distribution
-                  </Typography>
-                  <Box display="flex" flexDirection="column" gap={3}>
-                    {vendorDistribution.map((item, index) => (
-                      <Box key={index}>
-                        <Box display="flex" justifyContent="space-between" mb={1}>
-                          <Typography variant="subtitle2" fontWeight={600}>
-                            {item.name}
-                          </Typography>
-                          <Typography variant="body2" color={item.color} fontWeight={600}>
-                            {item.current}%
-                          </Typography>
-                        </Box>
-                        <LinearProgress
-                          variant="determinate"
-                          value={item.current}
-                          sx={{
-                            height: 8,
-                            borderRadius: 4,
-                            backgroundColor: `${item.color}20`,
-                            "& .MuiLinearProgress-bar": {
-                              borderRadius: 4,
-                              backgroundColor: item.color,
-                            },
-                          }}
-                        />
-                      </Box>
-                    ))}
-                  </Box>
                 </CardContent>
               </Card>
             </Grid>

@@ -40,6 +40,7 @@ export interface CreatePOFromRFPRequest {
   vendor_name: string;
   order_date: string;
   expected_delivery?: string | null;
+  payment_terms?: string | null;
   notes?: string | null;
   created_by: string;
   items: Array<{
