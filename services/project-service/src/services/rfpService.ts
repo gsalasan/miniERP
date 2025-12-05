@@ -193,12 +193,6 @@ export class RfpService {
 
       console.log('[RFP] Transaction completed. RFP created:', rfp?.rfp_number);
 
-      // TODO: Send notification to Admin Project role
-      // NotificationService.send({
-      //   role: 'ADMIN_PROJECT',
-      //   message: `RFP baru (${rfpNumber}) untuk proyek ${project.project_name} telah dibuat dan menunggu diproses.`,
-      //   link: `/procurement/rfp/${rfp!.id}`,
-      // });
 
       return rfp;
     } catch (error) {

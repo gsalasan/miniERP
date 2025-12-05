@@ -16,13 +16,6 @@ export interface ExportGanttOptions {
   };
 }
 
-/**
- * Export Gantt chart to PDF using jsPDF and html2canvas
- * TDD-015 Extended Section 9: Export & Print
- * 
- * @param container - HTMLElement or CSS selector for Gantt container
- * @param options - Export options
- */
 export async function exportGanttToPDF(
   container: HTMLElement | string,
   options: ExportGanttOptions = {}

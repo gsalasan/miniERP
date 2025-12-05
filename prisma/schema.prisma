@@ -570,7 +570,14 @@ model hr_attendances {
   employee_id           String
   date                  DateTime         @db.Date
   check_in_time         DateTime?
+  check_in_latitude     Decimal?         @db.Decimal(10, 8)
+  check_in_longitude    Decimal?         @db.Decimal(11, 8)
+  check_in_location     String?
   check_out_time        DateTime?
+  check_out_latitude    Decimal?         @db.Decimal(10, 8)
+  check_out_longitude   Decimal?         @db.Decimal(11, 8)
+  check_out_location    String?
+  work_duration_minutes Int?
   break_start           DateTime?
   break_end             DateTime?
   status                AttendanceStatus @default(PRESENT)
@@ -1533,11 +1540,21 @@ enum ProcurementStatus {
   RFP_SUBMITTED
 }
 
-enum ProjectPriority {
-  LOW
-  MEDIUM
-  HIGH
-  URGENT
+// ====================
+// Service Taxonomy LUTs
+// ====================
+
+model ServiceSystemCategory {
+  id         String             @id @default(uuid()) @db.Uuid
+  name       String             @unique
+  created_at DateTime           @default(now()) @db.Timestamptz(6)
+  updated_at DateTime           @default(now()) @db.Timestamptz(6)
+
+  // Inverse relation to Service
+  services   Service[]          @relation("ServiceKategoriSistem")
+
+  // One-to-many to subsystems
+  subsystems ServiceSubSystem[]
 }
 
 enum RFPItemType {

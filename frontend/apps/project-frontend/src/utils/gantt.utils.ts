@@ -3,19 +3,6 @@
 
 import type { GanttTask, DelayStatus } from '../types/gantt.types';
 
-/**
- * Calculate status-based color for Gantt chart bars
- * TDD-015 Extended Section 4: Status-based color logic
- * 
- * Logic:
- * - milestone → bar-milestone (brown/maroon)
- * - progress = 0% → bar-todo (blue)
- * - progress > 0% and < 100% → bar-in-progress (green)
- * - progress = 100% → bar-done (gray)
- * 
- * @param task - GanttTask with start, end, and progress
- * @returns DelayStatus with color class
- */
 export function calculateDelay(task: GanttTask): DelayStatus {
   // Milestones always get brown/maroon (highest priority)
   if (task.type === 'milestone') {
@@ -54,13 +41,6 @@ export function calculateDelay(task: GanttTask): DelayStatus {
   };
 }
 
-/**
- * Calculate luminance for dynamic text contrast (WCAG 2.0)
- * @param r - Red channel (0-255)
- * @param g - Green channel (0-255)
- * @param b - Blue channel (0-255)
- * @returns Luminance value (0-1)
- */
 export function calculateLuminance(r: number, g: number, b: number): number {
   const rsRGB = r / 255;
   const gsRGB = g / 255;
@@ -73,11 +53,6 @@ export function calculateLuminance(r: number, g: number, b: number): number {
   return 0.2126 * rLinear + 0.7152 * gLinear + 0.0722 * bLinear;
 }
 
-/**
- * Get contrasting text color (white or black) for given background
- * @param bgColor - Background color in hex format (#RRGGBB)
- * @returns '#FFFFFF' for dark backgrounds, '#000000' for light backgrounds
- */
 export function getContrastTextColor(bgColor: string): string {
   const hex = bgColor.replace('#', '');
   const r = parseInt(hex.substring(0, 2), 16);
@@ -90,11 +65,6 @@ export function getContrastTextColor(bgColor: string): string {
   return luminance > 0.5 ? '#000000' : '#FFFFFF';
 }
 
-/**
- * Validate date format (YYYY-MM-DD)
- * @param dateString - Date string to validate
- * @returns true if valid, false otherwise
- */
 export function isValidDateFormat(dateString: string): boolean {
   const regex = /^\d{4}-\d{2}-\d{2}$/;
   if (!regex.test(dateString)) return false;
@@ -103,11 +73,6 @@ export function isValidDateFormat(dateString: string): boolean {
   return !isNaN(date.getTime());
 }
 
-/**
- * Format date to YYYY-MM-DD
- * @param date - Date object or string
- * @returns Formatted date string
- */
 export function formatDateYYYYMMDD(date: Date | string): string {
   if (typeof date === 'string') {
     date = new Date(date);
@@ -120,13 +85,7 @@ export function formatDateYYYYMMDD(date: Date | string): string {
   return date.toISOString().split('T')[0];
 }
 
-/**
- * Detect circular dependencies in task graph
- * @param taskId - Task ID to check
- * @param dependencies - Array of dependent task IDs
- * @param allTasks - All tasks in the project
- * @returns true if circular dependency detected
- */
+
 export function hasCircularDependency(
   taskId: string,
   dependencies: string[],
@@ -160,12 +119,7 @@ export function hasCircularDependency(
   return false;
 }
 
-/**
- * Generate default milestones for a project
- * @param projectId - Project ID
- * @param projectStart - Project start date
- * @returns Array of default milestone tasks
- */
+
 export function generateDefaultMilestones(
   projectId: string,
   projectStart: Date
@@ -231,26 +185,16 @@ export function generateDefaultMilestones(
   return milestones;
 }
 
-/**
- * Add days to date
- * @param date - Base date
- * @param days - Number of days to add
- * @returns New date with days added
- */
+
 function addDays(date: Date, days: number): Date {
   const result = new Date(date);
   result.setDate(result.getDate() + days);
   return result;
 }
 
-/**
- * Export Gantt chart to PDF
- * @param svgElement - SVG element containing Gantt chart
- * @param filename - Output filename
- */
+
 export async function exportGanttToPDF(svgElement: SVGElement, filename: string = 'gantt-chart.pdf'): Promise<void> {
-  // This requires jsPDF and svg2pdf libraries
-  // Implementation will be done in the component that uses this
+
   console.log('Export to PDF:', filename, svgElement);
-  // TODO: Implement with jsPDF + svg2pdf.js
+
 }

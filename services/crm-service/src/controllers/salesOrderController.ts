@@ -1,7 +1,123 @@
 import { Request, Response } from 'express';
 import salesOrderServices from '../services/salesOrderServices';
+import salesOrderConversionService from '../services/salesOrderConversionService';
 
 class SalesOrderController {
+  /**
+   * Convert WON Opportunity to Sales Order
+   * POST /api/v1/sales-orders/convert-from-opportunity
+   */
+  async convertOpportunityToSalesOrder(req: Request, res: Response): Promise<void> {
+    try {
+      const { opportunityId, projectName, topDays, signedDate, idempotencyKey } = req.body;
+      const userId = (req as any).user?.userId;
+      const token = req.headers.authorization?.replace('Bearer ', '') || '';
+
+      if (!opportunityId) {
+        res.status(400).json({
+          success: false,
+          message: 'opportunityId is required',
+        });
+        return;
+      }
+
+      if (!userId) {
+        res.status(401).json({
+          success: false,
+          message: 'User not authenticated',
+        });
+        return;
+      }
+
+      console.log(`[SalesOrderController] Converting opportunity ${opportunityId} to SO by user ${userId}`);
+
+      const result = await salesOrderConversionService.convertOpportunityToSalesOrder(
+        {
+          opportunityId,
+          projectName,
+          topDays,
+          signedDate,
+          idempotencyKey,
+        },
+        userId,
+        token
+      );
+
+      // 409 if SO already exists
+      if (result.message?.includes('already exists')) {
+        res.status(409).json({
+          success: false,
+          message: result.message,
+          data: result,
+        });
+        return;
+      }
+
+      // 201 Created
+      res.status(201).json({
+        success: true,
+        message: 'Sales Order created successfully',
+        data: result,
+      });
+    } catch (error: any) {
+      console.error('[SalesOrderController] Error converting opportunity:', error);
+
+      // Handle specific errors
+      if (error.message?.includes('not found')) {
+        res.status(404).json({
+          success: false,
+          message: error.message,
+        });
+        return;
+      }
+
+      if (error.message?.includes('Only WON')) {
+        res.status(400).json({
+          success: false,
+          message: error.message,
+        });
+        return;
+      }
+
+      res.status(500).json({
+        success: false,
+        message: error.message || 'Failed to convert opportunity to Sales Order',
+      });
+    }
+  }
+
+  /**
+   * Get Sales Order by Opportunity ID
+   * GET /api/v1/sales-orders/by-opportunity/:opportunityId
+   */
+  async getSalesOrderByOpportunity(req: Request, res: Response): Promise<void> {
+    try {
+      const { opportunityId } = req.params;
+
+      const salesOrder = await salesOrderConversionService.getSalesOrderByOpportunity(opportunityId);
+
+      if (!salesOrder) {
+        res.status(404).json({
+          success: false,
+          message: 'Sales Order not found for this opportunity',
+        });
+        return;
+      }
+
+      res.status(200).json({
+        success: true,
+        data: salesOrder,
+      });
+    } catch (error: any) {
+      console.error('[SalesOrderController] Error getting sales order:', error);
+
+      res.status(500).json({
+        success: false,
+        message: error.message || 'Failed to get Sales Order',
+      });
+    }
+  }
+
   async createSalesOrder(req: Request, res: Response): Promise<void> {
     try {
       const {
@@ -17,14 +133,6 @@ class SalesOrderController {
         res.status(400).json({
           success: false,
           message: 'Project ID is required',
-        });
-        return;
-      }
-
-      if (!customerPoNumber) {
-        res.status(400).json({
-          success: false,
-          message: 'Customer PO Number is required',
         });
         return;
       }
@@ -59,7 +167,11 @@ class SalesOrderController {
       res.status(201).json({
         success: true,
         message: 'Sales Order created successfully',
-        data: result,
+        data: {
+          soId: result.salesOrder.id,
+          soNumber: result.salesOrder.so_number,
+          project: result.project,
+        },
       });
     } catch (error) {
       const err = error as Error;
@@ -250,6 +362,129 @@ class SalesOrderController {
       res.status(500).json({
         success: false,
         message: 'Failed to delete Sales Order',
+        error: err.message,
+      });
+    }
+  }
+
+  /**
+   * Convert WON Opportunity to Sales Order
+   * @route POST /api/v1/sales-orders/convert-from-opportunity
+   */
+  async convertFromOpportunity(req: Request, res: Response): Promise<void> {
+    try {
+      const { opportunityId, projectName, topDays, signedDate, idempotencyKey } = req.body;
+
+      // Validation
+      if (!opportunityId) {
+        res.status(400).json({
+          success: false,
+          message: 'opportunityId is required',
+        });
+        return;
+      }
+
+      const userId = (req as any).user?.id;
+      if (!userId) {
+        res.status(401).json({
+          success: false,
+          message: 'User authentication required',
+        });
+        return;
+      }
+
+      // Get token from headers
+      const token = req.headers.authorization?.replace('Bearer ', '') || '';
+
+      const result = await salesOrderConversionService.convertOpportunityToSalesOrder(
+        {
+          opportunityId,
+          projectName,
+          topDays,
+          signedDate,
+          idempotencyKey: idempotencyKey || req.headers['x-idempotency-key'] as string,
+        },
+        userId,
+        token
+      );
+
+      res.status(201).json({
+        success: true,
+        message: result.message || 'Sales Order conversion completed',
+        data: {
+          soId: result.soId,
+          soNumber: result.soNumber,
+          projectId: result.projectId,
+          estimationId: result.estimationId,
+          pdfUrl: result.pdfUrl,
+          status: result.status,
+        },
+      });
+    } catch (error) {
+      const err = error as Error;
+
+      // Handle specific errors
+      if (err.message === 'Opportunity not found') {
+        res.status(404).json({
+          success: false,
+          message: err.message,
+        });
+        return;
+      }
+
+      if (err.message === 'Only WON opportunities can be converted to Sales Order') {
+        res.status(403).json({
+          success: false,
+          message: err.message,
+        });
+        return;
+      }
+
+      if (err.message.includes('already exists')) {
+        res.status(409).json({
+          success: false,
+          message: err.message,
+        });
+        return;
+      }
+
+      console.error('[SalesOrderController] Error converting opportunity to SO:', err);
+      res.status(500).json({
+        success: false,
+        message: 'Failed to convert opportunity to Sales Order',
+        error: err.message,
+      });
+    }
+  }
+
+  /**
+   * Get Sales Order by Opportunity ID
+   * @route GET /api/v1/sales-orders/by-opportunity/:opportunityId
+   */
+  async getByOpportunityId(req: Request, res: Response): Promise<void> {
+    try {
+      const { opportunityId } = req.params;
+
+      const salesOrder = await salesOrderConversionService.getSalesOrderByOpportunity(opportunityId);
+
+      if (!salesOrder) {
+        res.status(404).json({
+          success: false,
+          message: 'Sales Order not found for this opportunity',
+        });
+        return;
+      }
+
+      res.status(200).json({
+        success: true,
+        data: salesOrder,
+      });
+    } catch (error) {
+      const err = error as Error;
+      console.error('[SalesOrderController] Error fetching SO by opportunity:', err);
+      res.status(500).json({
+        success: false,
+        message: 'Failed to fetch Sales Order',
         error: err.message,
       });
     }

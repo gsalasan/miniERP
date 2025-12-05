@@ -7,33 +7,6 @@ import '../styles/gantt.css';
 import { calculateDelay } from '../utils/gantt.utils';
 import { exportGanttToPDF } from '../utils/ganttExport';
 
-/**
- * GanttChartComponent - TDD-015 Extended Compliant Gantt Chart
- * 
- * Performance Optimizations:
- * ✅ Local state buffer (tasksView/milestonesView) for instant UI updates
- * ✅ requestAnimationFrame throttling for smooth drag without glitches
- * ✅ Commit to backend on mouseup (not during drag) to reduce API calls
- * ✅ Optimistic updates with error reversion
- * ✅ Memoized color application with useCallback
- * ✅ RAF-throttled MutationObserver to reduce overhead
- * ✅ Pure function for ganttTasks building (no recreate on every render)
- * ✅ Handles 500-1000 tasks smoothly (<3s render)
- * 
- * TDD-015 Extended Features:
- * ✅ Gantt config: header_height: 50, column_width: 30, step: 24, bar_height: 20
- * ✅ Status-based color system (bar-milestone, bar-todo, bar-in-progress, bar-done)
- * ✅ Dynamic text contrast (WCAG 2.0 compliant)
- * ✅ Custom popup HTML with Name, Progress, Start, End, Weight, Delay, Dependencies
- * ✅ Mobile responsive: <768px auto-switch to "Month" mode
- * 
- * Architecture:
- * - External props → local state sync via useEffect
- * - Drag events → RAF throttle → local state update
- * - Mouseup → commit pending updates → PATCH backend
- * - Error → revert to original props
- */
-
 type GanttTask = FrappeGanttTask;
 
 // Helper: Calculate luminance from RGB color

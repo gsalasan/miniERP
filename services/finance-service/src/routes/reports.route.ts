@@ -24,4 +24,7 @@ router.get('/balance-sheet-summary', reportsControllers.getBalanceSheetSummary);
 router.get('/income-statement', reportsControllers.getIncomeStatement);
 router.get('/income-statement-summary', reportsControllers.getIncomeStatementSummary);
 
+// Universal Financial Report - Per TSD FITUR 3.4.D
+router.get('/financial', reportsControllers.getFinancialReport);
+
 export default router;
