@@ -26,9 +26,12 @@ import { exportGanttToPDF } from '../utils/ganttExport';
 interface TimelineTabProps {
   projectId: string;
   isPM: boolean;
+  projectName?: string;
+  projectNumber?: string;
+  customerName?: string;
 }
 
-const TimelineTab = ({ projectId, isPM }: TimelineTabProps) => {
+const TimelineTab = ({ projectId, isPM, projectName, projectNumber, customerName }: TimelineTabProps) => {
   const [milestones, setMilestones] = useState<Milestone[]>([]);
   const [tasks, setTasks] = useState<Task[]>([]);
   const [loading, setLoading] = useState(true);
@@ -53,11 +56,22 @@ const TimelineTab = ({ projectId, isPM }: TimelineTabProps) => {
     }
 
     try {
+      // Generate filename from project name
+      const sanitizedProjectName = (projectName || projectNumber || 'project')
+        .replace(/[^a-z0-9]/gi, '-')
+        .toLowerCase();
+      const dateStr = new Date().toISOString().split('T')[0];
+      
       exportGanttToPDF(ganttContainerRef.current, {
-        filename: `project-gantt-${projectId}.pdf`,
+        filename: `gantt-${sanitizedProjectName}-${dateStr}.pdf`,
         format: 'pdf',
         orientation: 'landscape',
         quality: 0.95,
+        projectInfo: {
+          projectName: projectName || 'Project',
+          projectNumber: projectNumber || '-',
+          customerName: customerName || '-',
+        },
       });
       notify('Exporting Gantt chart to PDF...', { severity: 'info' });
     } catch (error) {
@@ -96,7 +110,6 @@ const TimelineTab = ({ projectId, isPM }: TimelineTabProps) => {
     setTemplateModalOpen(false);
     fetchMilestones();
     fetchTasks();
-    notify('Template diterapkan', { severity: 'success' });
   };
 
   const handleTaskClick = (task: Task) => {

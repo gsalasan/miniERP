@@ -279,6 +279,51 @@ class ProjectApi {
   }
 
   /**
+   * Create a new milestone template
+   */
+  async createMilestoneTemplate(
+    data: Omit<MilestoneTemplate, 'id'>
+  ): Promise<MilestoneTemplate> {
+    const response = await this.api.post<ApiResponse<MilestoneTemplate>>(
+      '/templates/milestones',
+      data
+    );
+    if (!response.data.success || !response.data.data) {
+      throw new Error(response.data.message || 'Failed to create template');
+    }
+    return response.data.data;
+  }
+
+  /**
+   * Update an existing milestone template
+   */
+  async updateMilestoneTemplate(
+    templateId: number,
+    data: Partial<Omit<MilestoneTemplate, 'id'>>
+  ): Promise<MilestoneTemplate> {
+    const response = await this.api.put<ApiResponse<MilestoneTemplate>>(
+      `/templates/milestones/${templateId}`,
+      data
+    );
+    if (!response.data.success || !response.data.data) {
+      throw new Error(response.data.message || 'Failed to update template');
+    }
+    return response.data.data;
+  }
+
+  /**
+   * Delete a milestone template
+   */
+  async deleteMilestoneTemplate(templateId: number): Promise<void> {
+    const response = await this.api.delete<ApiResponse<void>>(
+      `/templates/milestones/${templateId}`
+    );
+    if (!response.data.success) {
+      throw new Error(response.data.message || 'Failed to delete template');
+    }
+  }
+
+  /**
    * Get team members for a project (for assignment)
    * Fallback: returns project managers list mapped to TeamMember if endpoint missing
    */

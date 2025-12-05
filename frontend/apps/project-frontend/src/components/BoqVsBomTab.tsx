@@ -25,14 +25,15 @@ import WarningAmberOutlinedIcon from '@mui/icons-material/WarningAmberOutlined';
 import { projectApi } from '../api/projectApi';
 import { searchMaterials, searchServices, createMaterial, MaterialOption, ServiceOption } from '../api/engineeringApi';
 import AddBomItemDialog from './AddBomItemDialog';
-import BomTableWithRfp from './BomTableWithRfp';
 import ConfirmDialog from './ConfirmDialog';
+import SimpleBomTable from './SimpleBomTable';
 import Autocomplete from '@mui/material/Autocomplete';
 import TextField from '@mui/material/TextField';
 import type { EstimationItem, ProjectBOM, BomItem } from '../types';
 
 interface BoqVsBomTabProps {
   projectId: string;
+  projectName?: string;
   estimationItems: EstimationItem[];
   existingBomItems: ProjectBOM[];
   onBomSaved: () => void;
@@ -44,13 +45,17 @@ interface BomRow {
   id: string;
   itemId: string;
   itemName: string;
-  itemType: string;
+  itemType: 'MATERIAL' | 'SERVICE';
   quantity: number;
+  procurement_need?: number;
+  procurement_status?: string;
+  available_stock?: number;
   isNew?: boolean;
 }
 
 const BoqVsBomTab: React.FC<BoqVsBomTabProps> = ({
   projectId,
+  projectName,
   estimationItems,
   existingBomItems,
   onBomSaved,
@@ -83,12 +88,26 @@ const BoqVsBomTab: React.FC<BoqVsBomTabProps> = ({
       setAutocompleteLoading(false);
     }
   };
+  
+  const debounceSearch = (isMaterial: boolean, input: string) => {
+    if (searchDebounceRef.current) {
+      clearTimeout(searchDebounceRef.current);
+    }
+    searchDebounceRef.current = window.setTimeout(() => {
+      if (input.length >= 2) {
+        if (isMaterial) fetchMaterialOptions(input);
+        else fetchServiceOptions(input);
+      }
+    }, 300);
+  };
+  
   const [bomRows, setBomRows] = useState<BomRow[]>([]);
   const [openAddItemDialog, setOpenAddItemDialog] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const [hasChanges, setHasChanges] = useState(false);
+  const [bomInitialized, setBomInitialized] = useState(false);
   const [addConfirmOpen, setAddConfirmOpen] = useState(false);
   const [addConfirmName, setAddConfirmName] = useState<string | null>(null);
   const [addConfirmRowId, setAddConfirmRowId] = useState<string | null>(null);
@@ -116,17 +135,22 @@ const BoqVsBomTab: React.FC<BoqVsBomTabProps> = ({
   };
 
   useEffect(() => {
-    if (existingBomItems.length > 0) {
+    if (Array.isArray(existingBomItems) && existingBomItems.length > 0) {
       setBomRows(
         existingBomItems.map((item) => ({
           id: item.id,
           itemId: item.item_id,
           itemName: item.item_name || item.item_id,
-          itemType: item.item_type,
+          itemType: item.item_type as 'MATERIAL' | 'SERVICE',
           quantity: Number(item.quantity),
+          procurement_need: item.quantity,
+          procurement_status: 'NOT_STARTED',
         }))
       );
+    } else {
+      setBomRows([]);
     }
+    setBomInitialized(true);
   }, [existingBomItems]);
 
   const boqColumns: GridColDef[] = [
@@ -196,7 +220,10 @@ const BoqVsBomTab: React.FC<BoqVsBomTabProps> = ({
         const rowId = params.id.toString();
         const currentInput = inputMap[rowId] || '';
 
-        const showAddNew = isMaterial && currentInput.length >= 2 && !options.some((o) => (o.item_name || '').toLowerCase().includes(currentInput.toLowerCase()));
+        const showAddNew = isMaterial && currentInput.length >= 2 && !options.some((o) => {
+          const name = isMaterial ? (o as MaterialOption).item_name : (o as ServiceOption).service_name;
+          return (name || '').toLowerCase().includes(currentInput.toLowerCase());
+        });
 
         const displayOptions: any[] = showAddNew ? [...options, { id: 'add-new', item_name: currentInput }] : options;
 
@@ -287,8 +314,10 @@ const BoqVsBomTab: React.FC<BoqVsBomTabProps> = ({
       id: `temp-${Date.now()}-${index}`,
       itemId: item.item_id,
       itemName: item.item_name || item.item_id,
-      itemType: item.item_type,
+      itemType: item.item_type as 'MATERIAL' | 'SERVICE',
       quantity: Number(item.quantity),
+      procurement_need: Number(item.quantity),
+      procurement_status: 'NOT_STARTED',
       isNew: true,
     }));
     setBomRows(copiedRows);
@@ -309,6 +338,8 @@ const BoqVsBomTab: React.FC<BoqVsBomTabProps> = ({
       itemName: material.item_name || material.name || material.itemName,
       itemType: 'MATERIAL',
       quantity: 1,
+      procurement_need: 1,
+      procurement_status: 'NOT_STARTED',
       isNew: true,
     };
     setBomRows((prev) => [...prev, newRow]);
@@ -388,14 +419,16 @@ const BoqVsBomTab: React.FC<BoqVsBomTabProps> = ({
     return { ...newRow, itemName };
   };
 
-  const boqRows: GridRowsProp = estimationItems.map((item) => ({
-    id: item.id,
-    itemId: item.item_id,
-    itemName: item.item_name || item.item_id,
-    itemType: item.item_type,
-    quantity: Number(item.quantity),
-    hppAtEstimation: Number(item.hpp_at_estimation),
-  }));
+  const boqRows: GridRowsProp = Array.isArray(estimationItems) 
+    ? estimationItems.map((item) => ({
+        id: item.id,
+        itemId: item.item_id,
+        itemName: item.item_name || item.item_id,
+        itemType: item.item_type,
+        quantity: Number(item.quantity),
+        hppAtEstimation: Number(item.hpp_at_estimation),
+      }))
+    : [];
 
   return (
     <Box>
@@ -464,19 +497,33 @@ const BoqVsBomTab: React.FC<BoqVsBomTabProps> = ({
               </Box>
               <Divider />
               <Box sx={{ height: 500 }}>
-                <DataGrid
-                  rows={boqRows}
-                  columns={boqColumns}
-                  pageSize={10}
-                  rowsPerPageOptions={[10, 25, 50]}
-                  disableSelectionOnClick
-                  density="compact"
-                  sx={{
-                    '& .MuiDataGrid-cell': {
-                      fontSize: '0.875rem',
-                    },
-                  }}
-                />
+                {boqRows.length === 0 ? (
+                  <Box 
+                    display="flex" 
+                    justifyContent="center" 
+                    alignItems="center" 
+                    height="100%"
+                    sx={{ border: '1px dashed', borderColor: 'divider', borderRadius: 1 }}
+                  >
+                    <Typography variant="body2" color="text.secondary">
+                      Belum ada data estimasi
+                    </Typography>
+                  </Box>
+                ) : (
+                  <DataGrid
+                    key={`boq-grid-${boqRows.length}`}
+                    rows={boqRows}
+                    columns={boqColumns}
+                    hideFooter
+                    disableRowSelectionOnClick
+                    density="compact"
+                    sx={{
+                      '& .MuiDataGrid-cell': {
+                        fontSize: '0.875rem',
+                      },
+                    }}
+                  />
+                )}
               </Box>
               <Alert severity="info" sx={{ mt: 2 }}>
                 Total Items: <strong>{boqRows.length}</strong>
@@ -549,43 +596,26 @@ const BoqVsBomTab: React.FC<BoqVsBomTabProps> = ({
                 </Stack>
               </Box>
               <Divider />
-              <Box sx={{ height: 500 }}>
-                <BomTableWithRfp
+              {!bomInitialized ? (
+                <Box display="flex" justifyContent="center" alignItems="center" height="500px">
+                  <CircularProgress />
+                </Box>
+              ) : (
+                <SimpleBomTable
                   projectId={projectId}
-                  bomItems={bomRows.map((r) => ({
-                    id: r.id,
-                    itemId: r.itemId,
-                    itemName: r.itemName,
-                    itemType: r.itemType as 'MATERIAL' | 'SERVICE',
-                    quantity: r.quantity,
-                    available_stock: (r as any).available_stock,
-                    procurement_need: (r as any).procurement_need,
-                    procurement_status: (r as any).procurement_status,
-                  }))}
+                  projectName={projectName}
+                  bomItems={bomRows}
                   canEdit={canEdit}
                   onRfpCreated={() => {
-                    setSuccess('RFP berhasil dikirim');
-                    // trigger parent refresh if provided
+                    setSuccess('RFP berhasil dibuat dan dikirim ke Tim Procurement');
                     onBomSaved();
                   }}
-                  onBomChange={(updated) => {
-                    // map updated back to parent bomRows shape
-                    const mapped = updated.map((u) => ({
-                      id: u.id,
-                      itemId: u.itemId,
-                      itemName: u.itemName,
-                      itemType: u.itemType,
-                      quantity: Number(u.quantity),
-                      isNew: false,
-                      available_stock: (u as any).available_stock,
-                      procurement_need: (u as any).procurement_need,
-                      procurement_status: (u as any).procurement_status,
-                    }));
-                    setBomRows(mapped);
+                  onBomChange={(updatedRows) => {
+                    setBomRows(updatedRows);
                     setHasChanges(true);
                   }}
                 />
-              </Box>
+              )}
               <Stack
                 direction="row"
                 spacing={2}

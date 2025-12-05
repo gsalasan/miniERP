@@ -2,17 +2,14 @@ import React, { useMemo, useState } from 'react';
 import {
   Box,
   Button,
-  Paper,
   Stack,
   Typography,
   Chip,
-  Divider,
-  Alert,
   CircularProgress,
   IconButton,
 } from '@mui/material';
 import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
-import { DataGrid, GridColDef, GridSelectionModel } from '@mui/x-data-grid';
+import { DataGrid, GridColDef, GridRowSelectionModel, GridRowId } from '@mui/x-data-grid';
 import RfpConfirmationModal from './RfpConfirmationModal';
 import ConfirmDialog from './ConfirmDialog';
 import { useCreateRfp } from '../hooks/useRfpHooks';
@@ -37,22 +34,32 @@ interface Props {
 }
 
 const BomTableWithRfp: React.FC<Props> = ({ projectId, bomItems, canEdit, onRfpCreated, onBomChange }) => {
-  const [selection, setSelection] = useState<GridSelectionModel>([]);
+  const [selection, setSelection] = useState<readonly GridRowId[]>([]);
   const [openConfirm, setOpenConfirm] = useState(false);
   const createRfp = useCreateRfp(projectId);
-  const [localRows, setLocalRows] = useState<BomRow[]>(bomItems || []);
+  const [localRows, setLocalRows] = useState<BomRow[]>([]);
+  const [isInitialized, setIsInitialized] = useState(false);
 
   // keep local editable rows in sync with incoming prop
   React.useEffect(() => {
-    setLocalRows(
-      (bomItems || []).map((r) => ({
-        ...r,
-        procurement_need: typeof r.procurement_need === 'number' ? r.procurement_need : Math.max(0, r.quantity - (r.available_stock || 0)),
-      }))
-    );
+    const safeItems = Array.isArray(bomItems) ? bomItems : [];
+    const processedRows = safeItems.map((r) => ({
+      ...r,
+      id: r.id || `temp-${Date.now()}-${Math.random()}`,
+      procurement_need: r.procurement_need || r.quantity,
+      procurement_status: r.procurement_status || 'NOT_STARTED',
+    }));
+    setLocalRows(processedRows);
+    setIsInitialized(true);
   }, [bomItems]);
 
-  const rows = localRows;
+  const rows = React.useMemo(() => {
+    if (!isInitialized) return [];
+    return Array.isArray(localRows) ? localRows : [];
+  }, [localRows, isInitialized]);
+
+  // For RFP without inventory: Allow selection of all items
+  const selectableIds = useMemo(() => rows.map((r) => r.id), [rows]);
 
   const columns: GridColDef[] = [
     { field: 'itemName', headerName: 'Nama Item', flex: 1, minWidth: 240 },
@@ -64,34 +71,34 @@ const BomTableWithRfp: React.FC<Props> = ({ projectId, bomItems, canEdit, onRfpC
     },
     {
       field: 'quantity',
-      headerName: 'Qty',
+      headerName: 'Qty BoM',
       width: 100,
       type: 'number',
       editable: canEdit,
     },
     {
-      field: 'available_stock',
-      headerName: 'Stok Tersedia',
-      width: 150,
-      valueFormatter: (params) => {
-        const val = params?.value;
-        return val === null || val === undefined ? '-' : String(val);
-      },
-    },
-    {
       field: 'procurement_need',
       headerName: 'Kebutuhan Pengadaan',
       width: 180,
-      valueFormatter: (params) => {
-        const val = params?.value;
-        return val === null || val === undefined ? '0' : String(val);
+      valueFormatter: (value: any) => {
+        return value === null || value === undefined ? '0' : String(value);
       },
     },
     {
       field: 'procurement_status',
       headerName: 'Status Pengadaan',
-      width: 160,
-      renderCell: (params) => <Chip label={String(params?.value ?? 'STOCK_SUFFICIENT')} size="small" />,
+      width: 180,
+      renderCell: (params) => {
+        const status = String(params?.value ?? 'NOT_STARTED');
+        const colorMap: Record<string, 'default' | 'warning' | 'success' | 'info' | 'error'> = {
+          NOT_STARTED: 'default',
+          RFP_SUBMITTED: 'info',
+          IN_PROCUREMENT: 'warning',
+          RECEIVED: 'success',
+          STOCK_AVAILABLE: 'success',
+        };
+        return <Chip label={status} size="small" color={colorMap[status] || 'default'} />;
+      },
     },
     {
       field: 'actions',
@@ -110,14 +117,21 @@ const BomTableWithRfp: React.FC<Props> = ({ projectId, bomItems, canEdit, onRfpC
     },
   ];
 
-  const selectableIds = useMemo(() => rows.filter((r) => (r.procurement_need || 0) > 0).map((r) => r.id), [rows]);
-
-  const handleSelectionModelChange = (newSelection: GridSelectionModel) => {
+  const handleSelectionModelChange = (newSelection: GridRowSelectionModel) => {
+    console.log('[BomTable] Selection changed:', newSelection);
+    console.log('[BomTable] Selectable IDs:', selectableIds);
+    
+    // Convert to array if needed
+    const selectionArray: readonly GridRowId[] = Array.isArray(newSelection) 
+      ? newSelection 
+      : [];
+    
     // Only keep selectable IDs
-    const filtered = (newSelection || []).filter((id) => selectableIds.includes(String(id)));
-    // normalize ids to strings for consistent comparisons
-    const normalized = filtered.map((id) => String(id));
-    setSelection(normalized);
+    const filtered = selectionArray.filter((id) => selectableIds.includes(String(id)));
+    console.log('[BomTable] Filtered:', filtered);
+    
+    setSelection(filtered);
+    
     // Notify parent that a user interaction happened on the BoM tab
     if (typeof onBomChange === 'function') onBomChange(rows);
   };
@@ -126,13 +140,15 @@ const BomTableWithRfp: React.FC<Props> = ({ projectId, bomItems, canEdit, onRfpC
 
   const handleConfirm = async (payload: { items: any[]; notes?: string }) => {
     const items = payload.items.map((it) => ({ itemId: it.itemId, itemType: it.itemType, quantity: it.quantity }));
+    
     try {
-      await createRfp.mutateAsync({ items, notes: payload.notes });
+      const result = await createRfp.mutateAsync({ items, notes: payload.notes });
       setOpenConfirm(false);
       setSelection([]);
       if (onRfpCreated) onRfpCreated();
     } catch (err) {
-      // error handled in hook; keep modal open
+      console.error('Error creating RFP:', err);
+      // error handled in hook with toast; keep modal open
     }
   };
 
@@ -141,7 +157,10 @@ const BomTableWithRfp: React.FC<Props> = ({ projectId, bomItems, canEdit, onRfpC
     setLocalRows(updated);
     if (typeof onBomChange === 'function') onBomChange(updated);
     // also ensure selection is cleared for deleted id
-    setSelection((prev) => (Array.isArray(prev) ? prev.filter((s) => String(s) !== String(id)) : []));
+    setSelection((prev) => {
+      const prevArray = Array.isArray(prev) ? prev : [];
+      return prevArray.filter((s) => String(s) !== String(id));
+    });
   };
 
   const [confirmOpen, setConfirmOpen] = React.useState(false);
@@ -162,48 +181,84 @@ const BomTableWithRfp: React.FC<Props> = ({ projectId, bomItems, canEdit, onRfpC
 
   return (
     <Box>
-      <Paper sx={{ p: 2, mb: 2 }}>
-        <Stack direction="row" justifyContent="space-between" alignItems="center">
-          <Typography variant="h6">Bill of Materials (BoM)</Typography>
-          <Stack direction="row" spacing={2}>
-            <Button
-              variant="contained"
-              disabled={selection.length === 0 || !canEdit || createRfp.isLoading}
-              onClick={openModal}
-            >
-              {createRfp.isLoading ? <CircularProgress size={18} /> : 'Buat RFP'}
-            </Button>
-          </Stack>
+      {/* RFP Button */}
+      {rows.length > 0 && (
+        <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 2 }}>
+          <Typography variant="caption" color="text.secondary">
+            {(Array.isArray(selection) ? selection.length : 0) > 0 && 
+              `${Array.isArray(selection) ? selection.length : 0} item dipilih untuk RFP`}
+          </Typography>
+          <Button
+            variant="contained"
+            disabled={(Array.isArray(selection) ? selection.length : 0) === 0 || !canEdit || createRfp.isPending}
+            onClick={openModal}
+          >
+            {createRfp.isPending ? <CircularProgress size={18} /> : 'Buat RFP'}
+          </Button>
         </Stack>
-      </Paper>
+      )}
 
-      <Paper sx={{ height: '100%', p: 1, display: 'flex', flexDirection: 'column' }}>
-        <Box sx={{ flex: 1, minHeight: 0 }}>
+      {/* DataGrid Container */}
+      <Box sx={{ height: 500 }}>
+        {!isInitialized ? (
+          <Box display="flex" justifyContent="center" alignItems="center" height="100%">
+            <CircularProgress />
+          </Box>
+        ) : rows.length === 0 ? (
+          <Box 
+            display="flex" 
+            justifyContent="center" 
+            alignItems="center" 
+            height="100%"
+            sx={{ border: '1px dashed', borderColor: 'divider', borderRadius: 1 }}
+          >
+            <Typography variant="body2" color="text.secondary">
+              Belum ada item BoM. Salin dari BoQ atau tambah manual.
+            </Typography>
+          </Box>
+        ) : (
           <DataGrid
             rows={rows}
             columns={columns}
-            pageSize={10}
-            rowsPerPageOptions={[10, 25, 50]}
             checkboxSelection
-            onSelectionModelChange={handleSelectionModelChange}
-            selectionModel={selection}
+            onRowSelectionModelChange={handleSelectionModelChange}
+            rowSelectionModel={selection as any}
             getRowId={(r) => r.id}
-            disableSelectionOnClick
-            sx={{ height: '100%' }}
-            experimentalFeatures={{ newEditingApi: true }}
+            isRowSelectable={() => true}
+            disableRowSelectionOnClick
+            hideFooter
+            autoHeight
+            sx={{ 
+              minHeight: 300,
+              maxHeight: 500,
+              '& .MuiDataGrid-main': {
+                minHeight: '300px',
+              },
+            }}
             processRowUpdate={(newRow) => {
               const updated = rows.map((r) => (r.id === newRow.id ? { ...(r as BomRow), ...(newRow as any) } : r));
               setLocalRows(updated);
               if (typeof onBomChange === 'function') onBomChange(updated);
               return newRow;
             }}
+            onProcessRowUpdateError={(error) => {
+              console.error('[BomTable] Row update error:', error);
+            }}
           />
-        </Box>
-      </Paper>
+        )}
+      </Box>
 
       <RfpConfirmationModal
         open={openConfirm}
-        items={rows.filter((r) => selection.includes(r.id)).map((r) => ({ itemId: r.itemId, itemType: r.itemType, itemName: r.itemName, quantity: r.procurement_need || r.quantity }))}
+        items={rows.filter((r) => {
+          const selArray = Array.isArray(selection) ? selection : [];
+          return selArray.some((id) => String(id) === String(r.id));
+        }).map((r) => ({ 
+          itemId: r.itemId, 
+          itemType: r.itemType, 
+          itemName: r.itemName, 
+          quantity: r.quantity  // Use full quantity without inventory adjustment
+        }))}
         onClose={() => setOpenConfirm(false)}
         onConfirm={handleConfirm}
       />

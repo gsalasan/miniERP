@@ -91,7 +91,7 @@ const TaskDetailPanel = ({
       if (isPM) {
         updateData.name = formData.name;
         updateData.description = formData.description;
-        updateData.assignee_id = formData.assignee_id;
+        updateData.assignee_id = formData.assignee_id || null; // Allow unassigning
         updateData.start_date = formData.start_date?.toISOString();
         updateData.due_date = formData.due_date?.toISOString();
       }

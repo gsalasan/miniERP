@@ -29,6 +29,7 @@ import {
 import DashboardIcon from '@mui/icons-material/Dashboard';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
+import NotificationCenter from '../components/NotificationCenter';
 
 const drawerWidth = 280;
 
@@ -378,6 +379,9 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
         <Toolbar />
         {children}
       </Box>
+      
+      {/* Global Notification Center */}
+      <NotificationCenter />
     </Box>
   );
 };

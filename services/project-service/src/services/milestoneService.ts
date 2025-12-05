@@ -368,6 +368,89 @@ export class MilestoneService {
 
     return templates;
   }
+
+  /**
+   * Create milestone template
+   */
+  async createTemplate(data: {
+    template_name: string;
+    project_type?: string;
+    milestones: Array<{
+      name: string;
+      duration_days: number;
+      status: string;
+    }>;
+  }) {
+    const template = await prisma.milestone_templates.create({
+      data: {
+        template_name: data.template_name,
+        project_type: data.project_type,
+        milestones: data.milestones,
+      },
+    });
+
+    return template;
+  }
+
+  /**
+   * Update milestone template
+   */
+  async updateTemplate(
+    templateId: number,
+    data: {
+      template_name?: string;
+      project_type?: string;
+      milestones?: Array<{
+        name: string;
+        duration_days: number;
+        status: string;
+      }>;
+    }
+  ) {
+    // Check if template exists
+    const existing = await prisma.milestone_templates.findUnique({
+      where: { id: templateId },
+    });
+
+    if (!existing) {
+      const error: any = new Error('Template not found');
+      error.statusCode = 404;
+      throw error;
+    }
+
+    const template = await prisma.milestone_templates.update({
+      where: { id: templateId },
+      data: {
+        template_name: data.template_name,
+        project_type: data.project_type,
+        milestones: data.milestones,
+      },
+    });
+
+    return template;
+  }
+
+  /**
+   * Delete milestone template
+   */
+  async deleteTemplate(templateId: number) {
+    // Check if template exists
+    const existing = await prisma.milestone_templates.findUnique({
+      where: { id: templateId },
+    });
+
+    if (!existing) {
+      const error: any = new Error('Template not found');
+      error.statusCode = 404;
+      throw error;
+    }
+
+    await prisma.milestone_templates.delete({
+      where: { id: templateId },
+    });
+
+    return { success: true };
+  }
 }
 
 export const milestoneService = new MilestoneService();
