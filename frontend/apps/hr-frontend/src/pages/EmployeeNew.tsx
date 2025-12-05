@@ -4,6 +4,8 @@ import { ChevronRight, ChevronLeft, User, DollarSign, Shield, Plus, X } from 'lu
 import Select from 'react-select';
 import { PTKP_OPTIONS, isValidNpwp, normalizeNpwp, sumAllowancesFromArray, estimatePPh21Monthly, formatCurrencyID } from '../utils/tax';
 import { AllowanceCategoryLabels } from '../enums/employeeEnums';
+import hrClient from '../api/client';
+import API_CONFIG from '../config';
 
 interface Allowance {
   name: string;
@@ -12,6 +14,7 @@ interface Allowance {
 }
 
 type Props = { onClose?: () => void };
+
 
 export default function EmployeeNew({ onClose }: Props) {
   const [currentStep, setCurrentStep] = useState(1);
@@ -82,9 +85,11 @@ export default function EmployeeNew({ onClose }: Props) {
   useEffect(() => {
     const fetchEmployees = async () => {
       try {
-        const response = await fetch('http://localhost:4004/api/v1/employees');
-        const data = await response.json();
-        setEmployees(data.data || data || []);
+        const response = await hrClient.get<{ success?: boolean; data?: any[] }>('/employees');
+        const employeeData: any[] = Array.isArray(response.data?.data)
+          ? response.data.data
+          : Array.isArray(response.data) ? response.data : [];
+        setEmployees(employeeData);
       } catch (error) {
         console.error('Error fetching employees:', error);
       }
@@ -182,14 +187,9 @@ export default function EmployeeNew({ onClose }: Props) {
         email: form.email,
       };
 
-  const res = await fetch('http://localhost:4004/api/v1/employees', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
-      });
+      await hrClient.post('/employees', payload);
 
       setSaving(false);
-      if (res.ok) {
         setSuccess(true);
         setForm({
           full_name: '', ktp_number: '', address: '', phone: '', emergency_contact_name: '', emergency_contact_phone: '',
@@ -200,15 +200,9 @@ export default function EmployeeNew({ onClose }: Props) {
         setAllowances([]);
         setCurrentStep(1);
         setTimeout(() => { if (onClose) onClose(); }, 1500);
-      } else {
-        const err = await res.json().catch(() => null);
-        const msg = err?.message || 'Failed to add employee';
-        const joined = err?.errors && Array.isArray(err.errors) ? `${msg}: ${err.errors.join(', ')}` : msg;
-        setError(joined);
-      }
     } catch (e: any) {
       setSaving(false);
-      setError(e?.message || 'Failed to add employee');
+      setError(e?.message || API_CONFIG.OFFLINE_FALLBACK_MESSAGE);
     }
   };
 
@@ -745,13 +739,13 @@ export default function EmployeeNew({ onClose }: Props) {
       </button>
       
       {/* Header - Fixed */}
-      <div className="flex-shrink-0 text-center pt-8 pb-3 px-6 bg-white border-b border-gray-100">
+      <div className="shrink-0 text-center pt-8 pb-3 px-6 bg-white border-b border-gray-100">
         <h1 className="text-xl font-bold text-blue-900 mb-1">Add New Employee</h1>
         <p className="text-blue-600 text-sm">Complete employee data with accurate information</p>
       </div>
       
       {/* Step indicator - Fixed */}
-      <div className="flex-shrink-0 px-6 py-3 bg-gray-50 border-b border-gray-200">
+      <div className="shrink-0 px-6 py-3 bg-gray-50 border-b border-gray-200">
         <div className="max-w-2xl mx-auto">
           {/* Active step with icon */}
           <div className="flex items-center justify-center gap-2 mb-2">
@@ -798,7 +792,7 @@ export default function EmployeeNew({ onClose }: Props) {
           </div>
           
           {/* Fixed bottom navigation */}
-          <div className="flex-shrink-0 bg-white border-t border-gray-200 px-6 py-3 shadow-lg sticky bottom-0">
+          <div className="shrink-0 bg-white border-t border-gray-200 px-6 py-3 shadow-lg sticky bottom-0">
             <div className="flex justify-between items-center">
               <button 
                 type="button" 
@@ -823,7 +817,7 @@ export default function EmployeeNew({ onClose }: Props) {
                 <button 
                   type="submit" 
                   disabled={saving} 
-                  className="flex items-center px-6 py-2 bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white rounded-lg font-semibold text-sm transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow"
+                  className="flex items-center px-6 py-2 bg-linear-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white rounded-lg font-semibold text-sm transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow"
                 >
                   {saving ? (
                     <>

@@ -6,6 +6,7 @@ import EmployeeNew from './pages/EmployeeNew';
 import EmployeeDetail from './pages/EmployeeDetail';
 import EmployeeEdit from './pages/EmployeeEdit';
 import AttendanceManagement from './pages/AttendanceManagement';
+import OvertimeList from './pages/OvertimeList';
 
 export default function AppRouter() {
   return (
@@ -18,6 +19,7 @@ export default function AppRouter() {
         <Route path="/hr/employees/new" element={<EmployeeNew />} />
         <Route path="/hr/employees/:id" element={<EmployeeDetail />} />
         <Route path="/hr/attendances" element={<AttendanceManagement />} />
+        <Route path="/hr/overtimes" element={<OvertimeList />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </BrowserRouter>

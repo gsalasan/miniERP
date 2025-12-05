@@ -10,6 +10,8 @@ import {
   EmploymentTypeLabels,
   EmployeeStatusLabels
 } from '../enums/employeeEnums';
+import hrClient from '../api/client';
+import API_CONFIG from '../config';
 
 
 interface UserInfo {
@@ -39,15 +41,25 @@ export default function EmployeeDetail() {
   const { id } = useParams<{ id: string }>();
   const [employee, setEmployee] = useState<Employee | null>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
 
   useEffect(() => {
-    fetch(`http://localhost:4004/api/v1/employees/${id}`)
-      .then(res => res.json())
-      .then(data => {
-        setEmployee(data.data || null);
+    const fetchDetail = async () => {
+      setLoading(true);
+      setError(null);
+      try {
+        const response = await hrClient.get<{ success?: boolean; data?: Employee }>(`/employees/${id}`);
+        setEmployee(response.data.data || response.data || null);
+      } catch (err: any) {
+        setError(err?.message || API_CONFIG.OFFLINE_FALLBACK_MESSAGE);
+        setEmployee(null);
+      } finally {
         setLoading(false);
-      });
+      }
+    };
+
+    fetchDetail();
   }, [id]);
 
   const user = employee?.users?.[0];
@@ -67,6 +79,10 @@ export default function EmployeeDetail() {
       {loading ? (
         <div className="text-center py-10 text-blue-600">Memuat data...</div>
       ) : employee ? (
+        <>
+          {error && (
+            <div className="mb-4 text-red-600 bg-red-50 border border-red-200 p-3 rounded-lg">{error}</div>
+          )}
         <div className="max-w-2xl mx-auto bg-white rounded-2xl shadow-xl p-8 border border-gray-200 animate-fade-in">
           <div className="flex items-center gap-6 mb-8">
             <div className="w-24 h-24 rounded-full bg-gray-100 flex items-center justify-center text-5xl font-extrabold text-gray-400 shadow border-2 border-white">
@@ -138,6 +154,7 @@ export default function EmployeeDetail() {
             Dibuat: {user?.created_at ? new Date(user.created_at).toLocaleString('id-ID') : '-'} | Diperbarui: {user?.updated_at ? new Date(user.updated_at).toLocaleString('id-ID') : '-'}
           </div>
         </div>
+        </>
       ) : (
         <div className="text-center text-red-600 flex flex-col items-center gap-2">
           <FaUserCircle className="text-5xl mb-2 text-red-300" />
