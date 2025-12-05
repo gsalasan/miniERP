@@ -24,6 +24,7 @@ const createService = async (req: Request, res: Response) => {
       rekomendasi_tim_ids,
       fase_proyek_id,
       sbu_id,
+      category,
       unit,
       default_duration,
       is_active,
@@ -67,6 +68,7 @@ const createService = async (req: Request, res: Response) => {
       rekomendasi_tim_ids,
       fase_proyek_id,
       sbu_id,
+      category,
       unit,
       default_duration: default_duration ? parseFloat(default_duration) : undefined,
       is_active,
@@ -240,6 +242,7 @@ const updateService = async (req: Request, res: Response) => {
       deskripsi_id,
       deskripsi_text,
       rekomendasi_tim_ids,
+      category,
       unit,
       default_duration,
       is_active,
@@ -276,6 +279,7 @@ const updateService = async (req: Request, res: Response) => {
       updateData.deskripsi_text = deskripsi_text;
     }
     if (rekomendasi_tim_ids !== undefined) updateData.rekomendasi_tim_ids = rekomendasi_tim_ids;
+    if (category !== undefined) updateData.category = category;
     if (unit !== undefined) updateData.unit = unit;
     if (default_duration !== undefined) updateData.default_duration = parseFloat(default_duration);
     if (is_active !== undefined) updateData.is_active = is_active;

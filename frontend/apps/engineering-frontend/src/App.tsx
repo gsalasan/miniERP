@@ -1,6 +1,6 @@
-import React, { useEffect, useState } from "react";
+import React from "react";
 import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
-import { CssBaseline, ThemeProvider, createTheme } from "@mui/material";
+import { CssBaseline, ThemeProvider, createTheme, Box, CircularProgress } from "@mui/material";
 import { Layout } from "./layouts/Layout";
 import { DashboardPage } from "./pages/DashboardPage";
 import { ItemsPage } from "./pages/items";
@@ -16,7 +16,7 @@ import {
 } from "./pages/estimations";
 import { EngineeringDashboardPage } from "./pages/dashboard/EngineeringDashboardPage";
 import { NotificationProvider } from "./contexts/NotificationContext";
-import { AuthProvider } from "./context/AuthContext";
+import { AuthProvider, useAuth } from "./context/AuthContext";
 
 // Create modern MUI theme
 const theme = createTheme({
@@ -298,79 +298,75 @@ const theme = createTheme({
   },
 });
 
-function App() {
-  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
-  const [loading, setLoading] = useState<boolean>(true);
+// Protected Routes Component
+const ProtectedRoutes: React.FC = () => {
+  const { isAuthenticated, isLoading } = useAuth();
 
-  // On initial load, accept token passed via URL (?token=...) and store it in localStorage
-  useEffect(() => {
-    try {
-      const params = new URLSearchParams(window.location.search);
-      const token = params.get('token');
-      if (token) {
-        localStorage.setItem('token', token);
-        // Remove token from URL to avoid leaking it in history
-        params.delete('token');
-        const newSearch = params.toString();
-        const newUrl = window.location.pathname + (newSearch ? `?${newSearch}` : '') + window.location.hash;
-        window.history.replaceState({}, document.title, newUrl);
-      }
-    } catch (e) {
-      // ignore
-    }
-  }, []);
-
-  useEffect(() => {
-    // For now, skip authentication to test the app works
-    setIsAuthenticated(true);
-    setLoading(false);
-
-    // TODO: Re-enable authentication once cross-app navigation is working
-    // checkAuthentication();
-  }, []);
-
-  if (loading) {
+  if (isLoading) {
     return (
-      <div
-        style={{
-          display: "flex",
-          justifyContent: "center",
-          alignItems: "center",
-          height: "100vh",
-          flexDirection: "column",
-          gap: "16px",
-        }}
+      <Box
+        display="flex"
+        justifyContent="center"
+        alignItems="center"
+        minHeight="100vh"
+        flexDirection="column"
+        gap={2}
       >
-        <div style={{ fontSize: "24px" }}>⏳</div>
-        <div>Memuat aplikasi Cost Estimation...</div>
-      </div>
+        <CircularProgress size={48} />
+        <div>Memuat aplikasi Engineering...</div>
+      </Box>
     );
   }
 
+  if (!isAuthenticated) {
+    // Redirect to main dashboard if not authenticated
+    console.log('[APP] Not authenticated, redirecting to main dashboard...');
+    const mainDashboardUrl = `${window.location.protocol}//${window.location.hostname}:3000/?redirect=engineering-frontend`;
+    window.location.href = mainDashboardUrl;
+    return (
+      <Box
+        display="flex"
+        justifyContent="center"
+        alignItems="center"
+        minHeight="100vh"
+        flexDirection="column"
+        gap={2}
+      >
+        <CircularProgress size={48} />
+        <div>Redirecting to login...</div>
+      </Box>
+    );
+  }
+
+  return (
+    <Layout>
+      <Routes>
+        <Route path="/" element={<Navigate to="/dashboard" replace />} />
+        <Route path="/dashboard" element={<DashboardPage />} />
+        <Route path="/dashboard/engineering" element={<EngineeringDashboardPage />} />
+        <Route path="/items" element={<ItemsPage />} />
+        <Route path="/items/materials" element={<MaterialsPage />} />
+        <Route path="/items/services" element={<ServicesPage />} />
+        <Route path="/estimations" element={<EstimationsListPage />} />
+        <Route path="/estimations/queue" element={<EstimationQueuePage />} />
+        <Route path="/estimations/approval-queue" element={<ApprovalQueuePage />} />
+        <Route path="/estimations/request-demo" element={<EstimationRequestDemoPage />} />
+        <Route path="/estimations/:id" element={<EstimationCalculatorPage />} />
+        <Route path="/estimations/:id/view" element={<EstimationCalculatorPage />} />
+        <Route path="/estimations/:id/review" element={<EstimationReviewPage />} />
+      </Routes>
+    </Layout>
+  );
+};
+
+function App() {
   return (
     <ThemeProvider theme={theme}>
       <CssBaseline />
       <AuthProvider>
         <NotificationProvider>
           <Router>
-            <Layout>
-              <Routes>
-                <Route path="/" element={<Navigate to="/dashboard" replace />} />
-                <Route path="/dashboard" element={<DashboardPage />} />
-                <Route path="/dashboard/engineering" element={<EngineeringDashboardPage />} />
-                <Route path="/items" element={<ItemsPage />} />
-                <Route path="/items/materials" element={<MaterialsPage />} />
-                <Route path="/items/services" element={<ServicesPage />} />
-                <Route path="/estimations" element={<EstimationsListPage />} />
-                <Route path="/estimations/queue" element={<EstimationQueuePage />} />
-                <Route path="/estimations/approval-queue" element={<ApprovalQueuePage />} />
-                <Route path="/estimations/request-demo" element={<EstimationRequestDemoPage />} />
-                <Route path="/estimations/:id" element={<EstimationCalculatorPage />} />
-                <Route path="/estimations/:id/view" element={<EstimationCalculatorPage />} />
-                <Route path="/estimations/:id/review" element={<EstimationReviewPage />} />
-                {/* Add more routes as needed */}
-              </Routes>
-            </Layout>
+            <ProtectedRoutes />
           </Router>
         </NotificationProvider>
       </AuthProvider>

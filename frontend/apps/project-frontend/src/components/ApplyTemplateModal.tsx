@@ -13,8 +13,13 @@ import {
   Alert,
   CircularProgress,
   Box,
+  Stack,
+  IconButton,
 } from '@mui/material';
+import { Settings as SettingsIcon } from '@mui/icons-material';
+import { useNavigate } from 'react-router-dom';
 import { projectApi } from '../api/projectApi';
+import { notify } from './NotificationCenter';
 import type { MilestoneTemplate } from '../types';
 
 interface ApplyTemplateModalProps {
@@ -30,6 +35,7 @@ const ApplyTemplateModal = ({
   onApply,
   projectId,
 }: ApplyTemplateModalProps) => {
+  const navigate = useNavigate();
   const [templates, setTemplates] = useState<MilestoneTemplate[]>([]);
   const [selectedTemplateId, setSelectedTemplateId] = useState<number | null>(
     null
@@ -60,21 +66,57 @@ const ApplyTemplateModal = ({
   const handleApply = async () => {
     if (!selectedTemplateId) return;
 
+    const selectedTemplate = templates.find(t => t.id === selectedTemplateId);
+    const templateName = selectedTemplate?.template_name || 'template';
+
     try {
       setApplying(true);
       setError(null);
+      notify('Applying template to your project...', { 
+        severity: 'info',
+        title: '🚀 Applying Template'
+      });
       await projectApi.applyMilestoneTemplate(projectId, selectedTemplateId);
+      notify(
+        `"${templateName}" has been applied. All milestones are now ready!`,
+        { 
+          severity: 'success',
+          title: '✨ Template Applied',
+          duration: 5000
+        }
+      );
       onApply();
     } catch (err: any) {
-      setError(err.message || 'Failed to apply template');
+      const message = err.message || 'Unable to apply template';
+      setError(message);
+      notify(message, { 
+        severity: 'error',
+        title: '❌ Apply Failed'
+      });
     } finally {
       setApplying(false);
     }
   };
 
+  const handleManageTemplates = () => {
+    navigate('/templates');
+    onClose();
+  };
+
   return (
     <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
-      <DialogTitle>Apply Milestone Template</DialogTitle>
+      <DialogTitle>
+        <Stack direction="row" alignItems="center" justifyContent="space-between">
+          <span>Apply Milestone Template</span>
+          <IconButton
+            size="small"
+            onClick={handleManageTemplates}
+            title="Manage Templates"
+          >
+            <SettingsIcon />
+          </IconButton>
+        </Stack>
+      </DialogTitle>
       <DialogContent>
         {error && (
           <Alert severity="error" sx={{ mb: 2 }}>

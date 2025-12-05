@@ -23,6 +23,7 @@ interface AssignPmModalProps {
   onClose: () => void;
   projectId: string;
   projectName: string;
+  currentPmId?: string; // Add current PM ID to pre-select
   onSuccess: () => void;
 }
 
@@ -31,6 +32,7 @@ const AssignPmModal: React.FC<AssignPmModalProps> = ({
   onClose,
   projectId,
   projectName,
+  currentPmId,
   onSuccess,
 }) => {
   const [projectManagers, setProjectManagers] = useState<ProjectManager[]>([]);
@@ -41,9 +43,10 @@ const AssignPmModal: React.FC<AssignPmModalProps> = ({
 
   useEffect(() => {
     if (open) {
+      setSelectedPmId(currentPmId || '');
       fetchProjectManagers();
     }
-  }, [open]);
+  }, [open, currentPmId]);
 
   const fetchProjectManagers = async () => {
     setFetchingPMs(true);
@@ -61,16 +64,11 @@ const AssignPmModal: React.FC<AssignPmModalProps> = ({
   };
 
   const handleSubmit = async () => {
-    if (!selectedPmId) {
-      setError('Please select a Project Manager');
-      return;
-    }
-
     setLoading(true);
     setError(null);
 
     try {
-      await projectApi.assignPm(projectId, selectedPmId);
+      await projectApi.assignPm(projectId, selectedPmId || null);
       onSuccess();
       handleClose();
     } catch (err: any) {
@@ -92,7 +90,7 @@ const AssignPmModal: React.FC<AssignPmModalProps> = ({
 
   return (
     <Dialog open={open} onClose={handleClose} maxWidth="sm" fullWidth>
-      <DialogTitle>Tugaskan Project Manager</DialogTitle>
+      <DialogTitle>{currentPmId ? 'Ubah Project Manager' : 'Tugaskan Project Manager'}</DialogTitle>
       <DialogContent>
         <Box sx={{ mb: 2, mt: 1 }}>
           <Typography variant="body2" color="text.secondary">
@@ -123,6 +121,9 @@ const AssignPmModal: React.FC<AssignPmModalProps> = ({
               label="Project Manager"
               disabled={loading}
             >
+              <MenuItem value="">
+                <em>Belum ditugaskan</em>
+              </MenuItem>
               {projectManagers.map((pm) => (
                 <MenuItem key={pm.id} value={pm.id}>
                   <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
@@ -158,9 +159,9 @@ const AssignPmModal: React.FC<AssignPmModalProps> = ({
         <Button
           onClick={handleSubmit}
           variant="contained"
-          disabled={loading || !selectedPmId}
+          disabled={loading}
         >
-          {loading ? <CircularProgress size={24} /> : 'Konfirmasi'}
+          {loading ? <CircularProgress size={24} /> : (selectedPmId ? 'Konfirmasi' : 'Hapus Penugasan')}
         </Button>
       </DialogActions>
     </Dialog>

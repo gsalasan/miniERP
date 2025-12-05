@@ -252,8 +252,24 @@ export class AttendanceService {
       };
     });
 
+    // Helper to format Date to HH:mm (24h) in Asia/Jakarta
+    function formatTimeJakarta(date?: Date | string | null): string {
+      if (!date) return '';
+      const d = dayjs(date).tz('Asia/Jakarta');
+      if (!d.isValid()) return '';
+      return d.format('HH:mm');
+    }
+
+    // Add 'jam' field to each record
+    const dataWithJam = data.map((item) => ({
+      ...item,
+      jam: item.check_in_time || item.check_out_time
+        ? `${formatTimeJakarta(item.check_in_time)} - ${formatTimeJakarta(item.check_out_time)}`
+        : '',
+    }));
+
     return {
-      data,
+      data: dataWithJam,
       pagination: {
         page,
         limit,

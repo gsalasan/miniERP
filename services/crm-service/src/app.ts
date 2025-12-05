@@ -9,6 +9,10 @@ import quotationRoutes from './routes/quotationRoutes';
 import discountApprovalRoutes from './routes/discountApprovalRoutes';
 import discountPolicyRoutes from './routes/discountPolicyRoutes';
 import salesOrderRoutes from './routes/salesOrderRoutes';
+import dashboardRoutes from './routes/dashboardRoutes';
+import incentiveRoutes from './routes/incentiveRoutes';
+import topRoutes from './routes/topRoutes';
+import opportunityRoutes from './routes/opportunityRoutes';
 
 dotenv.config();
 
@@ -64,6 +68,10 @@ app.use('/api/v1/quotations', quotationRoutes);
 app.use('/api/v1/estimations', discountApprovalRoutes);
 app.use('/api/v1/discount-policies', discountPolicyRoutes);
 app.use('/api/v1/sales-orders', salesOrderRoutes);
+app.use('/api/v1/dashboards', dashboardRoutes);
+app.use('/api/v1/sales/incentives', incentiveRoutes);
+app.use('/api/v1', topRoutes); // TOP management routes
+app.use('/api/v1', opportunityRoutes); // Opportunity/Pipeline routes
 
 // Health check
 app.get('/health', (_, res) => res.json({ ok: true }));

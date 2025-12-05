@@ -120,6 +120,34 @@ export class TaskController {
       });
     }
   }
+
+  /**
+   * Get Gantt chart data
+   * GET /api/v1/projects/:projectId/gantt
+   */
+  async getGanttData(req: Request, res: Response) {
+    try {
+      const { projectId } = req.params;
+      const userId = req.user?.id;
+
+      if (!userId) {
+        return res.status(401).json({ message: 'Unauthorized' });
+      }
+
+      const ganttData = await taskService.getGanttData(projectId);
+
+      return res.status(200).json({
+        success: true,
+        data: ganttData,
+      });
+    } catch (error: any) {
+      console.error('Error fetching Gantt data:', error);
+      return res.status(error.statusCode || 500).json({
+        success: false,
+        message: error.message || 'Failed to fetch Gantt data',
+      });
+    }
+  }
 }
 
 export const taskController = new TaskController();

@@ -3,9 +3,9 @@ import prisma from '../prisma/client';
 
 export const getProjects = async (req: Request, res: Response) => {
   try {
-    const projects = await prisma.project.findMany({
+    const projects = await prisma.projects.findMany({
       include: {
-        customer: true,
+        customers: true,
         estimations: true,
         project_boms: true,
         milestones: true,
@@ -21,10 +21,10 @@ export const getProjects = async (req: Request, res: Response) => {
 export const getProjectById = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
-    const project = await prisma.project.findUnique({
+    const project = await prisma.projects.findUnique({
       where: { id },
       include: {
-        customer: true,
+        customers: true,
         estimations: true,
         project_boms: true,
         milestones: true,
@@ -41,7 +41,7 @@ export const getProjectById = async (req: Request, res: Response) => {
 export const createProject = async (req: Request, res: Response) => {
   try {
     const data = req.body;
-    const project = await prisma.project.create({ data });
+    const project = await prisma.projects.create({ data });
     res.status(201).json(project);
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
@@ -53,7 +53,7 @@ export const updateProject = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
     const data = req.body;
-    const project = await prisma.project.update({ where: { id }, data });
+    const project = await prisma.projects.update({ where: { id }, data });
     res.json(project);
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
@@ -64,7 +64,7 @@ export const updateProject = async (req: Request, res: Response) => {
 export const deleteProject = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
-    await prisma.project.delete({ where: { id } });
+    await prisma.projects.delete({ where: { id } });
     res.status(204).end();
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);

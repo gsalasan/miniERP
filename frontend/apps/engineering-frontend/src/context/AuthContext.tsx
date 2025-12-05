@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect, useRef, ReactNode } from "react";
+import React, { createContext, useContext, useState, useEffect, ReactNode } from "react";
 import { identityApi } from "../api/identityApi";
 
 export interface User {
@@ -11,10 +11,11 @@ export interface User {
 interface AuthContextType {
   user: User | null;
   token: string | null;
-  login: (email: string, password: string) => Promise<void>;
+  login: (token: string, userData: User) => void;
   logout: () => void;
   isAuthenticated: boolean;
   isLoading: boolean;
+  refreshUser: () => Promise<void>;
   
   // Role helper functions
   hasRole: (role: string) => boolean;
@@ -48,112 +49,141 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [token, setToken] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  // Load user from localStorage on mount
-  const previousTokenRef = useRef<string | null>(null);
-
-  // Central bootstrap: always prefer URL token if present, otherwise localStorage. If token changes, refresh user.
   useEffect(() => {
-    const urlParams = new URLSearchParams(window.location.search);
-    const tokenFromUrl = urlParams.get("token");
+    bootstrapTokenAndUser();
+  }, []);
 
-    console.log("🚀 AuthContext init - tokenFromUrl:", !!tokenFromUrl);
+  // Bootstrap similar to project-frontend: URL token > fresh cross-app token > stored token
+  const bootstrapTokenAndUser = async () => {
+    try {
+      console.log('[AUTH] Bootstrap starting...');
+      const params = new URLSearchParams(window.location.search);
+      // Accept both `token` (legacy) and `cross_app_token` (main dashboard)
+      const urlToken = params.get('token') || params.get('cross_app_token');
+      let activeToken: string | null = null;
 
-    if (tokenFromUrl) {
-      // Always override token if provided in URL
-      console.log("✅ Token found in URL, saving to localStorage");
-      localStorage.setItem("token", tokenFromUrl);
-      setToken(tokenFromUrl);
-      // Remove token param from URL
-      urlParams.delete("token");
-      const newSearch = urlParams.toString();
-      const newUrl = window.location.pathname + (newSearch ? `?${newSearch}` : "");
-      window.history.replaceState({}, document.title, newUrl);
-    } else {
-      // Check for cross-app token from main dashboard
-      const crossAppToken = localStorage.getItem("cross_app_token");
-      const crossAppUser = localStorage.getItem("cross_app_user");
-      const crossAppTimestamp = localStorage.getItem("cross_app_timestamp");
-      
-      console.log("🔍 Checking cross-app token:", {
-        hasToken: !!crossAppToken,
-        hasUser: !!crossAppUser,
-        timestamp: crossAppTimestamp,
-      });
-      
-      // Use cross_app_token if fresh (within 30 seconds)
-      if (crossAppToken && crossAppTimestamp) {
-        const age = Date.now() - parseInt(crossAppTimestamp, 10);
-        console.log("⏱️ Token age:", age, "ms (max 30000ms)");
-        
-        if (age < 30000) { // 30 detik
-          console.log("✅ Using cross-app token");
-          localStorage.setItem("token", crossAppToken);
-          setToken(crossAppToken);
-          
-          // Set user jika tersedia
-          if (crossAppUser) {
-            try {
-              const parsedUser = JSON.parse(crossAppUser);
-              // Map ke format User kita
-              const mappedUser: User = {
-                userId: parsedUser.userId || parsedUser.id || "",
-                email: parsedUser.email || "",
-                name: parsedUser.name || parsedUser.full_name || parsedUser.email || "",
-                roles: parsedUser.roles || [],
-              };
-              setUser(mappedUser);
-              localStorage.setItem("user", JSON.stringify(mappedUser));
-              console.log("👤 User set from cross-app:", mappedUser.email);
-            } catch (e) {
-              console.error("Failed to parse cross_app_user", e);
+      if (urlToken) {
+        console.log('[AUTH] Token found in URL, length:', urlToken.length);
+        localStorage.setItem('token', urlToken);
+        activeToken = urlToken;
+        // remove both possible param names from URL
+        params.delete('token');
+        params.delete('cross_app_token');
+        const cleaned = params.toString();
+        const newUrl = window.location.pathname + (cleaned ? `?${cleaned}` : '');
+        window.history.replaceState({}, '', newUrl);
+        console.log('[AUTH] URL cleaned');
+      } else {
+        console.log('[AUTH] No URL token, checking cross_app_token...');
+        const crossToken = localStorage.getItem('cross_app_token');
+        const crossUser = localStorage.getItem('cross_app_user');
+        const crossTs = localStorage.getItem('cross_app_timestamp');
+        if (crossToken && crossTs) {
+          const age = Date.now() - parseInt(crossTs, 10);
+          console.log('[AUTH] Cross-app token age:', age, 'ms');
+          if (age < 30000) {
+            // 30s freshness window
+            console.log('[AUTH] Using cross-app token');
+            localStorage.setItem('token', crossToken);
+            activeToken = crossToken;
+            if (crossUser) {
+              try {
+                const raw = JSON.parse(crossUser);
+                const mapped: User = {
+                  userId: raw.id || raw.userId || '',
+                  email: raw.email,
+                  name: raw.full_name || raw.name,
+                  roles: raw.roles || [],
+                };
+                setUser(mapped);
+                localStorage.setItem('user', JSON.stringify(mapped));
+                console.log('[AUTH] Cross-app user set:', mapped.email);
+              } catch (e) {
+                console.log('[AUTH] Failed to parse cross-app user');
+              }
             }
+          } else {
+            console.log('[AUTH] Cross-app token expired');
           }
-          
-          // Clean up cross-app data setelah digunakan
-          localStorage.removeItem("cross_app_token");
-          localStorage.removeItem("cross_app_user");
-          localStorage.removeItem("cross_app_timestamp");
+          // Clean up cross-app residue regardless
+          localStorage.removeItem('cross_app_token');
+          localStorage.removeItem('cross_app_user');
+          localStorage.removeItem('cross_app_timestamp');
         } else {
-          console.log("⚠️ Token expired, age:", age);
+          console.log('[AUTH] No cross-app token');
         }
       }
-      
-      const storedToken = localStorage.getItem("token");
-      if (storedToken) setToken(storedToken);
-    }
 
-    const initToken = localStorage.getItem("token") || tokenFromUrl || null;
-    previousTokenRef.current = initToken;
+      if (!activeToken) {
+        activeToken = localStorage.getItem('token');
+        console.log(
+          '[AUTH] Using stored token:',
+          activeToken ? 'exists' : 'none'
+        );
+      }
 
-    if (initToken) {
-      refreshUser(initToken).finally(() => setIsLoading(false));
-    } else {
+      if (activeToken) {
+        console.log(
+          '[AUTH] Setting token to state, length:',
+          activeToken.length
+        );
+        setToken(activeToken);
+        console.log('[AUTH] Token state updated, checking cached user...');
+        const cachedUser = localStorage.getItem('user');
+        if (cachedUser) {
+          try {
+            const parsed = JSON.parse(cachedUser);
+            setUser(parsed);
+            console.log('[AUTH] Using cached user:', parsed.email);
+            console.log('[AUTH] Setting isLoading to FALSE (cached path)');
+            setIsLoading(false);
+            // Also refresh silently in background
+            refreshUser(activeToken, true);
+            return;
+          } catch {
+            console.log('[AUTH] Cached user parse failed');
+          }
+        }
+        console.log('[AUTH] Fetching user from server...');
+        await refreshUser(activeToken);
+      } else {
+        console.log('[AUTH] No token found anywhere');
+        console.log('[AUTH] Setting isLoading to FALSE (no token)');
+        setIsLoading(false);
+      }
+    } catch (err) {
+      console.error('[AUTH] Bootstrap failed:', err);
       setIsLoading(false);
     }
+  };
 
-    // Listen for token/user changes from other tabs or programmatic updates
-    const onStorage = (e: StorageEvent) => {
-      if (e.key === "token" && e.newValue && e.newValue !== previousTokenRef.current) {
-        previousTokenRef.current = e.newValue;
+  // Listen for storage events (cross-tab synchronization)
+  useEffect(() => {
+    const handleStorageChange = (e: StorageEvent) => {
+      if (e.key === 'token' && e.newValue) {
+        console.log('[AUTH] Token changed in another tab');
         setToken(e.newValue);
         refreshUser(e.newValue);
       }
-      if (e.key === "user" && e.newValue) {
+      if (e.key === 'user' && e.newValue) {
         try {
           const parsed = JSON.parse(e.newValue);
           setUser(parsed);
+          console.log('[AUTH] User synced from another tab');
         } catch {
-          // ignore
+          console.log('[AUTH] Failed to parse user from storage event');
         }
       }
     };
-    window.addEventListener("storage", onStorage);
-    return () => window.removeEventListener("storage", onStorage);
+
+    window.addEventListener('storage', handleStorageChange);
+    return () => window.removeEventListener('storage', handleStorageChange);
   }, []);
 
-  // Helper function untuk load dari localStorage
-  async function refreshUser(_activeToken: string) {
+  // Helper function untuk refresh user
+  async function refreshUser(_activeToken: string, silent = false) {
     try {
+      if (!silent) console.log('[AUTH] Refreshing user from API...');
       const profile = await identityApi.getCurrentUser();
       if (profile && (profile.id || profile.email)) {
         interface ProfileShape {
@@ -176,36 +206,46 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         localStorage.setItem("user", JSON.stringify(updatedUser));
         // token already set
       }
-    } catch {
+      if (!silent) console.log('[AUTH] User refreshed successfully');
+    } catch (err) {
+      if (!silent) console.log('[AUTH] Failed to refresh user:', err);
       // If fetching user fails, keep existing state
+    } finally {
+      if (!silent) {
+        console.log('[AUTH] Setting isLoading to FALSE');
+        setIsLoading(false);
+      }
     }
   }
 
-  const login = async (email: string, password: string) => {
-    const response = await identityApi.login(email, password);
-    if (!response.data.success) throw new Error(response.data.message || "Login failed");
-    const { token: newToken, data: userData } = response.data;
-    // Clear any stale cached user before setting new
-    localStorage.setItem("token", newToken);
+  const login = (newToken: string, userData: User) => {
+    console.log('[AUTH] Login called with token and user data');
     setToken(newToken);
-    const mappedUser: User = {
-      userId: userData.id,
-      email: userData.email,
-      name: userData.name || userData.email,
-      roles: userData.roles || [],
-    };
-    setUser(mappedUser);
-    localStorage.setItem("user", JSON.stringify(mappedUser));
-    previousTokenRef.current = newToken;
+    setUser(userData);
+    localStorage.setItem('token', newToken);
+    localStorage.setItem('user', JSON.stringify(userData));
   };
 
   const logout = () => {
+    console.log('[AUTH] Logout called');
     setUser(null);
     setToken(null);
     localStorage.removeItem("token");
     localStorage.removeItem("user");
-    // Do not full clear to preserve other app data
-    window.location.href = "/login";
+    localStorage.removeItem('cross_app_token');
+    localStorage.removeItem('cross_app_timestamp');
+    localStorage.removeItem('cross_app_user');
+    // Redirect to main dashboard
+    const mainDashboardUrl = `${window.location.protocol}//${window.location.hostname}:3000/?redirect=engineering-frontend`;
+    window.location.href = mainDashboardUrl;
+  };
+
+  // Public refresh function for external calls
+  const publicRefreshUser = async () => {
+    const currentToken = localStorage.getItem('token');
+    if (currentToken) {
+      await refreshUser(currentToken);
+    }
   };
 
   // Role helper functions
@@ -295,6 +335,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     logout,
     isAuthenticated: !!token && !!user,
     isLoading,
+    refreshUser: publicRefreshUser,
     hasRole,
     hasAnyRole,
     hasAllRoles,
