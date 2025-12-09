@@ -114,35 +114,50 @@
    MILESTONE STYLES
    ============================================ */
 
-/* TDD-015 Extended: Delay-based color system */
-/* Milestone - Purple */
+/* TDD-015 Extended: Status-based color system */
+/* Milestone - Brown/Maroon */
 .gantt .bar-wrapper.bar-milestone .bar {
-  fill: #9c27b0 !important;
-  stroke: #7b1fa2 !important;
+  fill: #6d4c41 !important;
+  stroke: #5d4037 !important;
 }
 
-/* Delayed >7 days - Red */
-.gantt .bar-wrapper.bar-red .bar {
-  fill: #e53935 !important;
-  stroke: #c62828 !important;
+/* TODO - Blue */
+.gantt .bar-wrapper.bar-todo .bar {
+  fill: #2196f3 !important;
+  stroke: #1976d2 !important;
 }
 
-/* Delayed 1-7 days - Orange */
-.gantt .bar-wrapper.bar-orange .bar {
-  fill: #ff9800 !important;
-  stroke: #ef6c00 !important;
-}
-
-/* In progress / on track - Yellow */
-.gantt .bar-wrapper.bar-yellow .bar {
-  fill: #ffeb3b !important;
-  stroke: #f9a825 !important;
-}
-
-/* Completed - Green */
-.gantt .bar-wrapper.bar-green .bar {
+/* In Progress - Green */
+.gantt .bar-wrapper.bar-in-progress .bar {
   fill: #4caf50 !important;
-  stroke: #2e7d32 !important;
+  stroke: #388e3c !important;
+}
+
+/* Done - Gray */
+.gantt .bar-wrapper.bar-done .bar {
+  fill: #9e9e9e !important;
+  stroke: #757575 !important;
+}
+
+/* Backwards compatibility: Red/Orange/Yellow removed, mapping to status */
+.gantt .bar-wrapper.bar-red .bar {
+  fill: #2196f3 !important;
+  stroke: #1976d2 !important;
+}
+
+.gantt .bar-wrapper.bar-orange .bar {
+  fill: #4caf50 !important;
+  stroke: #388e3c !important;
+}
+
+.gantt .bar-wrapper.bar-yellow .bar {
+  fill: #2196f3 !important;
+  stroke: #1976d2 !important;
+}
+
+.gantt .bar-wrapper.bar-green .bar {
+  fill: #9e9e9e !important;
+  stroke: #757575 !important;
 }
 
 /* Backwards compatibility: Old milestone styles */

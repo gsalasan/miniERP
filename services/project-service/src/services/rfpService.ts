@@ -5,9 +5,7 @@ interface CreateRfpData {
   items: Array<{
     itemId: string;
     itemType: 'MATERIAL' | 'SERVICE';
-    itemName: string;
     quantity: number;
-    unit?: string;
     notes?: string;
   }>;
   notes?: string;
@@ -40,53 +38,61 @@ export class RfpService {
     data: CreateRfpData,
     loggedInUserId: string
   ) {
-    // Fetch project details
-    const project = await prisma.projects.findUnique({
-      where: { id: projectId },
-      select: {
-        id: true,
-        project_name: true,
-        pm_user_id: true,
-      },
-    });
+    try {
+      console.log('[RFP] Creating RFP for project:', projectId);
+      console.log('[RFP] User:', loggedInUserId);
+      console.log('[RFP] Data:', JSON.stringify(data, null, 2));
 
-    if (!project) {
-      throw new Error('Project not found');
-    }
+      // Fetch project details
+      const project = await prisma.projects.findUnique({
+        where: { id: projectId },
+        select: {
+          id: true,
+          project_name: true,
+          pm_user_id: true,
+        },
+      });
 
-    // Authorization: Only PM can create RFP
-    if (project.pm_user_id !== loggedInUserId) {
-      throw new Error('Forbidden: Only the assigned PM can create RFP');
-    }
+      if (!project) {
+        throw new Error('Project not found');
+      }
 
-    // Fetch user details
-    const user = await prisma.users.findUnique({
-      where: { id: loggedInUserId },
-      include: {
-        employees: {
-          select: {
-            full_name: true,
+      console.log('[RFP] Project found:', project.project_name);
+      console.log('[RFP] PM user ID:', project.pm_user_id);
+
+      // Authorization: Only PM can create RFP
+      if (project.pm_user_id !== loggedInUserId) {
+        throw new Error('Forbidden: Only the assigned PM can create RFP');
+      }
+
+      // Fetch user details
+      const user = await prisma.users.findUnique({
+        where: { id: loggedInUserId },
+        include: {
+          employees: {
+            select: {
+              full_name: true,
+            },
           },
         },
-      },
-    });
+      });
 
-    if (!user) {
-      throw new Error('User not found');
-    }
+      if (!user) {
+        throw new Error('User not found');
+      }
 
-    const requesterName = user.employees?.full_name || user.email;
+      const requesterName = user.employees?.full_name || user.email;
 
-    // Validate input
-    if (!data.items || data.items.length === 0) {
-      throw new Error('RFP must contain at least one item');
-    }
+      // Validate input
+      if (!data.items || data.items.length === 0) {
+        throw new Error('RFP must contain at least one item');
+      }
 
-    // Generate RFP number
-    const rfpNumber = await this.generateRfpNumber();
+      // Generate RFP number
+      const rfpNumber = await this.generateRfpNumber();
 
-    // Create RFP within transaction
-    const rfp = await prisma.$transaction(async (tx) => {
+      // Create RFP within transaction
+      const rfp = await prisma.$transaction(async (tx) => {
       // Create RFP header
       const newRfp = await tx.request_for_purchases.create({
         data: {
@@ -103,23 +109,76 @@ export class RfpService {
         },
       });
 
-      // Create RFP items
-      const rfpItemsData = data.items.map((item) => ({
-        id: randomUUID(),
-        rfp_id: newRfp.id,
-        item_name: item.itemName,
-        item_type: item.itemType,
-        material_id: item.itemType === 'MATERIAL' ? item.itemId : null,
-        service_id: item.itemType === 'SERVICE' ? item.itemId : null,
-        quantity: item.quantity,
-        unit: item.unit || null,
-        notes: item.notes || null,
-        created_at: new Date(),
-      }));
+      // Create RFP items - Fetch item details from database
+      const rfpItemsData = [];
+      
+      for (const item of data.items) {
+        console.log('[RFP] Processing item:', item);
+        let itemName = '';
+        let unit = '';
+
+        if (item.itemType === 'MATERIAL') {
+          console.log('[RFP] Looking up material:', item.itemId);
+          const material = await tx.material.findUnique({
+            where: { id: item.itemId },
+            select: { item_name: true, satuan: true },
+          });
+          if (!material) {
+            console.error('[RFP] Material not found:', item.itemId);
+            throw new Error(`Material with ID ${item.itemId} not found`);
+          }
+          console.log('[RFP] Material found:', material);
+          itemName = material.item_name;
+          unit = material.satuan || '';
+        } else if (item.itemType === 'SERVICE') {
+          console.log('[RFP] Looking up service:', item.itemId);
+          const service = await tx.service.findUnique({
+            where: { id: item.itemId },
+            select: { service_name: true, unit: true },
+          });
+          if (!service) {
+            console.error('[RFP] Service not found:', item.itemId);
+            throw new Error(`Service with ID ${item.itemId} not found`);
+          }
+          console.log('[RFP] Service found:', service);
+          itemName = service.service_name;
+          unit = service.unit || '';
+        } else {
+          throw new Error(`Invalid item type: ${item.itemType}`);
+        }
+
+        rfpItemsData.push({
+          id: randomUUID(),
+          rfp_id: newRfp.id,
+          item_name: itemName,
+          item_type: item.itemType,
+          material_id: item.itemType === 'MATERIAL' ? item.itemId : null,
+          service_id: item.itemType === 'SERVICE' ? item.itemId : null,
+          quantity: item.quantity,
+          unit: unit || null,
+          notes: item.notes || null,
+          created_at: new Date(),
+        });
+      }
 
       await tx.rfp_items.createMany({
         data: rfpItemsData,
       });
+
+      // Update BoM items status to RFP_SUBMITTED
+      console.log('[RFP] Updating BoM items status to RFP_SUBMITTED');
+      for (const item of data.items) {
+        await tx.project_boms.updateMany({
+          where: {
+            project_id: projectId,
+            item_id: item.itemId,
+            item_type: item.itemType as any,
+          },
+          data: {
+            procurement_status: 'RFP_SUBMITTED',
+          },
+        });
+      }
 
       // Fetch complete RFP with items
       const completeRfp = await tx.request_for_purchases.findUnique({
@@ -129,17 +188,17 @@ export class RfpService {
         },
       });
 
-      return completeRfp;
-    });
+        return completeRfp;
+      });
 
-    // TODO: Send notification to Admin Project role
-    // NotificationService.send({
-    //   role: 'ADMIN_PROJECT',
-    //   message: `RFP baru (${rfpNumber}) untuk proyek ${project.project_name} telah dibuat dan menunggu diproses.`,
-    //   link: `/procurement/rfp/${rfp!.id}`,
-    // });
+      console.log('[RFP] Transaction completed. RFP created:', rfp?.rfp_number);
 
-    return rfp;
+
+      return rfp;
+    } catch (error) {
+      console.error('[RFP] Error creating RFP:', error);
+      throw error;
+    }
   }
 
   /**
@@ -162,7 +221,7 @@ export class RfpService {
               select: {
                 id: true,
                 service_name: true,
-                service_category: true,
+                category: true,
               },
             },
           },
@@ -197,7 +256,7 @@ export class RfpService {
               select: {
                 id: true,
                 service_name: true,
-                service_category: true,
+                category: true,
               },
             },
           },

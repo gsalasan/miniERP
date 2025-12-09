@@ -186,6 +186,114 @@ export class MilestoneController {
       });
     }
   }
+
+  /**
+   * Create milestone template
+   * POST /api/v1/templates/milestones
+   */
+  async createTemplate(req: Request, res: Response) {
+    try {
+      const userId = req.user?.id;
+
+      if (!userId) {
+        return res.status(401).json({ message: 'Unauthorized' });
+      }
+
+      const { template_name, project_type, milestones } = req.body;
+
+      if (!template_name || !milestones || !Array.isArray(milestones)) {
+        return res.status(400).json({
+          success: false,
+          message: 'Template name and milestones array are required',
+        });
+      }
+
+      const template = await milestoneService.createTemplate({
+        template_name,
+        project_type,
+        milestones,
+      });
+
+      return res.status(201).json({
+        success: true,
+        data: template,
+        message: 'Template created successfully',
+      });
+    } catch (error: any) {
+      console.error('Error creating template:', error);
+      return res.status(500).json({
+        success: false,
+        message: error.message || 'Failed to create template',
+      });
+    }
+  }
+
+  /**
+   * Update milestone template
+   * PUT /api/v1/templates/milestones/:templateId
+   */
+  async updateTemplate(req: Request, res: Response) {
+    try {
+      const userId = req.user?.id;
+
+      if (!userId) {
+        return res.status(401).json({ message: 'Unauthorized' });
+      }
+
+      const { templateId } = req.params;
+      const { template_name, project_type, milestones } = req.body;
+
+      const template = await milestoneService.updateTemplate(
+        parseInt(templateId),
+        {
+          template_name,
+          project_type,
+          milestones,
+        }
+      );
+
+      return res.status(200).json({
+        success: true,
+        data: template,
+        message: 'Template updated successfully',
+      });
+    } catch (error: any) {
+      console.error('Error updating template:', error);
+      return res.status(error.statusCode || 500).json({
+        success: false,
+        message: error.message || 'Failed to update template',
+      });
+    }
+  }
+
+  /**
+   * Delete milestone template
+   * DELETE /api/v1/templates/milestones/:templateId
+   */
+  async deleteTemplate(req: Request, res: Response) {
+    try {
+      const userId = req.user?.id;
+
+      if (!userId) {
+        return res.status(401).json({ message: 'Unauthorized' });
+      }
+
+      const { templateId } = req.params;
+
+      await milestoneService.deleteTemplate(parseInt(templateId));
+
+      return res.status(200).json({
+        success: true,
+        message: 'Template deleted successfully',
+      });
+    } catch (error: any) {
+      console.error('Error deleting template:', error);
+      return res.status(error.statusCode || 500).json({
+        success: false,
+        message: error.message || 'Failed to delete template',
+      });
+    }
+  }
 }
 
 export const milestoneController = new MilestoneController();
