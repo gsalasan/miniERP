@@ -11,6 +11,8 @@ import {
   AllowanceCategoryLabels
 } from '../enums/employeeEnums';
 import { PTKP_OPTIONS, normalizeNpwp, isValidNpwp } from '../utils/tax';
+import hrClient from '../api/client';
+import API_CONFIG from '../config';
 
 interface EmployeeEditProps {
   id: string;
@@ -47,10 +49,11 @@ function EmployeeEdit({ id, onClose }: EmployeeEditProps) {
   useEffect(() => {
     async function fetchEmployees() {
       try {
-        const res = await fetch('http://localhost:4004/api/v1/employees');
-        if (!res.ok) throw new Error('Failed to load employees');
-        const payload = await res.json();
-        setEmployees(payload.data || []);
+        const response = await hrClient.get<{ success?: boolean; data?: any[] }>('/employees');
+        const employeeData: any[] = Array.isArray(response.data?.data)
+          ? response.data.data
+          : Array.isArray(response.data) ? response.data : [];
+        setEmployees(employeeData);
       } catch (err) {
         console.error('Failed to load employees:', err);
       }
@@ -61,10 +64,8 @@ function EmployeeEdit({ id, onClose }: EmployeeEditProps) {
   useEffect(() => {
     async function fetchData() {
       try {
-        const res = await fetch(`http://localhost:4004/api/v1/employees/${id}`);
-        if (!res.ok) throw new Error('Failed to load data');
-        const payload = await res.json();
-        const emp = payload.data || payload;
+        const response = await hrClient.get<{ success?: boolean; data?: any }>(`/employees/${id}`);
+        const emp = response.data.data || response.data;
         setForm({
           full_name: emp.full_name || '',
           position: emp.position || '',
@@ -99,7 +100,7 @@ function EmployeeEdit({ id, onClose }: EmployeeEditProps) {
           setAllowances([{ name: '', amount: '' }]);
         }
       } catch (e: any) {
-        setError(e.message || 'Failed to load data');
+        setError(e.message || API_CONFIG.OFFLINE_FALLBACK_MESSAGE);
       } finally {
         setLoading(false);
       }
@@ -157,30 +158,14 @@ function EmployeeEdit({ id, onClose }: EmployeeEditProps) {
     console.log('Payload:', JSON.stringify(filteredForm, null, 2));
     
     try {
-      const res = await fetch(`http://localhost:4004/api/v1/employees/${id}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ...filteredForm, allowances }),
-      });
-      if (res.ok) {
-        setShowModal(true);
-        setTimeout(() => {
-          setShowModal(false);
-          onClose();
-        }, 1500);
-      } else {
-        let errMsg = 'Failed to update data';
-        try {
-          const err = await res.json();
-          errMsg = err.message || errMsg;
-        } catch (err) {
-          // response not JSON, possibly HTML error
-          errMsg = 'Server error: ' + res.status;
-        }
-        setError(errMsg);
-      }
+      await hrClient.put(`/employees/${id}`, { ...filteredForm, allowances });
+      setShowModal(true);
+      setTimeout(() => {
+        setShowModal(false);
+        onClose();
+      }, 1500);
     } catch (e: any) {
-      setError(e.message || 'Failed to update data');
+      setError(e.message || API_CONFIG.OFFLINE_FALLBACK_MESSAGE);
     }
   };
 
@@ -190,7 +175,7 @@ function EmployeeEdit({ id, onClose }: EmployeeEditProps) {
     <>
   <div className="fixed inset-0 z-40 bg-black/30" onClick={onClose}></div>
     <div className="fixed inset-0 z-50 flex items-center justify-center px-2">
-  <div className="w-full max-w-xl min-w-[340px] mx-auto bg-gradient-to-br from-gray-50 to-white rounded-2xl shadow-2xl border border-gray-200 animate-fade-in relative overflow-hidden">
+  <div className="w-full max-w-xl min-w-[340px] mx-auto bg-linear-to-br from-gray-50 to-white rounded-2xl shadow-2xl border border-gray-200 animate-fade-in relative overflow-hidden">
   <div className="py-10 px-8 max-h-[90vh] overflow-y-auto">
           <div className="flex items-center gap-3 mb-6">
             <button onClick={onClose} className="text-gray-500 hover:text-blue-700 focus:outline-none" title="Close">
@@ -424,7 +409,7 @@ function EmployeeEdit({ id, onClose }: EmployeeEditProps) {
                 </button>
               </div>
             </div>
-            <button type="submit" className="w-full bg-gradient-to-r from-blue-700 to-blue-500 hover:from-blue-800 hover:to-blue-600 text-white py-3 rounded-xl font-bold text-lg shadow transition">Save Changes</button>
+            <button type="submit" className="w-full bg-linear-to-r from-blue-700 to-blue-500 hover:from-blue-800 hover:to-blue-600 text-white py-3 rounded-xl font-bold text-lg shadow transition">Save Changes</button>
             {error && <div className="text-red-600 mt-2 text-center">{error}</div>}
             {/* Success Modal - improved design */}
             {showModal && (

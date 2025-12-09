@@ -27,6 +27,7 @@ import {
   EmploymentTypeLabels,
   EmployeeStatusLabels
 } from '../enums/employeeEnums';
+import hrClient from '../api/client';
 
 interface UserInfo {
   id: string;
@@ -75,13 +76,19 @@ export default function EmployeeDetailModal({ id, onClose }: EmployeeDetailModal
   const [activeTab, setActiveTab] = useState<'info' | 'finance'>('info');
   
   useEffect(() => {
-    fetch(`http://localhost:4004/api/v1/employees/${id}`)
-      .then(res => res.json())
-      .then(data => {
-        console.log('Employee detail response:', data);
-        setEmployee(data.data || null);
+    const fetchEmployee = async () => {
+      try {
+        const response = await hrClient.get(`/employees/${id}`);
+        console.log('Employee detail response:', response.data);
+        setEmployee(response.data.data || null);
+      } catch (error) {
+        console.error('Error fetching employee detail:', error);
+        setEmployee(null);
+      } finally {
         setLoading(false);
-      });
+      }
+    };
+    fetchEmployee();
   }, [id]);
   // user dan allowances dideklarasikan di bawah jika employee sudah ada
   if (loading) {
@@ -289,13 +296,16 @@ export default function EmployeeDetailModal({ id, onClose }: EmployeeDetailModal
 
                 {/* Salary & Allowances */}
                 <div>
-                  <h3 className="text-sm font-bold text-gray-700 mb-3 flex items-center gap-2">
+                  <h3 className="text-base font-semibold text-gray-800 mb-3 flex items-center gap-2">
                     <FaMoneyBillWave className="text-green-600" /> Salary & Allowances
                   </h3>
                   <div className="bg-green-50 p-4 rounded-lg mb-3">
                     <div className="font-medium text-gray-600 mb-1 text-sm">Basic Salary</div>
                     <div className="text-green-700 font-bold text-xl">
-                      Rp {employee.basic_salary ? Number(employee.basic_salary).toLocaleString('id-ID') : '0'}
+                      {(() => {
+                        const total = allowancesArray.reduce((sum, item) => sum + item.amount, 0);
+                        return `Rp ${total.toLocaleString('id-ID')}`;
+                      })()}
                     </div>
                   </div>
                   <div className="overflow-x-auto">

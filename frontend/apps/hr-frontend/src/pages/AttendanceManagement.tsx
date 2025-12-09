@@ -1,5 +1,5 @@
-import React, { useEffect, useState } from 'react';
-import { Eye, Calendar, Search, Download, MapPin, Clock, User } from 'lucide-react';
+﻿import React, { useEffect, useState } from 'react';
+import { Eye, Calendar, Search, Download, MapPin, Clock, User, ChevronDown } from 'lucide-react';
 import Layout from '../components/Layout';
 
 interface Employee {
@@ -46,9 +46,28 @@ interface LeaveRequest {
   };
 }
 
+interface OvertimeRequest {
+  id: string;
+  employee_id: string;
+  overtime_code: 'L1' | 'L2' | 'L3' | 'L4';
+  overtime_date: string;
+  start_time: string;
+  end_time: string;
+  duration_hours: number;
+  description: string;
+  status: 'PENDING' | 'APPROVED' | 'REJECTED' | 'CANCELLED';
+  employee: {
+    id: string;
+    full_name: string;
+    position: string;
+    department: string;
+  };
+}
+
 export default function AttendanceManagement() {
   const [attendances, setAttendances] = useState<AttendanceRecord[]>([]);
   const [leaves, setLeaves] = useState<LeaveRequest[]>([]);
+  const [overtimes, setOvertimes] = useState<OvertimeRequest[]>([]);
   const [filteredAttendances, setFilteredAttendances] = useState<AttendanceRecord[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -57,6 +76,7 @@ export default function AttendanceManagement() {
   const [endDate, setEndDate] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
   const [viewMode, setViewMode] = useState<'summary' | 'detail'>('summary');
+  const [filterMode, setFilterMode] = useState<'present' | 'overtime' | 'leave'>('present');
   const [selectedEmployee, setSelectedEmployee] = useState<string | null>(null);
   const [showOvertimeModal, setShowOvertimeModal] = useState(false);
   const [showPresentMenu, setShowPresentMenu] = useState(false);
@@ -65,25 +85,14 @@ export default function AttendanceManagement() {
   const [showDetailModal, setShowDetailModal] = useState(false);
   const [selectedAttendance, setSelectedAttendance] = useState<AttendanceRecord | null>(null);
   
-  // Helper to get Monday of current week
-  const getMonday = (date: Date) => {
-    const d = new Date(date);
-    const day = d.getDay();
-    const diff = d.getDate() - day + (day === 0 ? -6 : 1); // adjust when day is Sunday
-    return new Date(d.setDate(diff));
-  };
-
-  // Helper to get Sunday of current week
-  const getSunday = (date: Date) => {
-    const monday = getMonday(date);
-    const sunday = new Date(monday);
-    sunday.setDate(monday.getDate() + 6);
-    return sunday;
-  };
-
-  // Format date to YYYY-MM-DD for input[type=date]
-  const formatDateInput = (date: Date) => {
-    return date.toISOString().split('T')[0];
+  const formatDate = (dateStr: string) => {
+    const date = new Date(dateStr);
+    return date.toLocaleDateString('id-ID', { 
+      weekday: 'short',
+      year: 'numeric', 
+      month: 'short', 
+      day: 'numeric' 
+    });
   };
 
   // Fetch attendances
@@ -97,8 +106,8 @@ export default function AttendanceManagement() {
     try {
       const token = localStorage.getItem('token');
       
-      // Fetch both attendances and leaves in parallel
-      const [attendanceRes, leaveRes] = await Promise.all([
+      // Fetch attendances, leaves, and overtimes in parallel
+      const [attendanceRes, leaveRes, overtimeRes] = await Promise.all([
         fetch('http://localhost:4004/api/v1/attendances', {
           headers: {
             'Authorization': `Bearer ${token}`,
@@ -106,6 +115,12 @@ export default function AttendanceManagement() {
           }
         }),
         fetch('http://localhost:4004/api/v1/leaves', {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
+        }),
+        fetch('http://localhost:4004/api/v1/overtimes', {
           headers: {
             'Authorization': `Bearer ${token}`,
             'Content-Type': 'application/json'
@@ -128,6 +143,13 @@ export default function AttendanceManagement() {
         const leaveData = await leaveRes.json();
         const approvedLeaves = leaveData.data?.filter((leave: LeaveRequest) => leave.status === 'APPROVED') || [];
         setLeaves(approvedLeaves);
+      }
+      
+      // Fetch and set approved overtimes
+      if (overtimeRes.ok) {
+        const overtimeData = await overtimeRes.json();
+        const approvedOvertimes = overtimeData.data?.filter((ot: OvertimeRequest) => ot.status === 'APPROVED') || [];
+        setOvertimes(approvedOvertimes);
       }
     } catch (err: any) {
       setError(err.message || 'Failed to fetch attendances');
@@ -173,16 +195,6 @@ export default function AttendanceManagement() {
     if (!datetime) return '-';
     const date = new Date(datetime);
     return date.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
-  };
-
-  const formatDate = (dateStr: string) => {
-    const date = new Date(dateStr);
-    return date.toLocaleDateString('id-ID', { 
-      weekday: 'short',
-      year: 'numeric', 
-      month: 'short', 
-      day: 'numeric' 
-    });
   };
 
   const formatDuration = (minutes: number | null) => {
@@ -344,7 +356,131 @@ export default function AttendanceManagement() {
     return summary;
   };
 
+  // Calculate overtime summary by level
+  const getOvertimeSummary = () => {
+    const summary: Record<string, {
+      employeeId: string;
+      L1: number;
+      L2: number;
+      L3: number;
+      L4: number;
+    }> = {};
+
+    // Filter overtimes by date range
+    let filteredOvertimes = overtimes;
+    if (startDate || endDate) {
+      filteredOvertimes = overtimes.filter(ot => {
+        const otDate = new Date(ot.overtime_date).toISOString().split('T')[0];
+        if (startDate && endDate) {
+          return otDate >= startDate && otDate <= endDate;
+        } else if (startDate) {
+          return otDate >= startDate;
+        } else if (endDate) {
+          return otDate <= endDate;
+        }
+        return true;
+      });
+    }
+
+    // Filter by search query
+    if (searchQuery.trim()) {
+      const query = searchQuery.toLowerCase();
+      filteredOvertimes = filteredOvertimes.filter(ot =>
+        ot.employee.full_name.toLowerCase().includes(query)
+      );
+    }
+
+    filteredOvertimes.forEach(ot => {
+      const employeeName = ot.employee.full_name;
+      if (!summary[employeeName]) {
+        summary[employeeName] = {
+          employeeId: ot.employee_id,
+          L1: 0,
+          L2: 0,
+          L3: 0,
+          L4: 0
+        };
+      }
+      summary[employeeName][ot.overtime_code]++;
+    });
+
+    return summary;
+  };
+
+  // Calculate leave summary
+  const getLeaveSummary = () => {
+    const summary: Record<string, {
+      employeeId: string;
+      izin: number;
+      cuti: number;
+      sakit: number;
+    }> = {};
+
+    // Filter leaves by date range
+    let filteredLeaves = leaves;
+    if (startDate || endDate) {
+      filteredLeaves = leaves.filter(leave => {
+        const leaveStart = new Date(leave.start_date).toISOString().split('T')[0];
+        const leaveEnd = new Date(leave.end_date).toISOString().split('T')[0];
+        
+        if (startDate && endDate) {
+          return (leaveStart <= endDate && leaveEnd >= startDate);
+        } else if (startDate) {
+          return leaveEnd >= startDate;
+        } else if (endDate) {
+          return leaveStart <= endDate;
+        }
+        return true;
+      });
+    }
+
+    // Filter by search query
+    if (searchQuery.trim()) {
+      const query = searchQuery.toLowerCase();
+      filteredLeaves = filteredLeaves.filter(leave =>
+        leave.employee.full_name.toLowerCase().includes(query)
+      );
+    }
+
+    filteredLeaves.forEach(leave => {
+      const employeeName = leave.employee.full_name;
+      if (!summary[employeeName]) {
+        summary[employeeName] = {
+          employeeId: leave.employee_id,
+          izin: 0,
+          cuti: 0,
+          sakit: 0
+        };
+      }
+
+      // Calculate days in range
+      const leaveStart = new Date(leave.start_date);
+      const leaveEnd = new Date(leave.end_date);
+      let filterStart = startDate ? new Date(startDate) : leaveStart;
+      let filterEnd = endDate ? new Date(endDate) : leaveEnd;
+      
+      const actualStart = leaveStart > filterStart ? leaveStart : filterStart;
+      const actualEnd = leaveEnd < filterEnd ? leaveEnd : filterEnd;
+      
+      if (actualStart <= actualEnd) {
+        const dayCount = Math.ceil((actualEnd.getTime() - actualStart.getTime()) / (1000 * 60 * 60 * 24)) + 1;
+        
+        if (leave.leave_type === 'SICK') {
+          summary[employeeName].sakit += dayCount;
+        } else if (['ANNUAL', 'MATERNITY', 'PATERNITY'].includes(leave.leave_type)) {
+          summary[employeeName].cuti += dayCount;
+        } else {
+          summary[employeeName].izin += dayCount;
+        }
+      }
+    });
+
+    return summary;
+  };
+
   const attendanceSummary = getAttendanceSummary();
+  const overtimeSummary = getOvertimeSummary();
+  const leaveSummary = getLeaveSummary();
 
   return (
     <Layout>
@@ -538,100 +674,246 @@ export default function AttendanceManagement() {
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       <div className="flex items-center gap-2">
                         <span>Present</span>
-                        <div className="relative">
+                        <div className="relative inline-block">
                           <button 
                             onClick={() => setShowPresentMenu(!showPresentMenu)}
-                            className="text-gray-400 hover:text-gray-600 p-1"
+                            className="text-gray-400 hover:text-gray-600 p-1 rounded hover:bg-gray-100 transition-colors"
+                            title="Switch view mode"
                           >
                             <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
                               <path d="M10 6a2 2 0 110-4 2 2 0 010 4zM10 12a2 2 0 110-4 2 2 0 010 4zM10 18a2 2 0 110-4 2 2 0 010 4z" />
                             </svg>
                           </button>
                           {showPresentMenu && (
-                            <div className="absolute right-0 mt-1 w-56 bg-white rounded-lg shadow-lg border border-gray-200 z-50">
-                              <div className="py-1">
-                                <button className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">
-                                  General - Regular attendance
-                                </button>
-                                <button className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">
-                                  Overtime - With OT hours
-                                </button>
+                            <>
+                              <div 
+                                className="fixed inset-0 z-40" 
+                                onClick={() => setShowPresentMenu(false)}
+                              />
+                              <div className="absolute left-0 top-full mt-2 w-56 bg-white rounded-lg shadow-xl border border-gray-200 z-50">
+                                <div className="py-2">
+                                  <button 
+                                    onClick={() => { setFilterMode('present'); setShowPresentMenu(false); }}
+                                    className={`w-full text-left px-4 py-2.5 text-sm transition-colors ${
+                                      filterMode === 'present' 
+                                        ? 'bg-blue-600 text-white font-semibold' 
+                                        : 'text-gray-700 hover:bg-blue-50'
+                                    }`}
+                                  >
+                                    <div className="font-medium">General</div>
+                                    <div className="text-xs opacity-80">Regular attendance</div>
+                                  </button>
+                                  <button 
+                                    onClick={() => { setFilterMode('overtime'); setShowPresentMenu(false); }}
+                                    className={`w-full text-left px-4 py-2.5 text-sm transition-colors ${
+                                      filterMode === 'overtime' 
+                                        ? 'bg-purple-600 text-white font-semibold' 
+                                        : 'text-gray-700 hover:bg-purple-50'
+                                    }`}
+                                  >
+                                    <div className="font-medium">Overtime</div>
+                                    <div className="text-xs opacity-80">With OT hours (L1-L4)</div>
+                                  </button>
+                                </div>
                               </div>
-                            </div>
+                            </>
                           )}
                         </div>
                       </div>
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Izin
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Cuti
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Sakit
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Alfa
-                    </th>
+                    {filterMode === 'present' ? (
+                      <>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Izin
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Cuti
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Sakit
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Alfa
+                        </th>
+                      </>
+                    ) : (
+                      <>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          <div className="text-center">
+                            <div>L1</div>
+                            <div className="text-xs font-normal text-gray-400">Weekday 8h</div>
+                          </div>
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          <div className="text-center">
+                            <div>L2</div>
+                            <div className="text-xs font-normal text-gray-400">Weekday 4h</div>
+                          </div>
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          <div className="text-center">
+                            <div>L3</div>
+                            <div className="text-xs font-normal text-gray-400">Weekend 8h</div>
+                          </div>
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          <div className="text-center">
+                            <div>L4</div>
+                            <div className="text-xs font-normal text-gray-400">Weekend 4h</div>
+                          </div>
+                        </th>
+                      </>
+                    )}
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
-                  {Object.entries(attendanceSummary).map(([employeeName, stats]) => {
-                    const totalPresent = stats.present + stats.overtime;
-                    
-                    return (
-                      <tr key={employeeName} className="hover:bg-gray-50">
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="flex items-center">
-                            <div className="shrink-0 h-10 w-10 bg-blue-100 rounded-full flex items-center justify-center">
-                              <User className="h-6 w-6 text-blue-600" />
+                  {filterMode === 'present' ? (
+                    // Present Mode - Show attendance summary
+                    Object.entries(attendanceSummary).map(([employeeName, stats]) => {
+                      const totalPresent = stats.present + stats.overtime;
+                      
+                      return (
+                        <tr key={employeeName} className="hover:bg-gray-50">
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <div className="flex items-center">
+                              <div className="shrink-0 h-10 w-10 bg-blue-100 rounded-full flex items-center justify-center">
+                                <User className="h-6 w-6 text-blue-600" />
+                              </div>
+                              <div className="ml-4">
+                                <div className="text-sm font-medium text-gray-900">{employeeName}</div>
+                              </div>
                             </div>
-                            <div className="ml-4">
-                              <div className="text-sm font-medium text-gray-900">{employeeName}</div>
-                            </div>
-                          </div>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          {totalPresent > 0 ? (
-                            <button
-                              onClick={() => {
-                                setSelectedEmployee(stats.employeeId);
-                                setShowOvertimeModal(true);
-                              }}
-                              className="px-3 py-1.5 rounded-lg text-sm font-medium bg-green-100 text-green-800 hover:bg-green-200 transition-colors cursor-pointer"
-                            >
-                              {totalPresent} days
-                            </button>
-                          ) : (
-                            <span className="px-3 py-1.5 rounded-lg text-sm font-medium bg-gray-100 text-gray-600">
-                              0 days
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            {totalPresent > 0 ? (
+                              <button
+                                onClick={() => {
+                                  setSelectedEmployee(stats.employeeId);
+                                  setShowOvertimeModal(true);
+                                }}
+                                className="px-3 py-1.5 rounded-lg text-sm font-medium bg-green-100 text-green-800 hover:bg-green-200 transition-colors cursor-pointer"
+                              >
+                                {totalPresent} days
+                              </button>
+                            ) : (
+                              <span className="px-3 py-1.5 rounded-lg text-sm font-medium bg-gray-100 text-gray-600">
+                                0 days
+                              </span>
+                            )}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <span className={`px-3 py-1.5 rounded-lg text-sm font-medium ${stats.izin > 0 ? 'bg-blue-100 text-blue-800' : 'bg-gray-100 text-gray-600'}`}>
+                              {stats.izin}
                             </span>
-                          )}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <span className={`px-3 py-1.5 rounded-lg text-sm font-medium ${stats.izin > 0 ? 'bg-blue-100 text-blue-800' : 'bg-gray-100 text-gray-600'}`}>
-                            {stats.izin}
-                          </span>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <span className={`px-3 py-1.5 rounded-lg text-sm font-medium ${stats.cuti > 0 ? 'bg-purple-100 text-purple-800' : 'bg-gray-100 text-gray-600'}`}>
-                            {stats.cuti}
-                          </span>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <span className={`px-3 py-1.5 rounded-lg text-sm font-medium ${stats.sakit > 0 ? 'bg-orange-100 text-orange-800' : 'bg-gray-100 text-gray-600'}`}>
-                            {stats.sakit}
-                          </span>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <span className={`px-3 py-1.5 rounded-lg text-sm font-medium ${stats.alfa > 0 ? 'bg-red-100 text-red-800' : 'bg-gray-100 text-gray-600'}`}>
-                            {stats.alfa}
-                          </span>
-                        </td>
-                      </tr>
-                    );
-                  })}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <span className={`px-3 py-1.5 rounded-lg text-sm font-medium ${stats.cuti > 0 ? 'bg-purple-100 text-purple-800' : 'bg-gray-100 text-gray-600'}`}>
+                              {stats.cuti}
+                            </span>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <span className={`px-3 py-1.5 rounded-lg text-sm font-medium ${stats.sakit > 0 ? 'bg-orange-100 text-orange-800' : 'bg-gray-100 text-gray-600'}`}>
+                              {stats.sakit}
+                            </span>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <span className={`px-3 py-1.5 rounded-lg text-sm font-medium ${stats.alfa > 0 ? 'bg-red-100 text-red-800' : 'bg-gray-100 text-gray-600'}`}>
+                              {stats.alfa}
+                            </span>
+                          </td>
+                        </tr>
+                      );
+                    })
+                  ) : (
+                    // Overtime Mode - Show L1-L4 levels
+                    Object.entries(overtimeSummary).map(([employeeName, stats]) => {
+                      const totalOT = stats.L1 + stats.L2 + stats.L3 + stats.L4;
+                      
+                      return (
+                        <tr key={employeeName} className="hover:bg-gray-50">
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <div className="flex items-center">
+                              <div className="shrink-0 h-10 w-10 bg-purple-100 rounded-full flex items-center justify-center">
+                                <Clock className="h-6 w-6 text-purple-600" />
+                              </div>
+                              <div className="ml-4">
+                                <div className="text-sm font-medium text-gray-900">{employeeName}</div>
+                                <div className="text-xs text-gray-500">Total: {totalOT} overtime</div>
+                              </div>
+                            </div>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-center">
+                            {stats.L1 > 0 ? (
+                              <button
+                                onClick={() => {
+                                  setSelectedEmployee(stats.employeeId);
+                                  setShowOvertimeModal(true);
+                                }}
+                                className="px-3 py-1.5 rounded-lg text-sm font-medium bg-purple-100 text-purple-800 hover:bg-purple-200 transition-colors cursor-pointer"
+                              >
+                                {stats.L1}
+                              </button>
+                            ) : (
+                              <span className="px-3 py-1.5 rounded-lg text-sm font-medium bg-gray-100 text-gray-600">
+                                0
+                              </span>
+                            )}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-center">
+                            {stats.L2 > 0 ? (
+                              <button
+                                onClick={() => {
+                                  setSelectedEmployee(stats.employeeId);
+                                  setShowOvertimeModal(true);
+                                }}
+                                className="px-3 py-1.5 rounded-lg text-sm font-medium bg-purple-100 text-purple-800 hover:bg-purple-200 transition-colors cursor-pointer"
+                              >
+                                {stats.L2}
+                              </button>
+                            ) : (
+                              <span className="px-3 py-1.5 rounded-lg text-sm font-medium bg-gray-100 text-gray-600">
+                                0
+                              </span>
+                            )}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-center">
+                            {stats.L3 > 0 ? (
+                              <button
+                                onClick={() => {
+                                  setSelectedEmployee(stats.employeeId);
+                                  setShowOvertimeModal(true);
+                                }}
+                                className="px-3 py-1.5 rounded-lg text-sm font-medium bg-indigo-100 text-indigo-800 hover:bg-indigo-200 transition-colors cursor-pointer"
+                              >
+                                {stats.L3}
+                              </button>
+                            ) : (
+                              <span className="px-3 py-1.5 rounded-lg text-sm font-medium bg-gray-100 text-gray-600">
+                                0
+                              </span>
+                            )}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-center">
+                            {stats.L4 > 0 ? (
+                              <button
+                                onClick={() => {
+                                  setSelectedEmployee(stats.employeeId);
+                                  setShowOvertimeModal(true);
+                                }}
+                                className="px-3 py-1.5 rounded-lg text-sm font-medium bg-indigo-100 text-indigo-800 hover:bg-indigo-200 transition-colors cursor-pointer"
+                              >
+                                {stats.L4}
+                              </button>
+                            ) : (
+                              <span className="px-3 py-1.5 rounded-lg text-sm font-medium bg-gray-100 text-gray-600">
+                                0
+                              </span>
+                            )}
+                          </td>
+                        </tr>
+                      );
+                    })
+                  )}
                 </tbody>
               </table>
             </div>
@@ -737,9 +1019,11 @@ export default function AttendanceManagement() {
 
       {/* Overtime Breakdown Modal */}
       {showOvertimeModal && selectedEmployee && (
-        <OvertimeBreakdownModal
+        <OvertimeDetailModal
           employeeId={selectedEmployee}
-          attendances={filteredAttendances.filter(a => a.employee_id === selectedEmployee)}
+          overtimes={overtimes.filter(ot => ot.employee_id === selectedEmployee)}
+          startDate={startDate}
+          endDate={endDate}
           onClose={() => {
             setShowOvertimeModal(false);
             setSelectedEmployee(null);
@@ -943,29 +1227,60 @@ function AttendanceDetailModal({ attendance, onClose }: AttendanceDetailModalPro
   );
 }
 
-// Overtime Breakdown Modal Component
-interface OvertimeBreakdownModalProps {
+// Overtime Detail Modal Component
+interface OvertimeDetailModalProps {
   employeeId: string;
-  attendances: AttendanceRecord[];
+  overtimes: OvertimeRequest[];
+  startDate: string;
+  endDate: string;
   onClose: () => void;
 }
 
-function OvertimeBreakdownModal({ employeeId, attendances, onClose }: OvertimeBreakdownModalProps) {
-  const generalAttendances = attendances.filter(a => 
-    (a.status === 'PRESENT' || a.status === 'LATE') && (!a.overtime_minutes || a.overtime_minutes === 0)
-  );
-  
-  const overtimeAttendances = attendances.filter(a => 
-    (a.status === 'PRESENT' || a.status === 'LATE') && a.overtime_minutes && a.overtime_minutes > 0
-  );
+function OvertimeDetailModal({ employeeId, overtimes, startDate, endDate, onClose }: OvertimeDetailModalProps) {
+  // Filter by date range
+  const filteredOvertimes = overtimes.filter(ot => {
+    if (!startDate && !endDate) return true;
+    const otDate = new Date(ot.overtime_date).toISOString().split('T')[0];
+    if (startDate && endDate) {
+      return otDate >= startDate && otDate <= endDate;
+    } else if (startDate) {
+      return otDate >= startDate;
+    } else if (endDate) {
+      return otDate <= endDate;
+    }
+    return true;
+  });
 
-  const employeeName = attendances[0]?.employee?.full_name || 'Employee';
+  // Group by level
+  const byLevel = {
+    L1: filteredOvertimes.filter(ot => ot.overtime_code === 'L1'),
+    L2: filteredOvertimes.filter(ot => ot.overtime_code === 'L2'),
+    L3: filteredOvertimes.filter(ot => ot.overtime_code === 'L3'),
+    L4: filteredOvertimes.filter(ot => ot.overtime_code === 'L4'),
+  };
+
+  const employeeName = filteredOvertimes[0]?.employee?.full_name || 'Employee';
+
+  const formatDate = (dateStr: string) => {
+    const date = new Date(dateStr);
+    return date.toLocaleDateString('id-ID', { 
+      weekday: 'short',
+      year: 'numeric', 
+      month: 'short', 
+      day: 'numeric' 
+    });
+  };
+
+  const formatTime = (timeStr: string) => {
+    const date = new Date(timeStr);
+    return date.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
+  };
 
   return (
     <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-50 p-4" onClick={onClose}>
-      <div className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+      <div className="bg-white rounded-2xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
         {/* Header */}
-        <div className="bg-blue-600 px-5 py-4 rounded-t-2xl relative">
+        <div className="bg-purple-600 px-5 py-4 rounded-t-2xl relative">
           <button
             onClick={onClose}
             className="absolute top-3 right-3 text-white/90 hover:text-white transition-colors"
@@ -975,110 +1290,77 @@ function OvertimeBreakdownModal({ employeeId, attendances, onClose }: OvertimeBr
             </svg>
           </button>
           
-          <h2 className="text-lg font-bold text-white">Attendance Breakdown</h2>
+          <h2 className="text-lg font-bold text-white">Detail Lembur</h2>
           <p className="text-xs text-white/80 mt-0.5">{employeeName}</p>
         </div>
 
         <div className="p-5">
           {/* Summary Cards */}
-          <div className="grid grid-cols-2 gap-4 mb-5">
-            <div className="bg-linear-to-br from-green-50 to-green-100 rounded-xl p-4 border border-green-200">
-              <div className="flex items-center gap-3">
-                <div className="w-12 h-12 bg-green-500 rounded-lg flex items-center justify-center">
-                  <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                  </svg>
-                </div>
-                <div>
-                  <p className="text-sm font-semibold text-green-700 uppercase">General</p>
-                  <p className="text-2xl font-bold text-green-900">{generalAttendances.length}</p>
-                  <p className="text-xs text-green-600">Regular attendance</p>
-                </div>
-              </div>
+          <div className="grid grid-cols-4 gap-3 mb-5">
+            <div className="bg-purple-50 rounded-lg p-3 border border-purple-200">
+              <div className="text-xs font-semibold text-purple-700">L1 - Weekday 8h</div>
+              <div className="text-2xl font-bold text-purple-900">{byLevel.L1.length}</div>
             </div>
-
-            <div className="bg-linear-to-br from-purple-50 to-purple-100 rounded-xl p-4 border border-purple-200">
-              <div className="flex items-center gap-3">
-                <div className="w-12 h-12 bg-purple-500 rounded-lg flex items-center justify-center">
-                  <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                  </svg>
-                </div>
-                <div>
-                  <p className="text-sm font-semibold text-purple-700 uppercase">Overtime</p>
-                  <p className="text-2xl font-bold text-purple-900">{overtimeAttendances.length}</p>
-                  <p className="text-xs text-purple-600">With overtime hours</p>
-                </div>
-              </div>
+            <div className="bg-purple-50 rounded-lg p-3 border border-purple-200">
+              <div className="text-xs font-semibold text-purple-700">L2 - Weekday 4h</div>
+              <div className="text-2xl font-bold text-purple-900">{byLevel.L2.length}</div>
+            </div>
+            <div className="bg-indigo-50 rounded-lg p-3 border border-indigo-200">
+              <div className="text-xs font-semibold text-indigo-700">L3 - Weekend 8h</div>
+              <div className="text-2xl font-bold text-indigo-900">{byLevel.L3.length}</div>
+            </div>
+            <div className="bg-indigo-50 rounded-lg p-3 border border-indigo-200">
+              <div className="text-xs font-semibold text-indigo-700">L4 - Weekend 4h</div>
+              <div className="text-2xl font-bold text-indigo-900">{byLevel.L4.length}</div>
             </div>
           </div>
 
-          {/* Lists */}
+          {/* Overtime List */}
           <div className="space-y-4">
-            {/* General List */}
-            {generalAttendances.length > 0 && (
-              <div>
-                <h3 className="text-sm font-bold text-gray-700 uppercase mb-2 flex items-center gap-2">
-                  <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                  General Attendance
-                </h3>
-                <div className="space-y-2 max-h-60 overflow-y-auto">
-                  {generalAttendances.map((att) => (
-                    <div key={att.id} className="bg-gray-50 rounded-lg p-3 border border-gray-200">
-                      <div className="flex justify-between items-center">
-                        <div>
-                          <p className="text-sm font-medium text-gray-900">
-                            {new Date(att.date).toLocaleDateString('id-ID', { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric' })}
-                          </p>
-                          <p className="text-xs text-gray-500 mt-1">
-                            {att.check_in_time ? new Date(att.check_in_time).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }) : '-'} - {att.check_out_time ? new Date(att.check_out_time).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }) : '-'}
-                          </p>
-                        </div>
-                        <span className="px-3 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                          {att.work_duration_minutes ? `${Math.floor(att.work_duration_minutes / 60)}h ${att.work_duration_minutes % 60}m` : '-'}
-                        </span>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* Overtime List */}
-            {overtimeAttendances.length > 0 && (
-              <div>
-                <h3 className="text-sm font-bold text-gray-700 uppercase mb-2 flex items-center gap-2">
-                  <div className="w-2 h-2 bg-purple-500 rounded-full"></div>
-                  Overtime Attendance
-                </h3>
-                <div className="space-y-2 max-h-60 overflow-y-auto">
-                  {overtimeAttendances.map((att) => (
-                    <div key={att.id} className="bg-purple-50 rounded-lg p-3 border border-purple-200">
-                      <div className="flex justify-between items-center">
-                        <div className="flex-1">
-                          <p className="text-sm font-medium text-gray-900">
-                            {new Date(att.date).toLocaleDateString('id-ID', { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric' })}
-                          </p>
-                          <p className="text-xs text-gray-500 mt-1">
-                            {att.check_in_time ? new Date(att.check_in_time).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }) : '-'} - {att.check_out_time ? new Date(att.check_out_time).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }) : '-'}
-                          </p>
-                          <p className="text-xs text-purple-600 font-medium mt-1">
-                            OT: {att.overtime_minutes ? `${Math.floor(att.overtime_minutes / 60)}h ${att.overtime_minutes % 60}m` : '-'}
-                          </p>
-                        </div>
-                        <span className="px-3 py-1 rounded-full text-xs font-medium bg-purple-100 text-purple-800">
-                          {att.work_duration_minutes ? `${Math.floor(att.work_duration_minutes / 60)}h ${att.work_duration_minutes % 60}m` : '-'}
-                        </span>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {generalAttendances.length === 0 && overtimeAttendances.length === 0 && (
+            {filteredOvertimes.length === 0 ? (
               <div className="text-center py-8 text-gray-500">
-                <p>No attendance records found</p>
+                <p>Tidak ada data lembur untuk periode ini</p>
+              </div>
+            ) : (
+              <div className="space-y-2 max-h-96 overflow-y-auto">
+                {filteredOvertimes.map((ot) => (
+                  <div 
+                    key={ot.id} 
+                    className={`rounded-lg p-4 border ${
+                      ot.overtime_code === 'L1' || ot.overtime_code === 'L2'
+                        ? 'bg-purple-50 border-purple-200'
+                        : 'bg-indigo-50 border-indigo-200'
+                    }`}
+                  >
+                    <div className="flex justify-between items-start mb-2">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2 mb-1">
+                          <span 
+                            className={`px-2 py-1 rounded text-xs font-bold ${
+                              ot.overtime_code === 'L1' || ot.overtime_code === 'L2'
+                                ? 'bg-purple-600 text-white'
+                                : 'bg-indigo-600 text-white'
+                            }`}
+                          >
+                            {ot.overtime_code}
+                          </span>
+                          <span className="text-sm font-semibold text-gray-900">
+                            {formatDate(ot.overtime_date)}
+                          </span>
+                        </div>
+                        <div className="text-xs text-gray-600 mb-1">
+                          <Clock className="inline w-3 h-3 mr-1" />
+                          {formatTime(ot.start_time)} - {formatTime(ot.end_time)} ({ot.duration_hours}h)
+                        </div>
+                        {ot.description && (
+                          <div className="text-sm text-gray-700 mt-2">
+                            <strong>Alasan:</strong> {ot.description}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                ))}
               </div>
             )}
           </div>
@@ -1087,3 +1369,5 @@ function OvertimeBreakdownModal({ employeeId, attendances, onClose }: OvertimeBr
     </div>
   );
 }
+
+// Main Component

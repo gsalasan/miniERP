@@ -12,6 +12,8 @@ import {
   EmploymentTypeLabels,
   EmployeeStatusLabels
 } from '../enums/employeeEnums';
+import hrClient from '../api/client';
+import API_CONFIG from '../config';
 
 
 
@@ -31,19 +33,26 @@ export default function EmployeesList() {
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [deleteSuccess, setDeleteSuccess] = useState(false);
   const [deleteId, setDeleteId] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  const fetchEmployees = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const response = await hrClient.get<{ success?: boolean; data?: Employee[] }>('/employees');
+      const payload = response.data.data || response.data || [];
+      console.log('Employee data received:', payload.length, 'employees');
+      setEmployees(payload);
+    } catch (err: any) {
+      console.error('Error fetching employees:', err);
+      setError(err?.message || API_CONFIG.OFFLINE_FALLBACK_MESSAGE);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
-    fetch('http://localhost:4004/api/v1/employees')
-      .then(res => res.json())
-      .then(data => {
-        console.log('Employee data received:', data.data?.length || 0, 'employees');
-        setEmployees(data.data || []);
-        setLoading(false);
-      })
-      .catch(err => {
-        console.error('Error fetching employees:', err);
-        setLoading(false);
-      });
+    fetchEmployees();
   }, []);
 
   // Get unique departments and positions for filter dropdowns
@@ -73,20 +82,17 @@ export default function EmployeesList() {
     if (!deleteId) return;
     setDeletingId(deleteId);
     try {
-      const res = await fetch(`http://localhost:4004/api/v1/employees/${deleteId}`, { method: 'DELETE' });
-      if (res.ok) {
-        setEmployees(prev => prev.filter(e => e.id !== deleteId));
-        setShowDeleteModal(false);
-        setDeleteSuccess(true);
-        setTimeout(() => setDeleteSuccess(false), 3000);
-      } else {
-        alert('Failed to delete employee');
-      }
-    } catch (e) {
-      alert('Failed to delete employee');
+      await hrClient.delete(`/employees/${deleteId}`);
+      setEmployees(prev => prev.filter(e => e.id !== deleteId));
+      setShowDeleteModal(false);
+      setDeleteSuccess(true);
+      setTimeout(() => setDeleteSuccess(false), 3000);
+    } catch (e: any) {
+      alert(e?.message || 'Failed to delete employee');
+    } finally {
+      setDeletingId(null);
+      setDeleteId(null);
     }
-    setDeletingId(null);
-    setDeleteId(null);
   }
 
   return (
@@ -96,10 +102,7 @@ export default function EmployeesList() {
         {showNewModal && (
           <EmployeeNew onClose={() => {
             setShowNewModal(false);
-            // Refresh list after creating
-            fetch('http://localhost:4004/api/v1/employees')
-              .then(res => res.json())
-              .then(data => setEmployees(data.data || []));
+            fetchEmployees();
           }} />
         )}
 
@@ -109,10 +112,7 @@ export default function EmployeesList() {
             id={editId} 
             onClose={() => {
               setEditId(null);
-              // Refresh list after editing
-              fetch('http://localhost:4004/api/v1/employees')
-                .then(res => res.json())
-                .then(data => setEmployees(data.data || []));
+              fetchEmployees();
             }} 
           />
         )}
@@ -169,6 +169,11 @@ export default function EmployeesList() {
         )}
 
         <div className="max-w-7xl mx-auto">
+          {error && (
+            <div className="mb-4 text-red-600 bg-red-50 border border-red-200 p-3 rounded-lg">
+              {error}
+            </div>
+          )}
           {loading ? (
             <div className="text-center py-10 text-blue-600 text-xl font-semibold">Loading employee data...</div>
           ) : (
@@ -227,7 +232,6 @@ export default function EmployeesList() {
                       <th className="py-3 px-4 text-left font-semibold">Department</th>
                       <th className="py-3 px-4 text-left font-semibold">Hire Date</th>
                       <th className="py-3 px-4 text-left font-semibold">Basic Salary</th>
-                      <th className="py-3 px-4 text-left font-semibold">Allowances</th>
                       <th className="py-3 px-4 text-left font-semibold">Gender</th>
                       <th className="py-3 px-4 text-left font-semibold">Marital Status</th>
                       <th className="py-3 px-4 text-left font-semibold">Employment Type</th>
@@ -250,14 +254,8 @@ export default function EmployeesList() {
                         <td className="py-3 px-4">{emp.department || '-'}</td>
                         <td className="py-3 px-4">{emp.hire_date ? new Date(emp.hire_date).toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' }) : '-'}</td>
                         <td className="py-3 px-4 text-[#06103A] font-semibold">
-                          {emp.basic_salary !== undefined && emp.basic_salary !== null && !isNaN(Number(emp.basic_salary))
-                            ? `Rp ${Number(emp.basic_salary).toLocaleString('id-ID')}`
-                            : '-'}
-                        </td>
-                        <td className="py-3 px-4 text-[#4E88BE] font-semibold">
                           {(() => {
                             if (!emp.allowances) return '-';
-                            // allowances can be stored as object map {name: amount} or array [{name, amount}]
                             let sum = 0;
                             try {
                               if (Array.isArray(emp.allowances)) {
@@ -276,7 +274,6 @@ export default function EmployeesList() {
                             } catch (e) {
                               return '-';
                             }
-
                             return sum > 0
                               ? sum.toLocaleString('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).replace('IDR', 'Rp')
                               : '-';

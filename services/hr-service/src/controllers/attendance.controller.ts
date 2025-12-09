@@ -11,13 +11,13 @@ export class AttendanceController {
    */
   async getTodayAttendance(req: Request, res: Response): Promise<void> {
     try {
-      const userId = req.user?.id;
-      if (!userId) {
+      const userContext = this.getRequestUser(req);
+      if (!userContext) {
         res.status(401).json({ error: 'Unauthorized' });
         return;
       }
 
-      const attendance = await attendanceService.getTodayAttendance(userId);
+      const attendance = await attendanceService.getTodayAttendance(userContext);
       res.json({
         success: true,
         data: attendance
@@ -38,8 +38,8 @@ export class AttendanceController {
    */
   async checkIn(req: Request, res: Response): Promise<void> {
     try {
-      const userId = req.user?.id;
-      if (!userId) {
+      const userContext = this.getRequestUser(req);
+      if (!userContext) {
         res.status(401).json({ error: 'Unauthorized' });
         return;
       }
@@ -54,7 +54,7 @@ export class AttendanceController {
         return;
       }
 
-      const attendance = await attendanceService.checkIn(userId, {
+      const attendance = await attendanceService.checkIn(userContext, {
         latitude,
         longitude,
         location
@@ -81,8 +81,8 @@ export class AttendanceController {
    */
   async checkOut(req: Request, res: Response): Promise<void> {
     try {
-      const userId = req.user?.id;
-      if (!userId) {
+      const userContext = this.getRequestUser(req);
+      if (!userContext) {
         res.status(401).json({ error: 'Unauthorized' });
         return;
       }
@@ -97,7 +97,7 @@ export class AttendanceController {
         return;
       }
 
-      const attendance = await attendanceService.checkOut(userId, {
+      const attendance = await attendanceService.checkOut(userContext, {
         latitude,
         longitude,
         location
@@ -123,8 +123,8 @@ export class AttendanceController {
    */
   async getMyAttendances(req: Request, res: Response): Promise<void> {
     try {
-      const userId = req.user?.id;
-      if (!userId) {
+      const userContext = this.getRequestUser(req);
+      if (!userContext) {
         res.status(401).json({ error: 'Unauthorized' });
         return;
       }
@@ -133,7 +133,7 @@ export class AttendanceController {
       const pageNum = parseInt(page as string);
       const limitNum = parseInt(limit as string);
 
-      const result = await attendanceService.getAttendances(userId, {
+      const result = await attendanceService.getAttendances({ user: userContext }, {
         month: month as string,
         page: pageNum,
         limit: limitNum
@@ -164,7 +164,9 @@ export class AttendanceController {
       const limitNum = parseInt(limit as string);
 
       const result = await attendanceService.getAttendances(
-        employeeId as string | undefined,
+        employeeId
+          ? { employeeId: employeeId as string }
+          : undefined,
         {
           month: month as string,
           page: pageNum,
@@ -282,7 +284,9 @@ export class AttendanceController {
 
       const stats = await attendanceService.getAttendanceStats(
         month as string,
-        employeeId as string | undefined
+        employeeId
+          ? { employeeId: employeeId as string }
+          : undefined
       );
 
       res.json({
@@ -296,5 +300,17 @@ export class AttendanceController {
         error: error.message || 'Failed to get attendance statistics' 
       });
     }
+  }
+
+  private getRequestUser(req: Request) {
+    if (!req.user?.id) {
+      return null;
+    }
+
+    return {
+      id: req.user.id as string,
+      email: req.user.email as string | undefined,
+      employeeId: req.user.employee_id as string | undefined,
+    };
   }
 }

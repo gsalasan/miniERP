@@ -1,7 +1,8 @@
 
-import React, { createContext, useContext, useState } from 'react';
+import React, { createContext, useContext, useState, useEffect } from 'react';
 import { FaHome, FaSignOutAlt } from 'react-icons/fa';
 import Sidebar from './Sidebar';
+import API_CONFIG from '../config';
 
 // Context untuk sinkronisasi collapse sidebar
 const SidebarCollapseContext = createContext<{collapsed: boolean, setCollapsed: (v: boolean) => void}>({collapsed: false, setCollapsed: () => {}});
@@ -13,6 +14,7 @@ export function useSidebarCollapse() {
 
 export default function Layout({ children }: { children: React.ReactNode }) {
   const [collapsed, setCollapsed] = useState(false);
+
   return (
     <SidebarCollapseContext.Provider value={{collapsed, setCollapsed}}>
       <div className="flex min-h-screen bg-gray-100 transition-all duration-300">
@@ -27,7 +29,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
               <div className="flex items-center gap-4">
                 <button
                   onClick={() => {
-                    window.location.href = 'http://localhost:3000/dashboard';
+                    window.location.href = `${API_CONFIG.MAIN_DASHBOARD_URL}/dashboard`;
                   }}
                   className="p-2 hover:bg-gray-100 text-gray-700 rounded-lg transition-all inline-flex items-center"
                   title="Dashboard Utama"
@@ -43,7 +45,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                       localStorage.removeItem('cross_app_user');
                       localStorage.removeItem('cross_app_timestamp');
                     } catch {}
-                    window.location.href = 'http://localhost:3000';
+                    window.location.href = API_CONFIG.MAIN_DASHBOARD_URL;
                   }}
                   className="p-2 hover:bg-gray-100 text-gray-700 rounded-lg transition-all inline-flex items-center"
                   title="Keluar"

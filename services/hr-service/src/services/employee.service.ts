@@ -253,90 +253,49 @@ export const disconnectEmployeeService = async () => {
 // Get all employees with user info
 export const getAllEmployees = async () => {
   try {
-    // Try legacy `employees` table first (this is where your 6 rows usually live)
-    let legacy: any[] = [];
-    try {
-      legacy = await prisma.employees.findMany({
-        select: {
-          id: true,
-          full_name: true,
-          position: true,
-          department: true,
-          gender: true,
-          marital_status: true,
-          blood_type: true,
-          employment_type: true,
-          status: true,
-          education_level: true,
-          hire_date: true,
-          basic_salary: true,
-          allowances: true,
-          phone: true,
-          tax_id: true,
-          bank_name: true,
-          bank_account_number: true,
-          npwp: true,
-          // Keep compatibility with old DB: ptkp column
-          ptkp: true,
-          manager_id: true,
-          users: {
-            select: {
-              id: true,
-              email: true,
-              roles: true,
-              is_active: true,
-              created_at: true,
-              updated_at: true,
-            }
-          }
-        }
-      });
-    } catch (selErr: any) {
-      // Fallback for older Prisma client that doesn't know the new fields
-      const msg = String(selErr?.message || '');
-      if (msg.includes('Unknown arg') || msg.includes('Unknown field')) {
-        legacy = await prisma.employees.findMany({
+    // Use all available fields from employees schema
+    const legacy = await prisma.employees.findMany({
+      select: {
+        id: true,
+        employee_id: true,
+        full_name: true,
+        first_name: true,
+        last_name: true,
+        email: true,
+        phone: true,
+        position: true,
+        department: true,
+        hire_date: true,
+        gender: true,
+        marital_status: true,
+        blood_type: true,
+        employment_type: true,
+        status: true,
+        allowances: true,
+        bank_name: true,
+        bank_account_number: true,
+        npwp: true,
+        ptkp: true,
+        manager_id: true,
+        is_active: true,
+        created_at: true,
+        updated_at: true,
+        users: {
           select: {
             id: true,
-            full_name: true,
-            position: true,
-            department: true,
-            gender: true,
-            marital_status: true,
-            blood_type: true,
-            employment_type: true,
-            status: true,
-            education_level: true,
-            hire_date: true,
-            basic_salary: true,
-            allowances: true,
-            phone: true,
-            tax_id: true,
-            users: {
-              select: {
-                id: true,
-                email: true,
-                roles: true,
-                is_active: true,
-                created_at: true,
-                updated_at: true,
-              }
-            }
+            email: true,
+            roles: true,
+            is_active: true,
+            created_at: true,
+            updated_at: true,
           }
-        });
-      } else {
-        throw selErr;
+        }
       }
-    }
+    });
 
-    // Normalize basic_salary to string for Decimal safety
+    // Return data as-is without overriding with null
     console.log(`getAllEmployees: returning ${legacy.length} rows from employees table`);
-    return legacy.map((emp: any) => ({
-      ...emp,
-      basic_salary: emp.basic_salary ? String(emp.basic_salary) : null,
-      // expose whichever exists: ptkp_status or ptkp
-      ptkp: (emp as any).ptkp_status ?? (emp as any).ptkp ?? null,
-    }));
+    return legacy;
   } catch (error: any) {
     console.error('Error fetching employees:', error);
     throw new Error('Gagal mengambil data employee: ' + error.message);
@@ -397,9 +356,14 @@ export const getEmployeeById = async (employeeId: string) => {
           where: { id: employeeId },
           select: {
             id: true,
+            employee_id: true,
             full_name: true,
+            first_name: true,
+            last_name: true,
             position: true,
             department: true,
+            email: true,
+            phone: true,
             gender: true,
             marital_status: true,
             blood_type: true,
@@ -407,10 +371,18 @@ export const getEmployeeById = async (employeeId: string) => {
             status: true,
             education_level: true,
             hire_date: true,
-            basic_salary: true,
             allowances: true,
-            phone: true,
-            tax_id: true,
+            bank_name: true,
+            bank_account_number: true,
+            npwp: true,
+            ptkp: true,
+            manager_id: true,
+            manager: {
+              select: {
+                full_name: true,
+                position: true
+              }
+            },
             users: {
               select: {
                 id: true,
