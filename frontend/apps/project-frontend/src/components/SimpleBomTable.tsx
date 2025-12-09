@@ -24,6 +24,8 @@ import SearchIcon from "@mui/icons-material/Search";
 import RfpConfirmationModal from "./RfpConfirmationModal";
 import ConfirmDialog from "./ConfirmDialog";
 import { useCreateRfp } from "../hooks/useRfpHooks";
+import AllocateStockModal from './AllocateStockModal';
+import { inventoryApi } from '../api/inventoryApi';
 
 interface BomRow {
   id: string;
@@ -60,6 +62,9 @@ const SimpleBomTable: React.FC<Props> = ({
   const [isInitialized, setIsInitialized] = useState(false);
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [confirmTargetId, setConfirmTargetId] = useState<string | null>(null);
+  const [stockMap, setStockMap] = useState<Record<string, any>>({});
+  const [allocOpen, setAllocOpen] = useState(false);
+  const [allocTarget, setAllocTarget] = useState<BomRow | null>(null);
   const [searchText, setSearchText] = useState("");
   const [orderBy, setOrderBy] = useState<keyof BomRow>("itemName");
   const [order, setOrder] = useState<"asc" | "desc">("asc");
@@ -74,6 +79,21 @@ const SimpleBomTable: React.FC<Props> = ({
     }));
     setLocalRows(processedRows);
     setIsInitialized(true);
+    // fetch stock info for these items
+    (async () => {
+      try {
+        const mats = await inventoryApi.getBomMaterials(projectId);
+        const map: Record<string, any> = {};
+        mats.forEach((m: any) => {
+          // try to key by material id or item id
+          const key = m.material_id || m.itemId || m.id;
+          if (key) map[key] = m;
+        });
+        setStockMap(map);
+      } catch (e) {
+        // ignore failures for now
+      }
+    })();
   }, [bomItems]);
 
   const handleSelectAll = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -377,16 +397,42 @@ const SimpleBomTable: React.FC<Props> = ({
                 </TableCell>
                 {canEdit && (
                   <TableCell align="center">
-                    <IconButton
-                      size="small"
-                      color="error"
-                      onClick={() => {
-                        setConfirmTargetId(row.id);
-                        setConfirmOpen(true);
-                      }}
-                    >
-                      <DeleteOutlineIcon fontSize="small" />
-                    </IconButton>
+                    <Stack direction="row" spacing={1} alignItems="center" justifyContent="center">
+                      <IconButton
+                        size="small"
+                        color="error"
+                        onClick={() => {
+                          setConfirmTargetId(row.id);
+                          setConfirmOpen(true);
+                        }}
+                      >
+                        <DeleteOutlineIcon fontSize="small" />
+                      </IconButton>
+                      {/* Allocate button: show when available stock > 0 and project still needs */}
+                      {(() => {
+                        const stock = stockMap[row.itemId] || {};
+                        const allocatedForProject = Number(stock.allocated_for_project ?? stock.allocatedForProject ?? 0);
+                        const needRemaining = (row.procurement_need || row.quantity) - (allocatedForProject || 0);
+                        // Show the button whenever the project still needs quantity (>0).
+                        // The modal will fetch latest availability and validate before confirming.
+                        if (needRemaining > 0) {
+                          return (
+                            <Button
+                              size="small"
+                              variant="outlined"
+                              onClick={() => {
+                                const available = Number(stock.available ?? stock.available_qty ?? 0);
+                                setAllocTarget({ ...row, available_stock: available, procurement_need: row.procurement_need });
+                                setAllocOpen(true);
+                              }}
+                            >
+                              Alokasikan Stok
+                            </Button>
+                          );
+                        }
+                        return null;
+                      })()}
+                    </Stack>
                   </TableCell>
                 )}
               </TableRow>
@@ -405,6 +451,26 @@ const SimpleBomTable: React.FC<Props> = ({
           </TableBody>
         </Table>
       </TableContainer>
+      <AllocateStockModal
+        open={allocOpen}
+        onClose={() => setAllocOpen(false)}
+        projectId={projectId}
+        materialId={allocTarget?.itemId || ''}
+        materialName={allocTarget?.itemName || ''}
+        needQty={allocTarget?.procurement_need}
+        availableQty={allocTarget?.available_stock}
+        onAllocated={async () => {
+          // refresh stock info and local rows
+          try {
+            const mats = await inventoryApi.getBomMaterials(projectId);
+            const map: Record<string, any> = {};
+            mats.forEach((m: any) => { const key = m.material_id || m.itemId || m.id; if (key) map[key] = m; });
+            setStockMap(map);
+          } catch (e) {}
+          // notify parent with updated rows if needed
+          if (typeof onBomChange === 'function') onBomChange(localRows);
+        }}
+      />
 
       {/* Modals */}
       <RfpConfirmationModal

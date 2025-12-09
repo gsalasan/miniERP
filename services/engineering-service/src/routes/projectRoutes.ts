@@ -41,6 +41,14 @@ router.delete(
   projectController.deleteProject
 );
 
+// Get estimations by project
+router.get(
+  '/api/v1/projects/:id/estimations',
+  verifyToken,
+  validateUUID,
+  projectController.getProjectEstimations
+);
+
 // Error handling middleware
 router.use(handleErrors);
 

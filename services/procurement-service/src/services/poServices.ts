@@ -1,8 +1,6 @@
-import { PrismaClient } from '@prisma/client';
+import prisma from '../utils/prisma';
 import { CreatePORequest, CreatePOFromRFPRequest, POStatus } from '../types/po.types';
 import { RFPStatus } from '../types/rfp.types';
-
-const prisma = new PrismaClient();
 
 /**
  * Generate PO Number

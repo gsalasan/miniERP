@@ -760,10 +760,10 @@ export const createEstimation = async (req: Request, res: Response) => {
     // }
 
     // Fetch project data untuk ambil customer info
-    const project = await prisma.projects.findUnique({
+    const project = await prisma.project.findUnique({
       where: { id: finalProjectId },
       include: {
-        customers: {
+        customer: {
           select: {
             id: true,
             customer_name: true,
@@ -846,7 +846,7 @@ export const createEstimation = async (req: Request, res: Response) => {
     });
 
     // UPDATE PROJECT STATUS: Set to 'PRE_SALES' ketika estimasi dibuat (FITUR 3.1.D requirement)
-    await prisma.projects.update({
+    await prisma.project.update({
       where: { id: finalProjectId },
       data: { status: 'PRE_SALES' },
     });
@@ -1607,3 +1607,5 @@ export const sendEstimationToCRM = async (req: Request, res: Response) => {
     return res.status(500).json({ success: false, error: msg });
   }
 };
+
+

@@ -63,12 +63,12 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
     { text: "Purchases", icon: <PurchasesIcon />, path: "/purchases" },
   ];
 
-  // Add Approval PO menu only for CEO or PROCUREMENT_MANAGER
+  // Add Approval PO menu only for CEO
   const { user } = useAuth();
   
-  // Check if user can approve PO (CEO or PROCUREMENT_MANAGER)
+  // Check if user can approve PO (CEO only)
   const canApprovePO = user?.roles?.some((role: string) =>
-    ['CEO', 'PROCUREMENT_MANAGER'].includes(role)
+    ['CEO'].includes(role)
   );
 
   const menuItems = canApprovePO

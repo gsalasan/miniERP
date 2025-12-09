@@ -80,7 +80,7 @@ const PurchaseOrderDetailPage: React.FC = () => {
   // Check user permissions based on roles
   const isProcurementAdmin = user?.roles?.includes('PROCUREMENT_ADMIN');
   const canApprovePO = user?.roles?.some((role: string) =>
-    ['CEO', 'PROCUREMENT_MANAGER'].includes(role)
+    ['CEO'].includes(role)
   );
   const canSubmitPO = isAuthenticated; // Any authenticated user can submit
   
@@ -316,7 +316,7 @@ const PurchaseOrderDetailPage: React.FC = () => {
             </Button>
           )}
           
-          {/* CEO/PROCUREMENT_MANAGER: Approve or Reject */}
+          {/* CEO only: Approve or Reject */}
           {(po.approval_status === 'PENDING_L1' || po.approval_status === 'PENDING_L2') && canApprovePO && (
             <>
               <Button
@@ -378,7 +378,7 @@ const PurchaseOrderDetailPage: React.FC = () => {
 
       {(po.approval_status === 'PENDING_L1' || po.approval_status === 'PENDING_L2') && !canApprovePO && (
         <Alert severity="info" sx={{ mb: 2 }}>
-          PO ini sedang menunggu approval dari CEO atau PROCUREMENT_MANAGER.
+          PO ini sedang menunggu approval dari CEO.
         </Alert>
       )}
 

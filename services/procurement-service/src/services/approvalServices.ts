@@ -1,6 +1,4 @@
-import { PrismaClient } from '@prisma/client';
-
-const prisma = new PrismaClient();
+import prisma from '../utils/prisma';
 
 export enum ApprovalStatus {
   DRAFT = 'DRAFT',
@@ -159,13 +157,13 @@ export async function approvePO(
     throw new Error('Approver not found');
   }
 
-  // Validate approver role - only CEO or PROCUREMENT_MANAGER can approve
+  // Validate approver role - only CEO can approve
   const canApprove = approver.roles.some((role: string) => 
-    ['CEO', 'PROCUREMENT_MANAGER'].includes(role)
+    ['CEO'].includes(role)
   );
 
   if (!canApprove) {
-    throw new Error('Only CEO or PROCUREMENT_MANAGER can approve PO. Current roles: ' + approver.roles.join(', '));
+    throw new Error('Only CEO can approve PO. Current roles: ' + approver.roles.join(', '));
   }
 
   // Determine next status
@@ -321,31 +319,42 @@ export async function rejectPO(
  * Get POs pending approval for specific user based on their role
  */
 export async function getPendingApprovalsForUser(userId: string) {
-  const user = await prisma.users.findUnique({
-    where: { id: userId },
-    select: { roles: true },
-  });
+  try {
+    console.log('[Approval Service] Getting pending approvals for user:', userId);
+    
+    const user = await prisma.users.findUnique({
+      where: { id: userId },
+      select: { roles: true },
+    });
 
-  if (!user) {
-    throw new Error('User not found');
-  }
+    if (!user) {
+      console.log('[Approval Service] User not found:', userId);
+      throw new Error('User not found');
+    }
 
-  // Only CEO and PROCUREMENT_MANAGER can see pending approvals
-  const canApprove = user.roles.some((role: string) => 
-    ['CEO', 'PROCUREMENT_MANAGER'].includes(role)
-  );
+    console.log('[Approval Service] User roles:', user.roles);
 
-  if (!canApprove) {
-    return [];
-  }
+    // Only CEO can see pending approvals
+    const canApprove = user.roles.some((role: string) => 
+      ['CEO'].includes(role)
+    );
 
-  // Get all POs pending approval (L1 and L2)
-  const pendingStatuses: ApprovalStatus[] = [
-    ApprovalStatus.PENDING_L1,
-    ApprovalStatus.PENDING_L2,
-  ];
+    console.log('[Approval Service] Can approve:', canApprove);
 
-  const pos = await prisma.purchaseOrder.findMany({
+    if (!canApprove) {
+      console.log('[Approval Service] User does not have CEO role, returning empty array');
+      return [];
+    }
+
+    // Get all POs pending approval (L1 and L2)
+    const pendingStatuses: ApprovalStatus[] = [
+      ApprovalStatus.PENDING_L1,
+      ApprovalStatus.PENDING_L2,
+    ];
+
+    console.log('[Approval Service] Fetching POs with statuses:', pendingStatuses);
+
+    const pos = await prisma.purchaseOrder.findMany({
     where: {
       approval_status: {
         in: pendingStatuses,
@@ -373,23 +382,15 @@ export async function getPendingApprovalsForUser(userId: string) {
           },
         },
       },
-      approval_logs: {
-        include: {
-          approver: {
-            select: {
-              id: true,
-              email: true,
-              employee: {
-                select: { full_name: true },
-              },
-            },
-          },
-        },
-        orderBy: { created_at: 'asc' },
-      },
     },
     orderBy: { submitted_for_approval_at: 'asc' },
   });
 
+  console.log('[Approval Service] Found', pos.length, 'pending POs');
   return pos;
+  } catch (error: any) {
+    console.error('[Approval Service] Error in getPendingApprovalsForUser:', error);
+    console.error('[Approval Service] Error stack:', error.stack);
+    throw error;
+  }
 }

@@ -1,8 +1,6 @@
-import { PrismaClient } from '@prisma/client';
+import prisma from '../utils/prisma';
 import { CreateWORequest, CreateWOFromRFPRequest, WOStatus } from '../types/wo.types';
 import { RFPStatus } from '../types/rfp.types';
-
-const prisma = new PrismaClient();
 
 /**
  * Generate WO Number

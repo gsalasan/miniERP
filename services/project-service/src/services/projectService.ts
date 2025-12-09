@@ -32,10 +32,10 @@ export class ProjectService {
    * Get project by ID with all relations
    */
   async getProjectById(projectId: string) {
-    const project = await prisma.projects.findUnique({
+    const project = await prisma.project.findUnique({
       where: { id: projectId },
       include: {
-        customers: {
+        customer: {
           select: {
             id: true,
             customer_name: true,
@@ -48,12 +48,12 @@ export class ProjectService {
         sales_orders: true,
         estimations: {
           include: {
-            estimation_items: true,
+            items: true,
           },
         },
         project_boms: true,
         project_milestones: true,
-        project_activities: {
+        activities: {
           orderBy: {
             performed_at: 'desc',
           },
@@ -70,12 +70,11 @@ export class ProjectService {
     const pmUser = project.pm_user_id ? await prisma.users.findUnique({
       where: { id: project.pm_user_id },
       include: {
-        employees: {
+        employee: {
           select: {
             id: true,
             full_name: true,
             position: true,
-            email: true,
           },
         },
       },
@@ -85,12 +84,11 @@ export class ProjectService {
     const salesUser = project.sales_user_id ? await prisma.users.findUnique({
       where: { id: project.sales_user_id },
       include: {
-        employees: {
+        employee: {
           select: {
             id: true,
             full_name: true,
             position: true,
-            email: true,
           },
         },
       },
@@ -99,16 +97,11 @@ export class ProjectService {
     // Normalize response: customers -> customer (singular), add user objects
     const normalizedProject = {
       ...project,
-      customer: project.customers,
+      customer: (project as any).customer || null,
       pm_user: pmUser,
       sales_user: salesUser,
-      // Transform estimation_items to items for frontend compatibility
-      estimations: project.estimations?.map(est => ({
-        ...est,
-        items: est.estimation_items || [],
-      })),
+      estimations: project.estimations?.map((est) => ({ ...est, items: (est as any).items || [] })),
     };
-    delete (normalizedProject as any).customers;
 
     // Enrich estimation items with Material/Service names
     if (normalizedProject.estimations && normalizedProject.estimations.length > 0) {
@@ -158,7 +151,7 @@ export class ProjectService {
    * Ensures caller is the project's assigned PM.
    */
   async createRfp(projectId: string, data: CreateRfpData, loggedInUserId: string) {
-    const project = await prisma.projects.findUnique({ where: { id: projectId } });
+    const project = await prisma.project.findUnique({ where: { id: projectId } });
     if (!project) throw new Error('Project not found');
 
     if (project.pm_user_id !== loggedInUserId) {
@@ -309,7 +302,7 @@ export class ProjectService {
     }
 
     // Fetch current project to capture previous status
-    const existingProjectForStatus = await prisma.projects.findUnique({
+    const existingProjectForStatus = await prisma.project.findUnique({
       where: { id: projectId },
       select: { status: true },
     });
@@ -319,7 +312,7 @@ export class ProjectService {
     const newStatus = data.pmUserId ? 'Planning' : 'WON'; // Revert to WON if unassigning
     
     // Update project
-    const updatedProject = await prisma.projects.update({
+    const updatedProject = await prisma.project.update({
       where: { id: projectId },
       data: {
         pm_user_id: data.pmUserId,
@@ -328,7 +321,7 @@ export class ProjectService {
         updated_by: loggedInUserId,
       },
       include: {
-        customers: {
+        customer: {
           select: {
             id: true,
             customer_name: true,
@@ -494,10 +487,10 @@ export class ProjectService {
       where.sales_user_id = filters.salesUserId;
     }
 
-    const projects = await prisma.projects.findMany({
+    const projects = await prisma.project.findMany({
       where,
       include: {
-        customers: {
+        customer: {
           select: {
             id: true,
             customer_name: true,
@@ -508,7 +501,7 @@ export class ProjectService {
           },
         },
         estimations: true,
-        project_activities: true,
+        activities: true,
         project_milestones: true,
         sales_orders: true,
       },
@@ -528,27 +521,36 @@ export class ProjectService {
         id: { in: allUserIds },
       },
       include: {
-        employees: {
+        // 'employee' is the relation name in the schema
+        employee: {
           select: {
             id: true,
             full_name: true,
             position: true,
-            email: true,
           },
         },
       },
     });
 
-    // Create user map for quick lookup
-    const userMap = new Map(users.map(u => [u.id, u]));
+    // Create enriched user map for quick lookup (flatten employee info)
+    const userMap = new Map(
+      users.map((u) => [
+        u.id,
+        {
+          id: u.id,
+          email: (u as any).email,
+          full_name: (u as any).employee?.full_name || undefined,
+          position: (u as any).employee?.position || undefined,
+        },
+      ])
+    );
 
-    // Normalize response: customers -> customer (singular) for each project, add user objects
-    const normalizedProjects = projects.map(project => ({
+    // Normalize response: use 'customer' (singular) and attach enriched user objects
+    const normalizedProjects = projects.map((project) => ({
       ...project,
-      customer: project.customers,
+      customer: (project as any).customer || null,
       pm_user: project.pm_user_id ? userMap.get(project.pm_user_id) || null : null,
       sales_user: project.sales_user_id ? userMap.get(project.sales_user_id) || null : null,
-      customers: undefined,
     }));
 
     return normalizedProjects;

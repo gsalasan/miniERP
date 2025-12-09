@@ -1,7 +1,5 @@
-import { PrismaClient } from '@prisma/client';
+import prisma from '../utils/prisma';
 import { CreateRFPRequest, UpdateRFPStatusRequest, RFPListQuery, RFPStatus } from '../types/rfp.types';
-
-const prisma = new PrismaClient();
 
 /**
  * Generate RFP Number

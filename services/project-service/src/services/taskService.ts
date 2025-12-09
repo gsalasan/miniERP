@@ -34,7 +34,7 @@ export class TaskService {
    */
   async createTask(projectId: string, data: CreateTaskData, userId: string) {
     // Check if user is PM
-    const project = await prisma.projects.findUnique({
+    const project = await prisma.project.findUnique({
       where: { id: projectId },
     });
 
@@ -53,7 +53,7 @@ export class TaskService {
     }
 
     // Verify milestone belongs to project
-    const milestone = await prisma.project_milestones.findUnique({
+    const milestone = await prisma.projectMilestone.findUnique({
       where: { id: data.milestoneId },
     });
 
@@ -64,19 +64,16 @@ export class TaskService {
     }
 
     // Create task
-    const task = await prisma.project_tasks.create({
+    const task = await prisma.projectTask.create({
       data: {
         project_id: projectId,
         milestone_id: data.milestoneId,
-        parent_task_id: data.parentTaskId || null,
-        task_type: data.taskType || null,
         name: data.taskName,
         description: data.description || '',
         assignee_id: data.assigneeId,
-        weight_pct: data.weightPct !== undefined ? data.weightPct : undefined,
-        status: data.status || 'TODO',
         start_date: data.startDate || milestone.start_date,
         due_date: data.endDate || milestone.end_date,
+        status: data.status || 'TODO',
         progress: 0,
       },
     });
@@ -123,9 +120,7 @@ export class TaskService {
     assigneeId?: string
   ) {
     const where: any = {
-      project_milestones: {
-        project_id: projectId,
-      },
+      project_id: projectId,
     };
 
     if (milestoneId) {
@@ -136,10 +131,10 @@ export class TaskService {
       where.assignee_id = assigneeId;
     }
 
-    const tasks = await prisma.project_tasks.findMany({
+    const tasks = await prisma.projectTask.findMany({
       where,
       include: {
-        project_milestones: {
+        milestone: {
           select: {
             id: true,
             name: true,
@@ -184,12 +179,12 @@ export class TaskService {
    * Update task
    */
   async updateTask(taskId: string, data: UpdateTaskData, userId: string) {
-    const task = await prisma.project_tasks.findUnique({
+    const task = await prisma.projectTask.findUnique({
       where: { id: taskId },
       include: {
-        project_milestones: {
+        milestone: {
           include: {
-            projects: true,
+            project: true,
           },
         },
       },
@@ -201,7 +196,7 @@ export class TaskService {
       throw error;
     }
 
-    const project = task.project_milestones.projects;
+    const project = task.milestone.project;
 
     // Check permission: PM or task assignee can update
     const isPM = project.pm_user_id === userId;
@@ -236,7 +231,7 @@ export class TaskService {
     if (data.status) updateData.status = data.status;
     if (data.progress !== undefined) updateData.progress = data.progress;
 
-    const updated = await prisma.project_tasks.update({
+    const updated = await prisma.projectTask.update({
       where: { id: taskId },
       data: updateData,
     });
@@ -263,7 +258,7 @@ export class TaskService {
 
     // Log activity if status changed
     if (data.status) {
-      await prisma.project_activities.create({
+      await prisma.projectActivity.create({
         data: {
           id: `act_${Date.now()}_${Math.random().toString(36).substring(7)}`,
           project_id: project.id,
@@ -286,12 +281,12 @@ export class TaskService {
    * Delete task
    */
   async deleteTask(taskId: string, userId: string) {
-    const task = await prisma.project_tasks.findUnique({
+    const task = await prisma.projectTask.findUnique({
       where: { id: taskId },
       include: {
-        project_milestones: {
+        milestone: {
           include: {
-            projects: true,
+            project: true,
           },
         },
       },
@@ -303,7 +298,7 @@ export class TaskService {
       throw error;
     }
 
-    const project = task.project_milestones.projects;
+    const project = task.milestone.project;
 
     if (project.pm_user_id !== userId) {
       const error: any = new Error(
@@ -313,7 +308,7 @@ export class TaskService {
       throw error;
     }
 
-    await prisma.project_tasks.delete({
+    await prisma.projectTask.delete({
       where: { id: taskId },
     });
 
@@ -326,7 +321,7 @@ export class TaskService {
    */
   async getGanttData(projectId: string) {
     // Verify project exists
-    const project = await prisma.projects.findUnique({
+    const project = await prisma.project.findUnique({
       where: { id: projectId },
       select: { id: true, project_name: true },
     });
@@ -338,10 +333,10 @@ export class TaskService {
     }
 
     // Get all tasks for this project with relations
-    const tasks = await prisma.project_tasks.findMany({
+    const tasks = await prisma.projectTask.findMany({
       where: { project_id: projectId },
       include: {
-        project_milestones: {
+        milestone: {
           select: {
             id: true,
             name: true,

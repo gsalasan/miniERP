@@ -15,6 +15,8 @@ import AddIcon from '@mui/icons-material/Add';
 import SaveIcon from '@mui/icons-material/Save';
 import DeleteIcon from '@mui/icons-material/Delete';
 import { projectApi } from '../api/projectApi';
+import AllocateStockModal from './AllocateStockModal';
+import { inventoryApi } from '../api/inventoryApi';
 import type { EstimationItem, ProjectBOM, BomItem } from '../types';
 
 interface BoqVsBomProps {
@@ -44,6 +46,9 @@ const BoqVsBom: React.FC<BoqVsBomProps> = ({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
+  const [stockMap, setStockMap] = useState<Record<string, any>>({});
+  const [allocOpen, setAllocOpen] = useState(false);
+  const [allocTarget, setAllocTarget] = useState<BomRow | null>(null);
 
   useEffect(() => {
     if (existingBomItems.length > 0) {
@@ -56,6 +61,20 @@ const BoqVsBom: React.FC<BoqVsBomProps> = ({
         }))
       );
     }
+    // fetch stock info for BOM materials
+    (async () => {
+      try {
+        const mats = await inventoryApi.getBomMaterials(projectId);
+        const map: Record<string, any> = {};
+        mats.forEach((m: any) => {
+          const key = m.material_id || m.itemId || m.id;
+          if (key) map[key] = m;
+        });
+        setStockMap(map);
+      } catch (e) {
+        // ignore
+      }
+    })();
   }, [existingBomItems]);
 
   const boqColumns: GridColDef[] = [
@@ -119,16 +138,31 @@ const BoqVsBom: React.FC<BoqVsBomProps> = ({
       sortable: false,
       renderCell: (params) => {
         if (!canEdit) return null;
+        const row = params.row as BomRow;
+        const stock = stockMap[row.itemId] || {};
+        const physical = Number(stock.physical_qty ?? stock.physicalQty ?? 0);
+        const allocatedTotal = Number(stock.allocated_total ?? stock.allocatedTotal ?? 0);
+        const allocatedForProject = Number(stock.allocated_for_project ?? stock.allocatedForProject ?? 0);
+        const available = Number(stock.available ?? stock.available_qty ?? Math.max(0, physical - allocatedTotal));
+        const needRemaining = Math.max(0, Number(row.quantity || 0) - allocatedForProject);
+
         return (
-          <Tooltip title="Hapus">
-            <IconButton
-              size="small"
-              color="error"
-              onClick={() => handleDeleteRow(params.row.id)}
-            >
-              <DeleteIcon fontSize="small" />
-            </IconButton>
-          </Tooltip>
+          <Box display="flex" gap={1} alignItems="center">
+            <Tooltip title="Hapus">
+              <IconButton
+                size="small"
+                color="error"
+                onClick={() => handleDeleteRow(params.row.id)}
+              >
+                <DeleteIcon fontSize="small" />
+              </IconButton>
+            </Tooltip>
+            {needRemaining > 0 && available > 0 && (
+              <Button size="small" variant="outlined" onClick={() => { setAllocTarget({ ...row, itemType: row.itemType, quantity: row.quantity }); setAllocOpen(true); }}>
+                Alokasikan Stok
+              </Button>
+            )}
+          </Box>
         );
       },
     },
@@ -322,6 +356,28 @@ const BoqVsBom: React.FC<BoqVsBomProps> = ({
           </>
         )}
       </Paper>
+      <AllocateStockModal
+        open={allocOpen}
+        onClose={() => setAllocOpen(false)}
+        projectId={projectId}
+        materialId={allocTarget?.itemId || ''}
+        materialName={allocTarget?.itemId || ''}
+        needQty={allocTarget?.quantity}
+        availableQty={allocTarget ? (stockMap[allocTarget.itemId]?.available ?? stockMap[allocTarget.itemId]?.available_qty ?? 0) : 0}
+        onAllocated={async () => {
+          // refresh stockMap
+          try {
+            const mats = await inventoryApi.getBomMaterials(projectId);
+            const map: Record<string, any> = {};
+            mats.forEach((m: any) => { const key = m.material_id || m.itemId || m.id; if (key) map[key] = m; });
+            setStockMap(map);
+          } catch (e) {}
+          setAllocOpen(false);
+          setAllocTarget(null);
+          setSuccess('Alokasi stok berhasil');
+          if (onBomSaved) onBomSaved();
+        }}
+      />
     </Box>
   );
 };

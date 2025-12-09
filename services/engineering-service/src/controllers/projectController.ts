@@ -3,12 +3,12 @@ import prisma from '../prisma/client';
 
 export const getProjects = async (req: Request, res: Response) => {
   try {
-    const projects = await prisma.projects.findMany({
+    const projects = await prisma.project.findMany({
       include: {
-        customers: true,
+        customer: true,
         estimations: true,
         project_boms: true,
-        milestones: true,
+        project_milestones: true,
       },
     });
     res.json(projects);
@@ -21,13 +21,13 @@ export const getProjects = async (req: Request, res: Response) => {
 export const getProjectById = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
-    const project = await prisma.projects.findUnique({
+    const project = await prisma.project.findUnique({
       where: { id },
       include: {
-        customers: true,
+        customer: true,
         estimations: true,
         project_boms: true,
-        milestones: true,
+        project_milestones: true,
       },
     });
     if (!project) return res.status(404).json({ error: 'Project not found' });
@@ -41,7 +41,7 @@ export const getProjectById = async (req: Request, res: Response) => {
 export const createProject = async (req: Request, res: Response) => {
   try {
     const data = req.body;
-    const project = await prisma.projects.create({ data });
+    const project = await prisma.project.create({ data });
     res.status(201).json(project);
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
@@ -53,7 +53,7 @@ export const updateProject = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
     const data = req.body;
-    const project = await prisma.projects.update({ where: { id }, data });
+    const project = await prisma.project.update({ where: { id }, data });
     res.json(project);
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
@@ -64,10 +64,63 @@ export const updateProject = async (req: Request, res: Response) => {
 export const deleteProject = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
-    await prisma.projects.delete({ where: { id } });
+    await prisma.project.delete({ where: { id } });
     res.status(204).end();
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
     res.status(400).json({ error: msg });
   }
 };
+
+export const getProjectEstimations = async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    
+    // Verify project exists
+    const project = await prisma.project.findUnique({
+      where: { id },
+    });
+    
+    if (!project) {
+      return res.status(404).json({ error: 'Project not found' });
+    }
+    
+    // Get all estimations for this project
+    const estimations = await prisma.estimations.findMany({
+      where: { project_id: id },
+      include: {
+        requested_by: {
+          select: {
+            id: true,
+            email: true,
+            employee: {
+              select: {
+                full_name: true,
+              },
+            },
+          },
+        },
+        assigned_to: {
+          select: {
+            id: true,
+            email: true,
+            employee: {
+              select: {
+                full_name: true,
+              },
+            },
+          },
+        },
+      },
+      orderBy: {
+        created_at: 'desc',
+      },
+    });
+    
+    res.json({ data: estimations });
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    res.status(500).json({ error: msg });
+  }
+};
+
