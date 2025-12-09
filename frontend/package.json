@@ -7,7 +7,7 @@
     "shared/*"
   ],
   "scripts": {
-    "dev": "npm run dev --workspaces --if-present",
+    "dev": "concurrently \"npm --prefix apps/main-frontend run dev\" \"npm --prefix apps/crm-frontend run dev\"",
     "build": "npm run build --workspaces --if-present",
     "lint": "npm run lint --workspaces --if-present",
     "lint:check": "npm run lint:check --workspaces --if-present",
@@ -16,12 +16,47 @@
     "type-check": "npm run type-check --workspaces --if-present"
   },
   "devDependencies": {
+    "@eslint/js": "^9.37.0",
+    "@tailwindcss/postcss": "^4.1.17",
+    "@types/nprogress": "^0.2.3",
+    "@types/react": "^18.2.21",
+    "@types/react-dom": "^18.2.7",
+    "@typescript-eslint/eslint-plugin": "^8.46.0",
+    "@typescript-eslint/parser": "^8.46.0",
+    "@vitejs/plugin-react": "^4.0.4",
+    "autoprefixer": "^10.4.22",
     "eslint": "^9.37.0",
-    "prettier": "^3.6.2",
-    "typescript": "^5.6.3"
+    "postcss": "^8.5.6",
+    "tailwindcss": "^4.1.17",
+    "typescript": "^5.2.2",
+    "vite": "^4.4.9"
   },
   "dependencies": {
-    "@prisma/client": "^6.18.0",
-    "minierp": "file:.."
+    "@emotion/react": "^11.11.0",
+    "@emotion/styled": "^11.11.0",
+    "@hello-pangea/dnd": "^18.0.1",
+    "@heroicons/react": "^2.2.0",
+    "@mui/icons-material": "^5.18.0",
+    "@mui/material": "^5.15.0",
+    "@mui/x-data-grid": "^8.15.0",
+    "@mui/x-date-pickers": "^8.19.0",
+    "axios": "^1.6.0",
+    "date-fns": "^4.1.0",
+    "dayjs": "^1.11.19",
+    "framer-motion": "^12.23.24",
+    "lucide-react": "^0.548.0",
+    "minierp": "file:..",
+    "notyf": "^3.10.0",
+    "nprogress": "^0.2.0",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "react-hot-toast": "^2.6.0",
+    "react-icons": "^4.12.0",
+    "react-router-dom": "^7.9.4",
+    "react-select": "^5.10.2",
+    "recharts": "^3.5.1",
+    "sweetalert2": "^11.26.4",
+    "xlsx": "^0.18.5",
+    "zustand": "^4.4.0"
   }
 }

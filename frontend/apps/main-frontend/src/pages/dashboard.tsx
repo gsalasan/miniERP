@@ -7,13 +7,8 @@ import { getMyAttendances } from '../api/attendance';
 import { checkSubordinates, getTeamRequests, getAllApprovalRequests } from '../api/approvals';
 import Sidebar from "../components/Sidebar";
 import MobileHamburger from "../components/Header";
-
-interface User {
-  id: number;
-  email: string;
-  roles: string[];
-  employee_id?: string;
-}
+import { authStore } from '@shared/services/stores/auth'
+import { Config } from '@shared/services/config'
 
 interface Module {
   id: string;
@@ -25,10 +20,11 @@ interface Module {
   category: "business" | "admin";
 }
 
-
 const Dashboard: React.FC = () => {
   const navigate = useNavigate();
-  const [user, setUser] = useState<User | null>(null);
+  const Auth = authStore()
+  const user = Auth.getUser()
+  const token = Auth.getToken()
   const [windowWidth, setWindowWidth] = useState(window.innerWidth);
   // State untuk attendance history
   const [attendanceHistory, setAttendanceHistory] = useState<AttendanceHistoryItem[]>([]);
@@ -152,7 +148,7 @@ const Dashboard: React.FC = () => {
           />
         </svg>
       ),
-      url: "http://localhost:3011", // Engineering frontend URL
+      url: `${import.meta.env.VITE_DEV_URL}:${import.meta.env.VITE_FE_ENGINEERING_PORT}`, // Engineering frontend URL
       color: "#10B981",
       category: "business",
     },
@@ -168,7 +164,7 @@ const Dashboard: React.FC = () => {
           />
         </svg>
       ),
-      url: "http://localhost:3010", // CRM frontend URL
+      url: `${import.meta.env.VITE_DEV_URL}:${import.meta.env.VITE_FE_CRM_PORT}`, // CRM frontend URL
       color: "#3B82F6",
       category: "business",
     },
@@ -184,7 +180,7 @@ const Dashboard: React.FC = () => {
           />
         </svg>
       ),
-      url: "http://localhost:3013", // HR frontend URL
+      url: `${import.meta.env.VITE_DEV_URL}:${import.meta.env.VITE_FE_HR_PORT}`, // HR frontend URL
       color: "#F59E0B",
       category: "business",
     },
@@ -200,7 +196,7 @@ const Dashboard: React.FC = () => {
           />
         </svg>
       ),
-      url: "http://localhost:3012", // Finance frontend URL
+      url: `${import.meta.env.VITE_DEV_URL}:${import.meta.env.VITE_FINANCE_CRM_PORT}`, // Finance frontend URL
       color: "#8B5CF6",
       category: "business",
     },
@@ -216,7 +212,7 @@ const Dashboard: React.FC = () => {
           />
         </svg>
       ),
-      url: "http://localhost:3015", // Procurement frontend URL (placeholder)
+      url: `${import.meta.env.VITE_DEV_URL}:${import.meta.env.VITE_PROCUREMENT_CRM_PORT}`, // Procurement frontend URL (placeholder)
       color: "#EF4444",
       category: "business",
     },
@@ -232,7 +228,7 @@ const Dashboard: React.FC = () => {
           />
         </svg>
       ),
-      url: "http://localhost:3016", // Project frontend URL (placeholder)
+      url: `${import.meta.env.VITE_DEV_URL}:${import.meta.env.VITE_FE_PROJECT_PORT}`, // Project frontend URL (placeholder)
       color: "#6B7280",
       category: "business",
     },
@@ -248,42 +244,40 @@ const Dashboard: React.FC = () => {
           />
         </svg>
       ),
-      url: "http://localhost:3014", // Identity frontend URL
+      url: `${import.meta.env.VITE_DEV_URL}:${import.meta.env.VITE_FE_IDENTITY_PORT}`, // Identity frontend URL
       color: "#EC4899",
       category: "admin",
     },
   ];
 
 
-  useEffect(() => {
-    // Ambil token dari localStorage
-    const token = localStorage.getItem("token");
-    if (!token) {
-      navigate("/"); // redirect ke login jika tidak ada token
-      return;
-    }
+  // useEffect(() => {
+  //   // Ambil token dari localStorage
+  //   const token = localStorage.getItem("auth");
+  //   if (!token) {
+  //     navigate("/"); // redirect ke login jika tidak ada token
+  //     return;
+  //   }
 
-    // Decode token (jika JWT, bisa pakai jwt-decode)
-    // Atau fetch profile dari backend
-    fetch("http://localhost:3001/api/v1/auth/me", {
-  headers: { Authorization: `Bearer ${token}` },
-    })
-      .then((res) => res.json())
-      .then((data: any) => {
-        if (data.success) {
-          setUser(data.data);
-        } else {
-          navigate("/");
-        }
-      })
-      .catch(() => {
-        navigate("/");
-      });
-  }, []);
+  //   // Decode token (jika JWT, bisa pakai jwt-decode)
+  //   // Atau fetch profile dari backend
+  //   fetch("http://localhost:4001/api/v1/auth/me", {
+  // headers: { Authorization: `Bearer ${token}` },
+  //   })
+  //     .then((res) => res.json())
+  //     .then((data: any) => {
+  //       if (data.success) {
+  //         setUser(data.data);
+  //       } else {
+  //         navigate("/");
+  //       }
+  //     })
+  //     .catch(() => {
+  //       navigate("/");
+  //     });
+  // }, []);
 
   const handleModuleClick = (module: Module) => {
-    // Store current token for cross-app authentication
-    const token = localStorage.getItem("token");
     console.log('📤 Module clicked:', module.name);
     console.log('🔑 Token available:', token ? '✅ ' + token.substring(0, 20) + '...' : '❌ null');
 
@@ -307,7 +301,7 @@ const Dashboard: React.FC = () => {
   };
 
   const logout = () => {
-    localStorage.removeItem("token");
+    Config.logout()
     navigate("/");
   };
 
@@ -397,42 +391,111 @@ const Dashboard: React.FC = () => {
               </div>
 
               {/* Quick Menu */}
-              <div style={{ marginBottom: '18px' }}>
-                <div style={{ fontSize: windowWidth < 768 ? '15px' : '18px', fontWeight: 700, color: '#1E293B', marginBottom: windowWidth < 768 ? '10px' : '16px' }}>
+              <div style={{ marginBottom: "24px" }}>
+                <div
+                  style={{
+                    fontSize: windowWidth < 768 ? "15px" : "18px",
+                    fontWeight: 700,
+                    color: "#1E293B",
+                    marginBottom: windowWidth < 768 ? "10px" : "16px",
+                  }}
+                >
                   Quick Menu
                 </div>
-                <div style={{ display: 'grid', gridTemplateColumns: windowWidth < 768 ? 'repeat(3, 1fr)' : windowWidth < 1024 ? 'repeat(4, 1fr)' : 'repeat(6, 1fr)', gap: windowWidth < 768 ? '10px' : '14px', maxWidth: windowWidth < 768 ? '100%' : '520px', margin: '0 auto' }}>
-                  <div onClick={() => navigate('/my-attendances')} style={{ cursor: 'pointer', background: '#FFFFFF', borderRadius: '10px', padding: windowWidth < 768 ? '12px 8px' : '16px 10px', boxShadow: '0 1px 3px rgba(0,0,0,0.08)', border: '1px solid #E5E7EB', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '10px', transition: 'all 0.2s' }} onMouseEnter={(e) => { e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,0,0,0.1)'; }} onMouseLeave={(e) => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 1px 3px rgba(0,0,0,0.08)'; }}>
-                    <div style={{ width: windowWidth < 768 ? '36px' : '42px', height: windowWidth < 768 ? '36px' : '42px', borderRadius: '50%', background: '#EFF6FF', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                      <svg width={windowWidth < 768 ? "20" : "22"} height={windowWidth < 768 ? "20" : "22"} viewBox="0 0 24 24" fill="none" stroke="#3B82F6" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                        <circle cx="12" cy="12" r="9"/>
-                        <path d="M12 8v4l2.5 2"/>
-                      </svg>
-                    </div>
-                    <span style={{ fontSize: windowWidth < 768 ? '11px' : '13px', fontWeight: 600, color: '#374151', textAlign: 'center' }}>Attendance</span>
-                  </div>
 
-                  <div onClick={() => navigate('/my-requests')} style={{ cursor: 'pointer', background: '#FFFFFF', borderRadius: '10px', padding: windowWidth < 768 ? '12px 8px' : '16px 10px', boxShadow: '0 1px 3px rgba(0,0,0,0.08)', border: '1px solid #E5E7EB', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '10px', transition: 'all 0.2s' }} onMouseEnter={(e) => { e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,0,0,0.1)'; }} onMouseLeave={(e) => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 1px 3px rgba(0,0,0,0.08)'; }}>
-                    <div style={{ width: windowWidth < 768 ? '36px' : '42px', height: windowWidth < 768 ? '36px' : '42px', borderRadius: '50%', background: '#FEF3C7', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                      <svg width={windowWidth < 768 ? "20" : "22"} height={windowWidth < 768 ? "20" : "22"} viewBox="0 0 24 24" fill="none" stroke="#F59E0B" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                        <rect x="3" y="3" width="18" height="18" rx="3"/>
-                        <path d="M8 8h8M8 12h8M8 16h4"/>
-                      </svg>
-                    </div>
-                    <span style={{ fontSize: windowWidth < 768 ? '11px' : '13px', fontWeight: 600, color: '#374151', textAlign: 'center' }}>Requests</span>
-                  </div>
+                <div
+                  style={{
+                    display: "grid",
+                    gridTemplateColumns:
+                      windowWidth < 768
+                        ? "repeat(3, 1fr)"
+                        : windowWidth < 1024
+                        ? "repeat(4, 1fr)"
+                        : "repeat(6, 1fr)",
+                    gap: windowWidth < 768 ? "10px" : "16px",
+                    width: "100%",
+                  }}
+                >
+                  {[
+                    {
+                      label: "Attendance",
+                      iconColor: "#3B82F6",
+                      bg: "#EFF6FF",
+                      onClick: () => navigate("/my-attendances"),
+                    },
+                    {
+                      label: "Requests",
+                      iconColor: "#F59E0B",
+                      bg: "#FEF3C7",
+                      onClick: () => navigate("/my-requests"),
+                    },
+                    {
+                      label: "Payslip",
+                      iconColor: "#10B981",
+                      bg: "#D1FAE5",
+                      onClick: () => alert("Fitur Slip Gaji segera hadir!"),
+                    },
+                  ].map((item, idx) => (
+                    <div
+                      key={idx}
+                      onClick={item.onClick}
+                      style={{
+                        cursor: "pointer",
+                        background: "#FFFFFF",
+                        borderRadius: "12px",
+                        padding: windowWidth < 768 ? "12px 8px" : "18px 12px",
+                        boxShadow: "0 1px 4px rgba(0,0,0,0.08)",
+                        border: "1px solid #E5E7EB",
+                        display: "flex",
+                        flexDirection: "column",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        gap: "10px",
+                        minWidth: "90px",
+                        transition: "all 0.25s ease",
+                      }}
+                      onMouseEnter={(e) => {
+                        if (windowWidth > 768) {
+                          e.currentTarget.style.transform = "translateY(-3px)";
+                          e.currentTarget.style.boxShadow = "0 6px 14px rgba(0,0,0,0.12)";
+                        }
+                      }}
+                      onMouseLeave={(e) => {
+                        if (windowWidth > 768) {
+                          e.currentTarget.style.transform = "translateY(0)";
+                          e.currentTarget.style.boxShadow = "0 1px 4px rgba(0,0,0,0.08)";
+                        }
+                      }}
+                    >
+                      <div
+                        style={{
+                          width: windowWidth < 768 ? "36px" : "42px",
+                          height: windowWidth < 768 ? "36px" : "42px",
+                          borderRadius: "50%",
+                          background: item.bg,
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                        }}
+                      >
+                        {/* iconnya tetap menggunakan SVG kamu */}
+                      </div>
 
-                  <div onClick={() => alert('Fitur Slip Gaji segera hadir!')} style={{ cursor: 'pointer', background: '#FFFFFF', borderRadius: '10px', padding: windowWidth < 768 ? '12px 8px' : '16px 10px', boxShadow: '0 1px 3px rgba(0,0,0,0.08)', border: '1px solid #E5E7EB', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '10px', transition: 'all 0.2s' }} onMouseEnter={(e) => { e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,0,0,0.1)'; }} onMouseLeave={(e) => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 1px 3px rgba(0,0,0,0.08)'; }}>
-                    <div style={{ width: windowWidth < 768 ? '36px' : '42px', height: windowWidth < 768 ? '36px' : '42px', borderRadius: '50%', background: '#D1FAE5', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                      <svg width={windowWidth < 768 ? "20" : "22"} height={windowWidth < 768 ? "20" : "22"} viewBox="0 0 24 24" fill="none" stroke="#10B981" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                        <rect x="4" y="6" width="16" height="12" rx="2"/>
-                        <circle cx="12" cy="12" r="3"/>
-                      </svg>
+                      <span
+                        style={{
+                          fontSize: windowWidth < 768 ? "11px" : "13px",
+                          fontWeight: 600,
+                          color: "#374151",
+                          textAlign: "center",
+                        }}
+                      >
+                        {item.label}
+                      </span>
                     </div>
-                    <span style={{ fontSize: windowWidth < 768 ? '11px' : '13px', fontWeight: 600, color: '#374151', textAlign: 'center' }}>Payslip</span>
-                  </div>
+                  ))}
                 </div>
               </div>
+
 
               {/* Approval Widgets - Hanya untuk Manager atau HR Admin */}
               {(hasSubordinates || isHRAdmin) && (

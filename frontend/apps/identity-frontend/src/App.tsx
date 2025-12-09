@@ -1,25 +1,18 @@
-import React from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
-import Dashboard from './pages/Dashboard';
-import UserManagement from './pages/users/UserManagement';
-import { useTokenSync } from './hooks/useTokenSync';
+import React from "react";
+import { ThemeProvider } from "@mui/material/styles";
+import { CssBaseline } from "@mui/material";
+import { theme } from "./theme";
+import AppRouter from "./router";
+import { AuthProvider } from "./contexts/AuthContext";
 
 function App() {
-  // Sync cross_app_token to token on app mount
-  useTokenSync();
-
   return (
-    <Router>
-      <Routes>
-        {/* Identity module routes */}
-        <Route path="/" element={<Dashboard />} />
-        <Route path="/dashboard" element={<Dashboard />} />
-        <Route path="/users" element={<UserManagement />} />
-
-        {/* Fallback */}
-        <Route path="*" element={<Navigate to="/" />} />
-      </Routes>
-    </Router>
+    <ThemeProvider theme={theme}>
+      <CssBaseline />
+      <AuthProvider>
+        <AppRouter />
+      </AuthProvider>
+    </ThemeProvider>
   );
 }
 

@@ -12,10 +12,14 @@ import {
   InputAdornment,
 } from "@mui/material";
 import { Email, Lock } from "@mui/icons-material";
-import { login as loginApi } from "../api";
+import { api } from '@shared/services/api/apiInstance'
+import { authStore } from '@shared/services/stores/auth'
+import { useAuth } from '../contexts/AuthContext';
 
 const Login: React.FC = () => {
   const navigate = useNavigate();
+  const { checkAuth } = useAuth();
+  const Auth = authStore()
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
@@ -29,24 +33,9 @@ const Login: React.FC = () => {
     setSuccess(false);
 
     try {
-      const result = await loginApi(email, password);
-
-      // Debug response
-      console.log("Login response:", result);
-
-      if (result?.success === true && result.token) {
-        setSuccess(true);
-        localStorage.setItem("token", result.token);
-        // Also store user data if available
-        if (result.data) {
-          localStorage.setItem("user", JSON.stringify(result.data));
-        }
-        setTimeout(() => {
-          navigate("/dashboard");
-        }, 1000);
-      } else {
-        setError(result?.message || "Login gagal. Periksa email dan password Anda.");
-      }
+      api.post('auth/login', {email, password}, (status: number, data: any, message:string, response:any) => {
+        if(status === 200) auth(response.data.token)
+      }, 'identity')
     } catch (err: any) {
       console.error("Login exception:", err);
       setError(
@@ -56,6 +45,14 @@ const Login: React.FC = () => {
     } finally {
       setLoading(false);
     }
+  };
+
+  const auth = async (token: string) => {
+    if (!token) return;
+    setSuccess(true);
+    Auth.setTokenInfo(token);    // simpan token di store
+    await checkAuth();           // update user state di AuthProvider
+    navigate("/dashboard");      // baru redirect
   };
 
   return (

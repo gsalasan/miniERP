@@ -1,0 +1,18 @@
+{
+  "identity": 4001,
+  "crm": 4002,
+  "hr": 4003,
+  "project": 4004,
+  "procurement": 4005,
+  "finance": 4006,
+  "engineering": 4007,
+
+  "frontend_main": 3000,
+  "frontend_identity": 3001,
+  "frontend_crm": 3002,
+  "frontend_hr": 3003,
+  "frontend_project": 3004,
+  "frontend_procurement": 3005,
+  "frontend_finance": 3006,
+  "frontend_engineering": 3007
+}

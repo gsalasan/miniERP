@@ -14,12 +14,13 @@ const getAllowedOrigins = () => {
   const raw = process.env.ALLOWED_ORIGINS || process.env.CORS_ORIGIN;
   if (!raw) return [
     'http://localhost:3000',
-    'http://localhost:3010',
-    'http://localhost:3011',
-    'http://localhost:3012',
-    'http://localhost:3013',
-    'http://localhost:3015',
-    'http://localhost:3016'
+    'http://localhost:3001',
+    'http://localhost:3002',
+    'http://localhost:3003',
+    'http://localhost:3004',
+    'http://localhost:3005',
+    'http://localhost:3006',
+    'http://localhost:3007'
   ];
   return raw.split(',').map(s => s.trim());
 };

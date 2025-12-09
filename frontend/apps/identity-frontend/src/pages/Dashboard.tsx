@@ -1,132 +1,103 @@
-import React, { useEffect, useState } from 'react';
-import Layout from '../components/Layout';
-import { Users, UserCheck, ShieldCheck } from 'lucide-react';
-import { fetchAllUsers } from '../api/userApi';
+import React, { useState, useEffect, useMemo } from "react";
+import {
+  Box,
+  Typography,
+  Divider,
+  Grid,
+  Card,
+  CardContent,
+  Button,
+  Chip,
+  Avatar,
+  List,
+  ListItem,
+  ListItemAvatar,
+  ListItemText,
+  LinearProgress,
+  CircularProgress,
+  Stack,
+  Paper,
+  Alert,
+  Badge,
+} from "@mui/material";
+import {
+  People as PeopleIcon,
+  TrendingUp as TrendingUpIcon,
+  Assignment as AssignmentIcon,
+  AttachMoney as MoneyIcon,
+  Add as AddIcon,
+  Visibility as VisibilityIcon,
+  Today as TodayIcon,
+  ArrowUpward as ArrowUpwardIcon,
+  ArrowDownward as ArrowDownwardIcon,
+  NotificationsActive as NotificationIcon,
+} from "@mui/icons-material";
+import { useNavigate } from "react-router-dom";
+import { useAuth } from "../contexts/AuthContext";
+import { config } from "../config";
 
-export default function Dashboard() {
-  const [stats, setStats] = useState({
-    totalUsers: 0,
-    activeUsers: 0,
-    admins: 0,
-  });
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    const token = localStorage.getItem('token');
-    
-    if (!token) {
-      setLoading(false);
-      return;
-    }
-    
-    loadStats();
-  }, []);
-
-  const loadStats = async () => {
-    try {
-      setLoading(true);
-      const users = await fetchAllUsers();
-      
-      setStats({
-        totalUsers: users.length,
-        activeUsers: users.filter((u: any) => u.is_active !== false).length,
-        admins: users.filter((u: any) => u.roles?.some((r: any) => r.includes('ADMIN'))).length,
-      });
-    } catch (err) {
-      console.error('Failed to load stats:', err);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  if (loading) {
-    return (
-      <Layout>
-        <div className="min-h-screen bg-[#F4F4F4] flex items-center justify-center">
-          <div className="text-center">
-            <div className="inline-block animate-spin rounded-full h-12 w-12 border-4 border-blue-200 border-t-blue-600 mb-4"></div>
-            <p className="text-blue-600 font-semibold">Loading Dashboard...</p>
-          </div>
-        </div>
-      </Layout>
-    );
-  }
+const HomePage: React.FC = () => {
+  const [loading, setLoading] = useState(false);
 
   return (
-    <Layout>
-      <div className="min-h-screen bg-[#F4F4F4] px-12 py-8">
-        <div className="max-w-7xl mx-auto">
-          {/* Header */}
-          <div className="mb-8">
-            <h1 className="text-3xl md:text-4xl font-bold text-[#06103A] mb-2">
-              Identity Dashboard
-            </h1>
-            <p className="text-[#6B6E70] text-base">
-              User Management System
-            </p>
-          </div>
-
-          {/* Statistics Cards */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
-            {/* Total Users */}
-            <div className="bg-white rounded-2xl shadow-lg p-8 border border-[#E5E7EB] hover:shadow-2xl hover:-translate-y-1 transition-all duration-300">
-              <div className="flex items-center gap-5">
-                <div className="w-20 h-20 rounded-xl bg-[#E8F4FC] flex items-center justify-center">
-                  <Users size={36} className="text-[#4E88BE]" />
-                </div>
-                <div>
-                  <p className="text-[#6B6E70] text-sm font-medium mb-1">Total Users</p>
-                  <h3 className="text-4xl font-bold text-[#06103A]">{stats.totalUsers}</h3>
-                </div>
-              </div>
-            </div>
-
-            {/* Active Users */}
-            <div className="bg-white rounded-2xl shadow-lg p-8 border border-[#E5E7EB] hover:shadow-2xl hover:-translate-y-1 transition-all duration-300">
-              <div className="flex items-center gap-5">
-                <div className="w-20 h-20 rounded-xl bg-[#D1FAE5] flex items-center justify-center">
-                  <UserCheck size={36} className="text-[#10B981]" />
-                </div>
-                <div>
-                  <p className="text-[#6B6E70] text-sm font-medium mb-1">Active Users</p>
-                  <h3 className="text-4xl font-bold text-[#06103A]">{stats.activeUsers}</h3>
-                </div>
-              </div>
-            </div>
-
-            {/* Admins */}
-            <div className="bg-white rounded-2xl shadow-lg p-8 border border-[#E5E7EB] hover:shadow-2xl hover:-translate-y-1 transition-all duration-300">
-              <div className="flex items-center gap-5">
-                <div className="w-20 h-20 rounded-xl bg-[#FEF3C7] flex items-center justify-center">
-                  <ShieldCheck size={36} className="text-[#F59E0B]" />
-                </div>
-                <div>
-                  <p className="text-[#6B6E70] text-sm font-medium mb-1">System Admins</p>
-                  <h3 className="text-4xl font-bold text-[#06103A]">{stats.admins}</h3>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Info Box */}
-          <div className="bg-blue-50 border-l-4 border-blue-500 p-6 rounded-lg">
-            <div className="flex items-start gap-3">
-              <div className="shrink-0">
-                <svg className="w-6 h-6 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-              </div>
-              <div>
-                <h3 className="text-lg font-semibold text-blue-900 mb-2">User Account Management</h3>
-                <p className="text-blue-800 text-sm leading-relaxed">
-                  User accounts are automatically created when adding new employees through the HR module. 
-                  Use the <strong>User Management</strong> page to view, edit roles, or manage existing user permissions.
-                </p>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </Layout>
+    <Box>
+      {loading ? (
+        <Box display="flex" justifyContent="center" alignItems="center" minHeight="400px">
+          <Typography variant="h6" color="text.secondary">
+            Memuat data...
+          </Typography>
+        </Box>
+      ) : (
+        <>
+          {/* Hero Header */}
+          <Paper
+            elevation={0}
+            sx={{
+              background: "linear-gradient(135deg, #06103A 0%, #4E88BE 100%)",
+              color: "white",
+              p: 4,
+              mb: 4,
+              borderRadius: 3,
+              position: "relative",
+              overflow: "hidden",
+              boxShadow: "0 4px 20px rgba(6, 16, 58, 0.15)",
+              "&::before": {
+                content: '""',
+                position: "absolute",
+                top: 0,
+                right: 0,
+                width: "200px",
+                height: "200px",
+                background: "rgba(200, 168, 112, 0.1)",
+                borderRadius: "50%",
+                transform: "translate(60px, -100px)",
+              },
+            }}
+          >
+            <Box position="relative" zIndex={1}>
+              <Typography variant="h3" sx={{ mb: 1, fontWeight: 700 }}>
+                Dashboard CRM ✨
+              </Typography>
+              <Typography variant="h6" sx={{ mb: 2, opacity: 0.9 }}>
+                Selamat datang di sistem miniERP
+              </Typography>
+              <Box display="flex" alignItems="center" gap={1}>
+                <TodayIcon fontSize="small" />
+                <Typography variant="body1">
+                  {new Date().toLocaleDateString("id-ID", {
+                    weekday: "long",
+                    year: "numeric",
+                    month: "long",
+                    day: "numeric",
+                  })}
+                </Typography>
+              </Box>
+            </Box>
+          </Paper>
+        </>
+      )}
+    </Box>
   );
-}
+};
+
+export default HomePage;
