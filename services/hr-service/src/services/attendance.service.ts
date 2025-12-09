@@ -1,12 +1,12 @@
-import { PrismaClient } from '@prisma/client';
+import { Prisma, hr_attendances } from '@prisma/client';
 import dayjs from 'dayjs';
 import utc from 'dayjs/plugin/utc';
 import timezone from 'dayjs/plugin/timezone';
+import { getPrisma } from '../utils/prisma';
+import { resolveHrEmployee } from '../utils/hrEmployeeResolver';
 
 dayjs.extend(utc);
 dayjs.extend(timezone);
-
-const prisma = new PrismaClient();
 
 interface GeoLocation {
   latitude: number;
@@ -20,149 +20,120 @@ interface AttendanceFilters {
   limit?: number;
 }
 
+interface AttendanceUserContext {
+  id: string;
+  email?: string;
+  employeeId?: string;
+}
+
+interface AttendanceSubjectFilter {
+  user?: AttendanceUserContext;
+  employeeId?: string;
+}
+
+type AttendanceWithEmployee = hr_attendances & {
+  employee?: {
+    id: string;
+    full_name: string | null;
+    position: string | null;
+    department?: string | null;
+  } | null;
+};
+
 export class AttendanceService {
+  private prisma = getPrisma();
+  private readonly tz = 'Asia/Jakarta';
+
   /**
    * Get today's attendance for a user
    */
-  async getTodayAttendance(userId: string) {
+  async getTodayAttendance(user: AttendanceUserContext) {
+    const employee = await this.resolveEmployee(user);
+    // Get current Jakarta time and format as YYYY-MM-DD string
+    const todayJakartaStr = dayjs().tz(this.tz).format('YYYY-MM-DD');
+    // Parse it back to create a Date at midnight Jakarta time without timezone conversion
+    const todayJakartaDate = new Date(todayJakartaStr + 'T00:00:00.000+07:00');
 
-
-  // Gunakan Asia/Jakarta untuk filter tanggal check_in_time
-  const tz = 'Asia/Jakarta';
-  const nowJakarta = dayjs().tz(tz);
-  // Ambil rentang waktu hari ini di Asia/Jakarta, lalu konversi ke UTC agar query DB benar
-  const todayStartJakarta = nowJakarta.startOf('day');
-  const todayEndJakarta = nowJakarta.endOf('day');
-  const todayStartUTC = todayStartJakarta.utc().toDate();
-  const todayEndUTC = todayEndJakarta.utc().toDate();
-
-    // Find user to get employee_id
-    const user = await prisma.users.findUnique({
-      where: { id: userId },
-      select: { employee_id: true }
-    });
-
-    if (!user || !user.employee_id) {
-      return null;
-    }
-
-    // Cari attendance dengan check_in_time hari ini (Asia/Jakarta, di-query pakai UTC)
-    const attendance = await prisma.hr_attendances.findFirst({
+    const attendance = await this.prisma.hr_attendances.findFirst({
       where: {
-        employee_id: user.employee_id,
-        check_in_time: {
-          gte: todayStartUTC,
-          lte: todayEndUTC,
-        },
+        employee_id: employee.id,
+        date: todayJakartaDate,
       },
       include: {
         employee: {
           select: {
             id: true,
             full_name: true,
-            position: true
-          }
-        }
-      }
+            position: true,
+          },
+        },
+      },
     });
 
-    // Convert Decimal to number for JSON serialization
-    if (attendance) {
-      return {
-        ...attendance,
-        check_in_latitude: attendance.check_in_latitude ? Number(attendance.check_in_latitude) : null,
-        check_in_longitude: attendance.check_in_longitude ? Number(attendance.check_in_longitude) : null,
-        check_out_latitude: attendance.check_out_latitude ? Number(attendance.check_out_latitude) : null,
-        check_out_longitude: attendance.check_out_longitude ? Number(attendance.check_out_longitude) : null,
-      };
-    }
-
-    return attendance;
+    return attendance ? this.normalizeAttendance(attendance) : null;
   }
 
   /**
    * Check-in
    */
-  async checkIn(userId: string, geoLocation: GeoLocation) {
-    // Find user to get employee_id
-    const user = await prisma.users.findUnique({
-      where: { id: userId },
-      select: { employee_id: true, email: true }
-    });
-
-    console.log('User from token:', { userId, user });
-
-    if (!user || !user.employee_id) {
-      throw new Error(`Employee not found for user ${user?.email || userId}. Please link this user to an employee first.`);
-    }
-
-    // Check if already checked in today
-    const existingAttendance = await this.getTodayAttendance(userId);
+  async checkIn(user: AttendanceUserContext, geoLocation: GeoLocation) {
+    const employee = await this.resolveEmployee(user);
+    const existingAttendance = await this.getTodayAttendance(user);
     if (existingAttendance) {
       throw new Error('Already checked in today');
     }
 
-    // Validate geo-location (basic validation)
-    if (geoLocation.latitude < -90 || geoLocation.latitude > 90) {
-      throw new Error('Invalid latitude');
-    }
-    if (geoLocation.longitude < -180 || geoLocation.longitude > 180) {
-      throw new Error('Invalid longitude');
-    }
+    this.validateCoordinates(geoLocation);
 
-    // Geofence validation: ensure location is within allowed radius
-    const geofenceOk = await this.validateGeofence(geoLocation.latitude, geoLocation.longitude, user.employee_id);
+    const geofenceOk = await this.validateGeofence(
+      geoLocation.latitude,
+      geoLocation.longitude,
+      employee.id
+    );
     if (!geofenceOk) {
       throw new Error('Location is outside the allowed area');
     }
 
-    // Create attendance record
-    const attendance = await prisma.hr_attendances.create({
+    // Set timezone to Jakarta for this session
+    await this.prisma.$executeRaw`SET TIME ZONE 'Asia/Jakarta'`;
+    
+    const nowJakarta = dayjs().tz(this.tz);
+    // Store date as YYYY-MM-DD at midnight Jakarta time WITHOUT timezone conversion
+    const jakartaDateStr = nowJakarta.format('YYYY-MM-DD');
+    const jakartaMidnight = new Date(jakartaDateStr + 'T00:00:00.000+07:00');
+    // Store check-in time as is in Jakarta timezone
+    const checkInTime = new Date(nowJakarta.format('YYYY-MM-DDTHH:mm:ss.SSS') + '+07:00');
+    
+    const attendance = await this.prisma.hr_attendances.create({
       data: {
-        employee_id: user.employee_id,
-        date: new Date(),
-        check_in_time: new Date(),
+        employee_id: employee.id,
+        date: jakartaMidnight,
+        check_in_time: checkInTime,
         check_in_latitude: geoLocation.latitude,
         check_in_longitude: geoLocation.longitude,
-        check_in_location: geoLocation.location || `${geoLocation.latitude}, ${geoLocation.longitude}`,
-        status: 'PRESENT'
+        check_in_location:
+          geoLocation.location || `${geoLocation.latitude}, ${geoLocation.longitude}`,
+        status: 'PRESENT',
       },
       include: {
         employee: {
           select: {
             id: true,
             full_name: true,
-            position: true
-          }
-        }
-      }
+            position: true,
+          },
+        },
+      },
     });
 
-    // Convert Decimal to number for JSON serialization
-    return {
-      ...attendance,
-      check_in_latitude: Number(attendance.check_in_latitude),
-      check_in_longitude: Number(attendance.check_in_longitude),
-      check_out_latitude: attendance.check_out_latitude ? Number(attendance.check_out_latitude) : null,
-      check_out_longitude: attendance.check_out_longitude ? Number(attendance.check_out_longitude) : null,
-    };
+    return this.normalizeAttendance(attendance);
   }
+
   /**
    * Check-out
    */
-  async checkOut(userId: string, geoLocation: GeoLocation) {
-    // Find user to get employee_id
-    const user = await prisma.users.findUnique({
-      where: { id: userId },
-      select: { employee_id: true }
-    });
-
-    if (!user || !user.employee_id) {
-      throw new Error('Employee not found');
-    }
-
-    // Find today's attendance
-    const attendance = await this.getTodayAttendance(userId);
+  async checkOut(user: AttendanceUserContext, geoLocation: GeoLocation) {
+    const attendance = await this.getTodayAttendance(user);
     if (!attendance) {
       throw new Error('No check-in record found for today');
     }
@@ -171,106 +142,34 @@ export class AttendanceService {
       throw new Error('Already checked out today');
     }
 
-    // Validate geo-location
-    if (geoLocation.latitude < -90 || geoLocation.latitude > 90) {
-      throw new Error('Invalid latitude');
-    }
-    if (geoLocation.longitude < -180 || geoLocation.longitude > 180) {
-      throw new Error('Invalid longitude');
-    }
+    this.validateCoordinates(geoLocation);
 
-    // Geofence validation for check-out as well
-    const geofenceOk = await this.validateGeofence(geoLocation.latitude, geoLocation.longitude, user.employee_id);
+    const geofenceOk = await this.validateGeofence(
+      geoLocation.latitude,
+      geoLocation.longitude,
+      attendance.employee_id
+    );
     if (!geofenceOk) {
       throw new Error('Location is outside the allowed area');
     }
 
-    // Calculate work duration in minutes
-    const checkInTime = attendance.check_in_time ? new Date(attendance.check_in_time) : new Date();
-    const checkOutTime = new Date();
-    const durationMs = checkOutTime.getTime() - checkInTime.getTime();
-    const durationMinutes = Math.floor(durationMs / 60000);
+    const nowJakarta = dayjs().tz(this.tz);
+    const checkInTime = attendance.check_in_time
+      ? dayjs(attendance.check_in_time)
+      : nowJakarta;
+    const durationMinutes = Math.max(0, nowJakarta.diff(checkInTime, 'minute'));
+    // Store check-out time in Jakarta timezone
+    const checkOutTime = new Date(nowJakarta.format('YYYY-MM-DDTHH:mm:ss.SSS') + '+07:00');
 
-    // Update attendance record
-    const updatedAttendance = await prisma.hr_attendances.update({
+    const updatedAttendance = await this.prisma.hr_attendances.update({
       where: { id: attendance.id },
       data: {
         check_out_time: checkOutTime,
         check_out_latitude: geoLocation.latitude,
         check_out_longitude: geoLocation.longitude,
-        check_out_location: geoLocation.location || `${geoLocation.latitude}, ${geoLocation.longitude}`,
-        work_duration_minutes: durationMinutes
-      },
-      include: {
-        employee: {
-          select: {
-            id: true,
-            full_name: true,
-            position: true
-          }
-        }
-      }
-    });
-
-    return updatedAttendance;
-  }
-
-  /**
-   * Get attendances with filters and pagination
-   */
-  async getAttendances(employeeUserId?: string, filters?: AttendanceFilters) {
-    const page = filters?.page || 1;
-    const limit = filters?.limit || 20;
-    const skip = (page - 1) * limit;
-
-    // Build where clause
-    const where: any = {};
-
-    // If employeeUserId provided, filter by that employee
-    if (employeeUserId) {
-      const user = await prisma.users.findUnique({
-        where: { id: employeeUserId },
-        select: { employee_id: true }
-      });
-      
-      if (user && user.employee_id) {
-        where.employee_id = user.employee_id;
-      } else {
-        // No employee found, return empty
-        return {
-          data: [],
-          pagination: {
-            page,
-            limit,
-            total: 0,
-            totalPages: 0
-          }
-        };
-      }
-    }
-
-    // Filter by month if provided (format: YYYY-MM)
-    if (filters?.month) {
-      const [year, month] = filters.month.split('-').map(Number);
-      const startDate = new Date(year, month - 1, 1);
-      const endDate = new Date(year, month, 0, 23, 59, 59, 999);
-
-      where.date = {
-        gte: startDate,
-        lte: endDate
-      };
-    }
-
-    // Get total count
-    const total = await prisma.hr_attendances.count({ where });
-
-    // Get data
-    const data = await prisma.hr_attendances.findMany({
-      where,
-      skip,
-      take: limit,
-      orderBy: {
-        date: 'desc'
+        check_out_location:
+          geoLocation.location || `${geoLocation.latitude}, ${geoLocation.longitude}`,
+        work_duration_minutes: durationMinutes,
       },
       include: {
         employee: {
@@ -278,10 +177,79 @@ export class AttendanceService {
             id: true,
             full_name: true,
             position: true,
-            department: true
-          }
-        }
-      }
+          },
+        },
+      },
+    });
+
+    return this.normalizeAttendance(updatedAttendance);
+  }
+
+  /**
+   * Get attendances with filters and pagination
+   */
+  async getAttendances(
+    subject?: AttendanceSubjectFilter,
+    filters?: AttendanceFilters
+  ) {
+    const page = filters?.page && filters.page > 0 ? filters.page : 1;
+    const limit = filters?.limit && filters.limit > 0 ? filters.limit : 20;
+    const skip = (page - 1) * limit;
+
+    const where: Prisma.hr_attendancesWhereInput = {};
+    const targetEmployeeId = await this.resolveSubjectToEmployeeId(subject);
+    if (subject && !targetEmployeeId) {
+      return {
+        data: [],
+        pagination: {
+          page,
+          limit,
+          total: 0,
+          totalPages: 0,
+        },
+      };
+    }
+    if (targetEmployeeId) {
+      where.employee_id = targetEmployeeId;
+    }
+
+    if (filters?.month) {
+      const { startDate, endDate } = this.getMonthRange(filters.month);
+      where.date = {
+        gte: startDate,
+        lte: endDate,
+      };
+    }
+
+    const total = await this.prisma.hr_attendances.count({ where });
+    const rows = await this.prisma.hr_attendances.findMany({
+      where,
+      skip,
+      take: limit,
+      orderBy: { date: 'desc' },
+      include: {
+        employee: {
+          select: {
+            id: true,
+            full_name: true,
+            position: true,
+            department: true,
+          },
+        },
+      },
+    });
+
+    const data = (rows as AttendanceWithEmployee[]).map((row) => {
+      const normalized = this.normalizeAttendance(row);
+      return {
+        ...normalized,
+        jam:
+          normalized.check_in_time || normalized.check_out_time
+            ? `${this.formatJakartaTime(normalized.check_in_time)} - ${this.formatJakartaTime(
+                normalized.check_out_time
+              )}`
+            : '',
+      };
     });
 
     // Helper to format Date to HH:mm (24h) in Asia/Jakarta
@@ -306,64 +274,45 @@ export class AttendanceService {
         page,
         limit,
         total,
-        totalPages: Math.ceil(total / limit)
-      }
+        totalPages: Math.ceil(total / limit),
+      },
     };
   }
 
   /**
    * Get attendance statistics for a month
    */
-  async getAttendanceStats(month: string, employeeUserId?: string) {
-    const [year, monthNum] = month.split('-').map(Number);
-    const startDate = new Date(year, monthNum - 1, 1);
-    const endDate = new Date(year, monthNum, 0, 23, 59, 59, 999);
-
-    // Build where clause
-    const where: any = {
+  async getAttendanceStats(month: string, subject?: AttendanceSubjectFilter) {
+    const { startDate, endDate } = this.getMonthRange(month);
+    const where: Prisma.hr_attendancesWhereInput = {
       date: {
         gte: startDate,
-        lte: endDate
-      }
+        lte: endDate,
+      },
     };
 
-    // Filter by employee if provided
-    if (employeeUserId) {
-      const user = await prisma.users.findUnique({
-        where: { id: employeeUserId },
-        select: { employee_id: true }
-      });
-      
-      if (user && user.employee_id) {
-        where.employee_id = user.employee_id;
-      }
+    const targetEmployeeId = await this.resolveSubjectToEmployeeId(subject);
+    if (subject && !targetEmployeeId) {
+      return this.emptyStats(month);
+    }
+    if (targetEmployeeId) {
+      where.employee_id = targetEmployeeId;
     }
 
-    // Get all attendances for the month
-    const attendances = await prisma.hr_attendances.findMany({
-      where,
-      include: {
-        employee: {
-          select: {
-            id: true,
-            full_name: true
-          }
-        }
-      }
-    });
+    const attendances = (await this.prisma.hr_attendances.findMany({ where })) as hr_attendances[];
+    if (!attendances.length) {
+      return this.emptyStats(month);
+    }
 
-    // Calculate statistics
     const totalDays = attendances.length;
-    const presentDays = attendances.filter(a => a.status === 'PRESENT').length;
-    const lateDays = attendances.filter(a => a.status === 'LATE').length;
-    const absentDays = attendances.filter(a => a.status === 'ABSENT').length;
-    
-    // Calculate total work duration
-    const totalWorkMinutes = attendances.reduce((sum, a) => {
-      return sum + (a.work_duration_minutes || 0);
-    }, 0);
-
-    const averageWorkMinutes = totalDays > 0 ? Math.floor(totalWorkMinutes / totalDays) : 0;
+    const presentDays = attendances.filter((attendance) => attendance.status === 'PRESENT').length;
+    const lateDays = attendances.filter((attendance) => attendance.status === 'LATE').length;
+    const absentDays = attendances.filter((attendance) => attendance.status === 'ABSENT').length;
+    const totalWorkMinutes = attendances.reduce<number>(
+      (sum, item) => sum + (item.work_duration_minutes || 0),
+      0
+    );
+    const averageWorkMinutes = Math.floor(totalWorkMinutes / totalDays);
 
     return {
       month,
@@ -373,7 +322,7 @@ export class AttendanceService {
       absentDays,
       totalWorkMinutes,
       averageWorkMinutes,
-      averageWorkHours: (averageWorkMinutes / 60).toFixed(2)
+      averageWorkHours: (averageWorkMinutes / 60 || 0).toFixed(2),
     };
   }
 
@@ -406,6 +355,122 @@ export class AttendanceService {
    * By default, geofence is DISABLED so employees can check-in from anywhere.
    * To enable geofence, set HR_GEOFENCE_ENABLED=true in environment.
    */
+  private async resolveEmployee(user: AttendanceUserContext) {
+    console.log('[AttendanceService] Resolving employee for user:', {
+      userId: user.id,
+      email: user.email,
+      employeeId: user.employeeId
+    });
+    const employee = await resolveHrEmployee(this.prisma, {
+      userId: user.id,
+      email: user.email,
+      employeeId: user.employeeId,
+    });
+    console.log('[AttendanceService] Resolved employee:', employee.id);
+    return employee;
+  }
+
+  private getTodayBounds() {
+    const nowJakarta = dayjs().tz(this.tz);
+    return {
+      nowJakarta,
+      startUtc: nowJakarta.startOf('day').utc().toDate(),
+      endUtc: nowJakarta.endOf('day').utc().toDate(),
+    };
+  }
+
+  private normalizeAttendance(attendance: any) {
+    const toNumber = (value: any) =>
+      value === null || value === undefined ? null : Number(value);
+    
+    // Convert all timestamps to Jakarta timezone ISO strings
+    const toJakartaISO = (date: any) => {
+      if (!date) return null;
+      return dayjs(date).tz(this.tz).format('YYYY-MM-DDTHH:mm:ss.SSSZ');
+    };
+
+    return {
+      ...attendance,
+      // Convert date field to Jakarta date string (YYYY-MM-DD)
+      date: attendance.date ? dayjs(attendance.date).tz(this.tz).format('YYYY-MM-DD') : null,
+      check_in_time: toJakartaISO(attendance.check_in_time),
+      check_out_time: toJakartaISO(attendance.check_out_time),
+      check_in_latitude: toNumber(attendance.check_in_latitude),
+      check_in_longitude: toNumber(attendance.check_in_longitude),
+      check_out_latitude: toNumber(attendance.check_out_latitude),
+      check_out_longitude: toNumber(attendance.check_out_longitude),
+    };
+  }
+
+  private validateCoordinates({ latitude, longitude }: GeoLocation) {
+    if (latitude < -90 || latitude > 90) {
+      throw new Error('Invalid latitude');
+    }
+    if (longitude < -180 || longitude > 180) {
+      throw new Error('Invalid longitude');
+    }
+  }
+
+  private formatJakartaTime(date?: Date | string | null) {
+    if (!date) return '';
+    const d = dayjs(date).tz(this.tz);
+    return d.isValid() ? d.format('HH:mm') : '';
+  }
+
+  private getMonthRange(month: string) {
+    const [year, monthNum] = month.split('-').map(Number);
+    if (!year || !monthNum) {
+      throw new Error('Invalid month format. Use YYYY-MM');
+    }
+
+    const startDate = new Date(Date.UTC(year, monthNum - 1, 1));
+    const endDate = new Date(Date.UTC(year, monthNum, 0, 23, 59, 59, 999));
+    return { startDate, endDate };
+  }
+
+  private async resolveSubjectToEmployeeId(subject?: AttendanceSubjectFilter) {
+    if (!subject) {
+      return undefined;
+    }
+
+    if (subject.user) {
+      const employee = await this.resolveEmployee(subject.user);
+      return employee.id;
+    }
+
+    if (subject.employeeId) {
+      const employee = await this.prisma.employees.findUnique({
+        where: { id: subject.employeeId },
+        select: { id: true },
+      });
+      if (employee) {
+        return employee.id;
+      }
+
+      const user = await this.prisma.users.findUnique({
+        where: { id: subject.employeeId },
+        select: { employee_id: true },
+      });
+
+      return user?.employee_id || undefined;
+    }
+
+    return undefined;
+  }
+
+  private emptyStats(month: string) {
+    return {
+      month,
+      totalDays: 0,
+      presentDays: 0,
+      lateDays: 0,
+      absentDays: 0,
+      totalWorkMinutes: 0,
+      averageWorkMinutes: 0,
+      averageWorkHours: '0.00',
+    };
+  }
+
   private async validateGeofence(
     latitude: number,
     longitude: number,

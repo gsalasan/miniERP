@@ -282,19 +282,12 @@ const Dashboard: React.FC = () => {
     console.log('🔑 Token available:', token ? '✅ ' + token.substring(0, 20) + '...' : '❌ null');
 
     if (token && user) {
-      // Use localStorage for cross-app sharing (since sessionStorage is tab-specific)
-      // Navigate to the module in the same tab and pass token via URL query param
-      try {
-        const url = new URL(module.url);
-        // attach cross-app token so the target app can read it from URL
-        url.searchParams.set('cross_app_token', token);
-        // preserve existing params if any
-        window.location.href = url.toString();
-      } catch {
-        // Fallback for non-absolute URLs
-        const separator = module.url.includes('?') ? '&' : '?';
-        window.location.href = `${module.url}${separator}cross_app_token=${encodeURIComponent(token)}`;
-      }
+      // Pass token via URL query parameter
+      const url = `${module.url}?token=${encodeURIComponent(token)}`;
+      console.log('✅ Opening module with token in URL');
+
+      // Navigate to the module
+      window.open(url, '_blank');
     } else {
       console.error("❌ No token or user data available");
     }

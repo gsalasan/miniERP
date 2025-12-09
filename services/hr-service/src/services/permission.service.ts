@@ -47,6 +47,11 @@ export class PermissionService {
    * Get all permission requests for an employee
    */
   async getEmployeePermissions(employeeId: string, status?: string) {
+    // hr_permission_requests table doesn't exist, return empty array
+    console.log('Permission requests table not implemented yet');
+    return [];
+    
+    /*
     const where: any = { employee_id: employeeId };
     if (status) {
       where.status = status;
@@ -68,6 +73,7 @@ export class PermissionService {
         created_at: 'desc',
       },
     });
+    */
   }
 
   /**

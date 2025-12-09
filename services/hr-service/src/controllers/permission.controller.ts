@@ -56,11 +56,18 @@ export class PermissionController {
 
       const { getPrisma } = await import('../utils/prisma');
       const prisma = getPrisma();
-      const hrEmployee = await resolveHrEmployee(prisma, {
-        userId,
-        email: req.user?.email,
-        employeeId: req.user?.employee_id,
-      });
+      let hrEmployee: { id: string } | null = null;
+      try {
+        hrEmployee = await resolveHrEmployee(prisma, {
+          userId,
+          email: req.user?.email,
+          employeeId: req.user?.employee_id,
+        });
+      } catch (e) {
+        // If employee is not linked, return an empty list instead of 500
+        res.json({ success: true, data: [] });
+        return;
+      }
 
       const { status } = req.query;
       const permissions = await permissionService.getEmployeePermissions(
